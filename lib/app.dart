@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'features/home/presentation/home_page.dart';
+import 'features/home/presentation/pages/home_page.dart';
 
 class ShopTrackApp extends StatelessWidget {
   const ShopTrackApp({super.key});
