@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../models/shopping_item.dart';
 
 class AddItemSheet extends StatefulWidget {
   const AddItemSheet({super.key});
@@ -15,6 +16,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
   final TextEditingController _notesController = TextEditingController();
 
   bool _showMoreOptions = false;
+  String? _errorText;
 
   @override
   void dispose() {
@@ -24,6 +26,26 @@ class _AddItemSheetState extends State<AddItemSheet> {
     _priceController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _onSave() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      setState(() {
+        _errorText = 'Item name is required';
+      });
+      return;
+    }
+
+    final item = ShoppingItem(
+      name: name,
+      quantity: _quantityController.text.isEmpty ? null : _quantityController.text,
+      unit: _unitController.text.isEmpty ? null : _unitController.text,
+      price: _priceController.text.isEmpty ? null : _priceController.text,
+      notes: _notesController.text.isEmpty ? null : _notesController.text,
+    );
+
+    Navigator.pop(context, item);
   }
 
   @override
@@ -67,12 +89,20 @@ class _AddItemSheetState extends State<AddItemSheet> {
               decoration: InputDecoration(
                 labelText: 'Item Name',
                 hintText: 'e.g. Eggs',
+                errorText: _errorText,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
               ),
+              onChanged: (value) {
+                if (_errorText != null && value.trim().isNotEmpty) {
+                  setState(() {
+                    _errorText = null;
+                  });
+                }
+              },
             ),
             const SizedBox(height: 16),
             InkWell(
@@ -160,7 +190,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
             ],
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _onSave,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
