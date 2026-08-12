@@ -92,7 +92,16 @@ class _HomePageState extends State<HomePage> {
                     : ListView.builder(
                         itemCount: _items.length,
                         itemBuilder: (context, index) {
-                          return ShoppingItemTile(item: _items[index]);
+                          return ShoppingItemTile(
+                            item: _items[index],
+                            onToggle: () {
+                              setState(() {
+                                _items[index] = _items[index].copyWith(
+                                  isPurchased: !_items[index].isPurchased,
+                                );
+                              });
+                            },
+                          );
                         },
                       ),
               ),

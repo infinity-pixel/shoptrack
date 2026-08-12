@@ -14,4 +14,22 @@ class ShoppingItem {
     this.notes,
     this.isPurchased = false,
   });
+
+  ShoppingItem copyWith({
+    String? name,
+    String? quantity,
+    String? unit,
+    String? price,
+    String? notes,
+    bool? isPurchased,
+  }) {
+    return ShoppingItem(
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+      price: price ?? this.price,
+      notes: notes ?? this.notes,
+      isPurchased: isPurchased ?? this.isPurchased,
+    );
+  }
 }
