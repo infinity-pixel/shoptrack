@@ -95,7 +95,7 @@ void main() {
       expect(result.priceBasisSymbol, 'kg');
     });
 
-    test('Missing quantity returns zero', () {
+    test('Quantity empty with unit → behaves as 1 (Smart Default Case A)', () {
       final result = PricingCalculator.calculate(
         quantity: null,
         priceValue: 100,
@@ -103,7 +103,8 @@ void main() {
         unit: ShoppingUnit.l,
         priceBasis: ShoppingUnit.l,
       );
-      expect(result, PricingResult.zero);
+      expect(result.totalPrice, 100.0);
+      expect(result.unitPrice, 100.0);
     });
 
     test('Zero quantity returns zero', () {
@@ -150,7 +151,7 @@ void main() {
       expect(result, PricingResult.zero);
     });
 
-    test('Total mode with compatibility check (kg/g normalization not needed for total mode calculation but price per unit is based on quantity unit)', () {
+    test('Total mode with compatibility check (kg/g normalization to standard basis for display)', () {
        final result = PricingCalculator.calculate(
         quantity: 250,
         priceValue: 25,
@@ -159,8 +160,8 @@ void main() {
         priceBasis: null,
       );
       expect(result.totalPrice, 25.0);
-      expect(result.unitPrice, 0.10);
-      expect(result.priceBasisSymbol, 'g');
+      expect(result.unitPrice, 100.0);
+      expect(result.priceBasisSymbol, 'kg');
     });
   });
 }

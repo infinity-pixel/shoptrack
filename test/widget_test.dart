@@ -6,12 +6,21 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoptrack/app.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('Smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const ShopTrackApp());
+    
+    // Wait for the loading to complete
+    await tester.pump();
+    await tester.pump();
 
     // Verify that the app title or some text is present
     expect(find.text("Today's Shopping"), findsOneWidget);

@@ -1,32 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/utils/pricing_calculator.dart';
 import '../../../../models/shopping_item.dart';
 
 class AddItemSheet extends StatefulWidget {
-  const AddItemSheet({super.key});
+  final int nextPosition;
+  final ShoppingItem? initialItem;
+
+  const AddItemSheet({
+    super.key,
+    required this.nextPosition,
+    this.initialItem,
+  });
 
   @override
   State<AddItemSheet> createState() => _AddItemSheetState();
 }
 
 class _AddItemSheetState extends State<AddItemSheet> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _quantityController;
+  late final TextEditingController _priceController;
+  late final TextEditingController _notesController;
 
   bool _showMoreOptions = false;
   String? _errorText;
-  PricingMode _pricingMode = PricingMode.total;
-  ShoppingUnit? _selectedUnit;
-  ShoppingUnit? _selectedPriceBasis;
+  String? _priceErrorText;
+  late PricingMode _pricingMode;
+  late ShoppingUnit? _selectedUnit;
+  late ShoppingUnit? _selectedPriceBasis;
   PricingResult _calcResult = PricingResult.zero;
+
+  bool get _isEditing => widget.initialItem != null;
 
   @override
   void initState() {
     super.initState();
+    
+    final item = widget.initialItem;
+    _nameController = TextEditingController(text: item?.name);
+    _quantityController = TextEditingController(
+      text: item?.quantityValue != null ? _formatQty(item!.quantityValue) : '',
+    );
+    _priceController = TextEditingController(
+      text: item?.priceValue != null ? item!.priceValue!.toStringAsFixed(item.priceValue == item.priceValue!.roundToDouble() ? 0 : 2) : '',
+    );
+    _notesController = TextEditingController(text: item?.notes);
+    
+    _pricingMode = item?.pricingMode ?? PricingMode.total;
+    _selectedUnit = item?.shoppingUnit;
+    _selectedPriceBasis = item?.priceBasis;
+    
+    if (item != null && (item.notes != null || item.quantityValue != null || item.priceValue != null)) {
+      _showMoreOptions = true;
+    }
+
     _quantityController.addListener(_updateCalculation);
     _priceController.addListener(_updateCalculation);
+    
+    // Initial calculation if editing
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateCalculation());
   }
 
   @override
@@ -38,28 +72,41 @@ class _AddItemSheetState extends State<AddItemSheet> {
     super.dispose();
   }
 
+  String _formatQty(double? val) {
+    if (val == null) return '';
+    if (val == val.toInt()) return val.toInt().toString();
+    return val.toString();
+  }
+
   void _updateCalculation() {
     final qty = double.tryParse(_quantityController.text);
     final price = double.tryParse(_priceController.text);
 
-    // Reset price basis if incompatible or not applicable
-    if (_pricingMode == PricingMode.unit && _selectedUnit != null) {
-      if (_selectedPriceBasis != null && !_selectedUnit!.isCompatibleWith(_selectedPriceBasis!)) {
-        _selectedPriceBasis = null;
+    if (_pricingMode == PricingMode.unit && price != null && _selectedUnit == null) {
+      if (mounted) {
+        setState(() {
+          _calcResult = PricingResult.zero;
+          _priceErrorText = 'Unit required for Price per Unit';
+        });
       }
+      return;
     } else {
-      _selectedPriceBasis = null;
+      if (_priceErrorText != null) {
+        if (mounted) setState(() => _priceErrorText = null);
+      }
     }
 
-    setState(() {
-      _calcResult = PricingCalculator.calculate(
-        quantity: qty,
-        priceValue: price,
-        mode: _pricingMode,
-        unit: _selectedUnit,
-        priceBasis: _selectedPriceBasis,
-      );
-    });
+    if (mounted) {
+      setState(() {
+        _calcResult = PricingCalculator.calculate(
+          quantity: qty,
+          priceValue: price,
+          mode: _pricingMode,
+          unit: _selectedUnit,
+          priceBasis: _selectedPriceBasis,
+        );
+      });
+    }
   }
 
   void _onSave() {
@@ -71,17 +118,67 @@ class _AddItemSheetState extends State<AddItemSheet> {
       return;
     }
 
+    final price = double.tryParse(_priceController.text);
+    if (_pricingMode == PricingMode.unit && price != null && _selectedUnit == null) {
+      setState(() {
+        _priceErrorText = 'Unit required for Price per Unit';
+      });
+      return;
+    }
+
     final item = ShoppingItem(
+      id: widget.initialItem?.id ?? const Uuid().v4(),
       name: name,
       quantityValue: double.tryParse(_quantityController.text),
-      priceValue: double.tryParse(_priceController.text),
+      priceValue: price,
       pricingMode: _pricingMode,
       shoppingUnit: _selectedUnit,
       priceBasis: _selectedPriceBasis,
       notes: _notesController.text.isEmpty ? null : _notesController.text,
+      isPurchased: widget.initialItem?.isPurchased ?? false,
+      position: widget.initialItem?.position ?? widget.nextPosition,
     );
 
     Navigator.pop(context, item);
+  }
+
+  Future<void> _onDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete item?'),
+        content: const Text('Are you sure you want to delete this item?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      Navigator.pop(context, 'delete');
+    }
+  }
+
+  void _updatePriceBasisDefault(ShoppingUnit? unit) {
+    if (_pricingMode == PricingMode.unit && unit != null) {
+      if (unit == ShoppingUnit.g || unit == ShoppingUnit.kg) {
+        _selectedPriceBasis = ShoppingUnit.kg;
+      } else if (unit == ShoppingUnit.ml || unit == ShoppingUnit.l) {
+        _selectedPriceBasis = ShoppingUnit.l;
+      } else {
+        _selectedPriceBasis = unit;
+      }
+    } else {
+      _selectedPriceBasis = null;
+    }
   }
 
   @override
@@ -109,9 +206,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Add Item',
-                  style: TextStyle(
+                Text(
+                  _isEditing ? 'Edit Item' : 'Add Item',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -125,7 +222,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
             const SizedBox(height: 16),
             TextField(
               controller: _nameController,
-              autofocus: true,
+              autofocus: !_isEditing,
               decoration: InputDecoration(
                 labelText: 'Item Name',
                 hintText: 'e.g. Eggs',
@@ -183,6 +280,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                 onSelectionChanged: (newSelection) {
                   setState(() {
                     _pricingMode = newSelection.first;
+                    _updatePriceBasisDefault(_selectedUnit);
                     _updateCalculation();
                   });
                 },
@@ -206,7 +304,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     flex: 3,
-                    child: DropdownButtonFormField<ShoppingUnit>(
+                    child: DropdownButtonFormField<ShoppingUnit?>(
                       initialValue: _selectedUnit,
                       decoration: InputDecoration(
                         labelText: 'Unit',
@@ -214,20 +312,22 @@ class _AddItemSheetState extends State<AddItemSheet> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      items: ShoppingUnit.values.map((unit) {
-                        return DropdownMenuItem(
-                          value: unit,
-                          child: Text(unit.displayName),
-                        );
-                      }).toList(),
+                      items: [
+                        const DropdownMenuItem<ShoppingUnit?>(
+                          value: null,
+                          child: Text('No unit'),
+                        ),
+                        ...ShoppingUnit.values.map((unit) {
+                          return DropdownMenuItem<ShoppingUnit?>(
+                            value: unit,
+                            child: Text(unit.displayName),
+                          );
+                        }),
+                      ],
                       onChanged: (value) {
                         setState(() {
                           _selectedUnit = value;
-                          if (_selectedUnit != null && _selectedPriceBasis != null) {
-                            if (!_selectedUnit!.isCompatibleWith(_selectedPriceBasis!)) {
-                              _selectedPriceBasis = null;
-                            }
-                          }
+                          _updatePriceBasisDefault(_selectedUnit);
                           _updateCalculation();
                         });
                       },
@@ -268,6 +368,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                 decoration: InputDecoration(
                   labelText: _getPriceLabel(),
                   prefixText: '৳ ',
+                  errorText: _priceErrorText,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -288,7 +389,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                         children: [
                           const Text('Total', style: TextStyle(fontSize: 14)),
                           Text(
-                            '৳${_calcResult.totalPrice.toStringAsFixed(2)}',
+                            NumberFormatter.formatPrice(_calcResult.totalPrice),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -304,7 +405,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                             style: const TextStyle(fontSize: 14),
                           ),
                           Text(
-                            '৳${_calcResult.unitPrice.toStringAsFixed(2)}/${_calcResult.priceBasisSymbol}',
+                            '${NumberFormatter.formatPrice(_calcResult.unitPrice)}/${_calcResult.priceBasisSymbol}',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
@@ -326,24 +427,54 @@ class _AddItemSheetState extends State<AddItemSheet> {
               ),
             ],
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _onSave,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                if (_isEditing) ...[
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _onDelete,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Delete',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: _onSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Save',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              ],
             ),
           ],
         ),

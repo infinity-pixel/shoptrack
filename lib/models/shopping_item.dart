@@ -61,9 +61,16 @@ enum ShoppingUnit {
     if (isVolume && other.isVolume) return true;
     return false;
   }
+
+  ShoppingUnit get standardBasis {
+    if (isMass) return ShoppingUnit.kg;
+    if (isVolume) return ShoppingUnit.l;
+    return this;
+  }
 }
 
 class ShoppingItem {
+  final String id;
   final String name;
   final String? quantity; // Kept for UI compatibility if needed
   final String? unit; // Kept for UI compatibility if needed
@@ -78,7 +85,11 @@ class ShoppingItem {
   final ShoppingUnit? shoppingUnit;
   final ShoppingUnit? priceBasis;
 
+  // Reordering
+  final int position;
+
   const ShoppingItem({
+    required this.id,
     required this.name,
     this.quantity,
     this.unit,
@@ -90,6 +101,7 @@ class ShoppingItem {
     this.pricingMode = PricingMode.total,
     this.shoppingUnit,
     this.priceBasis,
+    this.position = 0,
   });
 
   PricingResult get pricing {
@@ -104,7 +116,55 @@ class ShoppingItem {
 
   String get unitLabel => shoppingUnit?.symbol ?? '';
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'quantity': quantity,
+      'unit': unit,
+      'price': price,
+      'notes': notes,
+      'isPurchased': isPurchased,
+      'quantityValue': quantityValue,
+      'priceValue': priceValue,
+      'pricingMode': pricingMode.name,
+      'shoppingUnit': shoppingUnit?.name,
+      'priceBasis': priceBasis?.name,
+      'position': position,
+    };
+  }
+
+  factory ShoppingItem.fromJson(Map<String, dynamic> json) {
+    return ShoppingItem(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      quantity: json['quantity'] as String?,
+      unit: json['unit'] as String?,
+      price: json['price'] as String?,
+      notes: json['notes'] as String?,
+      isPurchased: json['isPurchased'] as bool? ?? false,
+      quantityValue: (json['quantityValue'] as num?)?.toDouble(),
+      priceValue: (json['priceValue'] as num?)?.toDouble(),
+      pricingMode: PricingMode.values.firstWhere(
+        (e) => e.name == json['pricingMode'],
+        orElse: () => PricingMode.total,
+      ),
+      shoppingUnit: json['shoppingUnit'] != null
+          ? ShoppingUnit.values.firstWhere(
+              (e) => e.name == json['shoppingUnit'],
+            )
+          : null,
+      priceBasis: json['priceBasis'] != null
+          ? ShoppingUnit.values.firstWhere(
+              (e) => e.name == json['priceBasis'],
+            )
+          : null,
+      position: json['position'] as int? ?? 0,
+    );
+  }
+
   ShoppingItem copyWith({
+    String? id,
     String? name,
     String? quantity,
     String? unit,
@@ -116,8 +176,10 @@ class ShoppingItem {
     PricingMode? pricingMode,
     ShoppingUnit? shoppingUnit,
     ShoppingUnit? priceBasis,
+    int? position,
   }) {
     return ShoppingItem(
+      id: id ?? this.id,
       name: name ?? this.name,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
@@ -129,6 +191,7 @@ class ShoppingItem {
       pricingMode: pricingMode ?? this.pricingMode,
       shoppingUnit: shoppingUnit ?? this.shoppingUnit,
       priceBasis: priceBasis ?? this.priceBasis,
+      position: position ?? this.position,
     );
   }
 }
