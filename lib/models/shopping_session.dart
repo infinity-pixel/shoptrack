@@ -16,6 +16,28 @@ class ShoppingSession {
     return date.year == now.year && date.month == now.month && date.day == now.day;
   }
 
+  bool get isFuture {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return date.isAfter(today);
+  }
+
+  bool get isPast {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return date.isBefore(today);
+  }
+
+  int get purchasedCount => items.where((i) => i.isPurchased).length;
+  int get pendingCount => items.where((i) => !i.isPurchased).length;
+  int get plannedCount => isFuture ? pendingCount : items.length;
+
+  double get totalPurchasedAmount =>
+      items.where((i) => i.isPurchased).fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
+
+  double get totalAmount =>
+      items.fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

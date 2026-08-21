@@ -109,7 +109,7 @@ void main() {
       await repo.saveSession(sOld);
       await repo.saveSession(sNew);
 
-      final all = await repo.getAllSessions();
+      final all = await repo.getAllSessions(includeEmpty: true);
       expect(all.first.id, 'new');
       expect(all.last.id, 'old');
     });

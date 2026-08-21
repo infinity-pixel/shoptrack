@@ -7,8 +7,9 @@ import '../../../models/shopping_session.dart';
 
 abstract class ShoppingRepository {
   Future<ShoppingSession> getSessionByDate(DateTime date);
-  Future<List<ShoppingSession>> getAllSessions();
+  Future<List<ShoppingSession>> getAllSessions({bool includeEmpty = false});
   Future<void> saveSession(ShoppingSession session);
+  Future<void> deleteSession(String id);
   Future<void> clearAll();
 }
 
@@ -18,7 +19,7 @@ class LocalShoppingRepository implements ShoppingRepository {
 
   @override
   Future<ShoppingSession> getSessionByDate(DateTime date) async {
-    final all = await getAllSessions();
+    final all = await getAllSessions(includeEmpty: true);
     
     // Find session with same calendar date
     try {
@@ -31,14 +32,14 @@ class LocalShoppingRepository implements ShoppingRepository {
       // Return empty session for that date
       return ShoppingSession(
         id: const Uuid().v4(),
-        date: date,
+        date: DateTime(date.year, date.month, date.day),
         items: [],
       );
     }
   }
 
   @override
-  Future<List<ShoppingSession>> getAllSessions() async {
+  Future<List<ShoppingSession>> getAllSessions({bool includeEmpty = false}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       
@@ -49,11 +50,16 @@ class LocalShoppingRepository implements ShoppingRepository {
       if (sessionsJson == null) return [];
 
       final List<dynamic> decodedList = jsonDecode(sessionsJson);
-      final sessions = decodedList
+      List<ShoppingSession> sessions = decodedList
           .map((json) => ShoppingSession.fromJson(json as Map<String, dynamic>))
           .toList();
       
-      // Sort newest first
+      // Filter empty sessions unless requested otherwise (Rule 16)
+      if (!includeEmpty) {
+        sessions = sessions.where((s) => s.items.isNotEmpty).toList();
+      }
+
+      // Sort newest first as a baseline (UI will group and sort specifically)
       sessions.sort((a, b) => b.date.compareTo(a.date));
       return sessions;
     } catch (e) {
@@ -66,19 +72,56 @@ class LocalShoppingRepository implements ShoppingRepository {
   Future<void> saveSession(ShoppingSession session) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final all = await getAllSessions();
+      // Use internal helper to get all sessions including empty ones
+      final String? sessionsJson = prefs.getString(_sessionsKey);
+      List<ShoppingSession> all = [];
+      if (sessionsJson != null) {
+        all = (jsonDecode(sessionsJson) as List)
+            .map((json) => ShoppingSession.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
       
       final index = all.indexWhere((s) => s.id == session.id);
       if (index != -1) {
         all[index] = session;
       } else {
-        all.add(session);
+        // Double check if a session for this date already exists
+        final dateIndex = all.indexWhere((s) => 
+          s.date.year == session.date.year && 
+          s.date.month == session.date.month && 
+          s.date.day == session.date.day
+        );
+        if (dateIndex != -1) {
+          all[dateIndex] = session;
+        } else {
+          all.add(session);
+        }
       }
 
-      final String json = jsonEncode(all.map((s) => s.toJson()).toList());
-      await prefs.setString(_sessionsKey, json);
+      final String updatedJson = jsonEncode(all.map((s) => s.toJson()).toList());
+      await prefs.setString(_sessionsKey, updatedJson);
     } catch (e) {
       debugPrint('Error saving session: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteSession(String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? sessionsJson = prefs.getString(_sessionsKey);
+      if (sessionsJson == null) return;
+
+      List<ShoppingSession> all = (jsonDecode(sessionsJson) as List)
+          .map((json) => ShoppingSession.fromJson(json as Map<String, dynamic>))
+          .toList();
+          
+      all.removeWhere((s) => s.id == id);
+      
+      final String updatedJson = jsonEncode(all.map((s) => s.toJson()).toList());
+      await prefs.setString(_sessionsKey, updatedJson);
+    } catch (e) {
+      debugPrint('Error deleting session: $e');
     }
   }
 
@@ -96,24 +139,22 @@ class LocalShoppingRepository implements ShoppingRepository {
     try {
       final List<dynamic> decodedItems = jsonDecode(legacyJson);
       final items = decodedItems
-          .map((j) => ShoppingItem.fromJson(jsonDecode(jsonEncode(j)))) // Safety cast
+          .map((j) => ShoppingItem.fromJson(j as Map<String, dynamic>))
           .toList();
 
       if (items.isNotEmpty) {
+        final now = DateTime.now();
         final session = ShoppingSession(
           id: const Uuid().v4(),
-          date: DateTime.now(),
+          date: DateTime(now.year, now.month, now.day),
           items: items,
         );
         
-        // Save using current logic (will avoid infinite recursion by not calling getAllSessions here)
-        // But we need to check if a session for today already exists in the new key to avoid overwriting.
-        // Actually, just append to new key if exists.
         final String? existingSessionsJson = prefs.getString(_sessionsKey);
         List<ShoppingSession> all = [];
         if (existingSessionsJson != null) {
           all = (jsonDecode(existingSessionsJson) as List)
-              .map((j) => ShoppingSession.fromJson(j))
+              .map((j) => ShoppingSession.fromJson(j as Map<String, dynamic>))
               .toList();
         }
         
@@ -125,8 +166,6 @@ class LocalShoppingRepository implements ShoppingRepository {
       debugPrint('Migration from Sprint 7 successful.');
     } catch (e) {
       debugPrint('Migration failed: $e');
-      // If migration fails, we don't remove the key yet to avoid data loss? 
-      // But we should probably avoid multiple fail logs.
     }
   }
 }

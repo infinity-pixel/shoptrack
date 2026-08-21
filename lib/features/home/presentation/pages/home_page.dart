@@ -60,30 +60,30 @@ class _HomePageState extends State<HomePage> {
         .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
   }
 
-  void _addItem(ShoppingItem item) {
+  Future<void> _addItem(ShoppingItem item) async {
     setState(() {
       _currentSession.items.add(item);
     });
-    _persistSession();
+    await _persistSession();
   }
 
-  void _updateItem(ShoppingItem updatedItem) {
+  Future<void> _updateItem(ShoppingItem updatedItem) async {
     final index = _currentSession.items.indexWhere((it) => it.id == updatedItem.id);
     if (index != -1) {
       setState(() {
         _currentSession.items[index] = updatedItem;
       });
-      _persistSession();
+      await _persistSession();
     }
   }
 
-  void _deleteItem(ShoppingItem item) {
+  Future<void> _deleteItem(ShoppingItem item) async {
     final index = _currentSession.items.indexOf(item);
     if (index != -1) {
       setState(() {
         _currentSession.items.removeAt(index);
       });
-      _persistSession();
+      await _persistSession();
 
       final messenger = ShopTrackApp.scaffoldMessengerKey.currentState;
       if (messenger != null) {
@@ -94,13 +94,13 @@ class _HomePageState extends State<HomePage> {
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: 'Undo',
-              onPressed: () {
+              onPressed: () async {
                 messenger.hideCurrentSnackBar();
                 setState(() {
                   _currentSession.items.insert(
                       index < _currentSession.items.length ? index : _currentSession.items.length, item);
                 });
-                _persistSession();
+                await _persistSession();
               },
             ),
           ),
@@ -127,168 +127,217 @@ class _HomePageState extends State<HomePage> {
     final bool hasItems = _currentSession.items.isNotEmpty;
     final bool allPurchased = hasItems && activeItems.isEmpty;
 
-    return Scaffold(
-      appBar: widget.onBackToHistory != null
-          ? AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: widget.onBackToHistory,
-              ),
-              title: Text(_currentSession.isToday ? 'Today' : DateFormat('d MMM').format(_currentSession.date)),
-              centerTitle: true,
-            )
-          : null,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Custom Header (only if not using AppBar)
-            if (widget.onBackToHistory == null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 20, 12, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      formattedDate,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _currentSession.isToday ? "Today's Shopping" : "Shopping Record",
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        if (!hasItems && widget.onBackToHistory != null) {
+          final shouldDiscard = await _showDiscardWarning();
+          if (shouldDiscard && mounted) {
+            widget.onBackToHistory!();
+          }
+        } else {
+          if (widget.onBackToHistory != null) {
+            widget.onBackToHistory!();
+          } else {
+            Navigator.pop(context);
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: widget.onBackToHistory != null
+            ? AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () async {
+                    if (!hasItems) {
+                      final shouldDiscard = await _showDiscardWarning();
+                      if (shouldDiscard && mounted) {
+                        widget.onBackToHistory!();
+                      }
+                    } else {
+                      widget.onBackToHistory!();
+                    }
+                  },
                 ),
-              ),
-            const SizedBox(height: 20),
+                title: Text(_currentSession.isToday ? 'Today' : DateFormat('d MMM').format(_currentSession.date)),
+                centerTitle: true,
+              )
+            : null,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Custom Header (only if not using AppBar)
+              if (widget.onBackToHistory == null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 20, 12, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        formattedDate,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _currentSession.isToday ? "Today's Shopping" : "Shopping Record",
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 20),
 
-            // Content Area
-            Expanded(
-              child: !hasItems
-                  ? _buildEmptyState()
-                  : ListView(
-                      children: [
-                        if (allPurchased)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                            child: _buildCompletedState(),
-                          ),
-
-                        // Active Items Section
-                        if (activeItems.isNotEmpty) ...[
-                          ReorderableListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: activeItems.length,
-                            // ignore: deprecated_member_use
-                            onReorder: (oldIndex, newIndex) =>
-                                _onReorder(activeItems, oldIndex, newIndex),
-                            itemBuilder: (context, index) {
-                              final item = activeItems[index];
-                              return Padding(
-                                key: ValueKey(item.id),
-                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                child: ShoppingItemTile(
-                                  item: item,
-                                  index: index,
-                                  onToggle: () => _toggleItem(item),
-                                  onTap: () => _openEditSheet(item),
-                                  onDelete: () => _deleteItem(item),
-                                ),
-                              );
-                            },
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                            child: Column(
-                              children: [
-                                const Divider(height: 32),
-                                _buildTotalAmountRow(),
-                              ],
+              // Content Area
+              Expanded(
+                child: !hasItems
+                    ? _buildEmptyState()
+                    : ListView(
+                        children: [
+                          if (allPurchased)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: _buildCompletedState(),
                             ),
-                          ),
-                        ],
 
-                        // Purchased Section
-                        if (purchasedItems.isNotEmpty)
-                          Container(
-                            color: Colors.grey[50], // Edge-to-edge background
-                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 12.0),
-                                  child: Text(
-                                    'Purchased',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                          // Active Items Section
+                          if (activeItems.isNotEmpty) ...[
+                            ReorderableListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: activeItems.length,
+                              // ignore: deprecated_member_use
+                              onReorder: (oldIndex, newIndex) =>
+                                  _onReorder(activeItems, oldIndex, newIndex),
+                              itemBuilder: (context, index) {
+                                final item = activeItems[index];
+                                return Padding(
+                                  key: ValueKey(item.id),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                  child: ShoppingItemTile(
+                                    item: item,
+                                    index: index,
+                                    onToggle: () => _toggleItem(item),
+                                    onTap: () => _openEditSheet(item),
+                                    onDelete: () => _deleteItem(item),
+                                  ),
+                                );
+                              },
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                              child: Column(
+                                children: [
+                                  const Divider(height: 32),
+                                  _buildTotalAmountRow(),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          // Purchased Section
+                          if (purchasedItems.isNotEmpty)
+                            Container(
+                              color: Colors.grey[50], // Edge-to-edge background
+                              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 12.0),
+                                    child: Text(
+                                      'Purchased',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                ReorderableListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: purchasedItems.length,
-                                  // ignore: deprecated_member_use
-                                  onReorder: (oldIndex, newIndex) =>
-                                      _onReorder(purchasedItems, oldIndex, newIndex),
-                                  itemBuilder: (context, index) {
-                                    final item = purchasedItems[index];
-                                    return Padding(
-                                      key: ValueKey(item.id),
-                                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                      child: ShoppingItemTile(
-                                        item: item,
-                                        index: index,
-                                        onToggle: () => _toggleItem(item),
-                                        onTap: () => _openEditSheet(item),
-                                        onDelete: () => _deleteItem(item),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                                  child: _buildPurchasedAmountCard(),
-                                ),
-                              ],
+                                  const SizedBox(height: 8),
+                                  ReorderableListView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: purchasedItems.length,
+                                    // ignore: deprecated_member_use
+                                    onReorder: (oldIndex, newIndex) =>
+                                        _onReorder(purchasedItems, oldIndex, newIndex),
+                                    itemBuilder: (context, index) {
+                                      final item = purchasedItems[index];
+                                      return Padding(
+                                        key: ValueKey(item.id),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                        child: ShoppingItemTile(
+                                          item: item,
+                                          index: index,
+                                          onToggle: () => _toggleItem(item),
+                                          onTap: () => _openEditSheet(item),
+                                          onDelete: () => _deleteItem(item),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                                    child: _buildPurchasedAmountCard(),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        const SizedBox(height: 80), // FAB Clearance
-                      ],
-                    ),
-            ),
-          ],
+                          const SizedBox(height: 80), // FAB Clearance
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () async {
+            final newItem = await showModalBottomSheet<dynamic>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => AddItemSheet(nextPosition: _currentSession.items.length),
+            );
+
+            if (newItem is ShoppingItem) {
+              _addItem(newItem);
+            }
+          },
+          child: const Icon(Icons.add),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final newItem = await showModalBottomSheet<dynamic>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => AddItemSheet(nextPosition: _currentSession.items.length),
-          );
+    );
+  }
 
-          if (newItem is ShoppingItem) {
-            _addItem(newItem);
-          }
-        },
-        child: const Icon(Icons.add),
+  Future<bool> _showDiscardWarning() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('No items added'),
+        content: const Text('You must add at least one item for this date to be saved.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Stay Here'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Discard & Go Back'),
+          ),
+        ],
       ),
     );
+    return result ?? false;
   }
 
   void _openEditSheet(ShoppingItem item) async {
@@ -328,7 +377,34 @@ class _HomePageState extends State<HomePage> {
     _persistSession();
   }
 
-  void _toggleItem(ShoppingItem item) {
+  void _toggleItem(ShoppingItem item) async {
+    final bool becomingPurchased = !item.isPurchased;
+    
+    // Rule 9: Move future item to today if marked as purchased
+    if (becomingPurchased && _currentSession.isFuture) {
+      final today = DateTime.now();
+      final todaySession = await _repository.getSessionByDate(today);
+      
+      final movedItem = item.copyWith(isPurchased: true, position: todaySession.items.length);
+      
+      setState(() {
+        _currentSession.items.removeWhere((it) => it.id == item.id);
+      });
+      await _persistSession();
+      
+      todaySession.items.add(movedItem);
+      await _repository.saveSession(todaySession);
+      
+      final messenger = ShopTrackApp.scaffoldMessengerKey.currentState;
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text('${item.name} moved to Today\'s list'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final index = _currentSession.items.indexWhere((it) => it.id == item.id);
     if (index != -1) {
       setState(() {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../features/home/presentation/pages/home_page.dart';
-import '../../../../features/history/presentation/pages/history_page.dart';
+import '../../../home/presentation/pages/home_page.dart';
+import '../../../history/presentation/pages/history_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -12,21 +12,49 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
   DateTime? _selectedHistoricalDate;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildBody(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
-            // Clear historical date when switching tabs
+            // Clear historical date when switching tabs (unless it's the home tab)
             if (index != 0) {
               _selectedHistoricalDate = null;
             }
           });
+        },
+        physics: const ClampingScrollPhysics(),
+        children: [
+          _buildHomeTab(),
+          _buildHistoryTab(),
+          _buildAccountTab(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
         },
         elevation: 0,
         backgroundColor: Colors.white,
@@ -49,32 +77,33 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _buildBody() {
-    switch (_currentIndex) {
-      case 0:
-        return HomePage(
-          key: ValueKey(_selectedHistoricalDate?.toIso8601String() ?? 'today'),
-          sessionDate: _selectedHistoricalDate,
-          onBackToHistory: _selectedHistoricalDate != null ? () {
-            setState(() {
-              _selectedHistoricalDate = null;
-              _currentIndex = 1; // Switch back to history tab
-            });
-          } : null,
-        );
-      case 1:
-        return HistoryPage(
-          onSessionSelected: (date) {
-            setState(() {
-              _selectedHistoricalDate = date;
-              _currentIndex = 0; // Switch to home tab to show historical session
-            });
-          },
-        );
-      case 2:
-        return const Center(child: Text('Account Screen (Coming Soon)'));
-      default:
-        return const SizedBox();
-    }
+  Widget _buildHomeTab() {
+    return HomePage(
+      key: ValueKey(_selectedHistoricalDate?.toIso8601String() ?? 'today'),
+      sessionDate: _selectedHistoricalDate,
+      onBackToHistory: _selectedHistoricalDate != null
+          ? () {
+              setState(() {
+                _selectedHistoricalDate = null;
+                _pageController.jumpToPage(1);
+              });
+            }
+          : null,
+    );
+  }
+
+  Widget _buildHistoryTab() {
+    return HistoryPage(
+      onSessionSelected: (date) {
+        setState(() {
+          _selectedHistoricalDate = date;
+          _pageController.jumpToPage(0);
+        });
+      },
+    );
+  }
+
+  Widget _buildAccountTab() {
+    return const Center(child: Text('Account Screen (Coming Soon)'));
   }
 }
