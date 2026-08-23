@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../history/presentation/pages/history_page.dart';
+import '../../../account/presentation/pages/account_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -104,6 +105,6 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildAccountTab() {
-    return const Center(child: Text('Account Screen (Coming Soon)'));
+    return const AccountPage();
   }
 }
