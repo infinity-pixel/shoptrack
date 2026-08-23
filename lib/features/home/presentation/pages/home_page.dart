@@ -3,8 +3,10 @@ import 'package:intl/intl.dart';
 import '../../../../app.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/utils/number_formatter.dart';
+import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_item.dart';
 import '../../../../models/shopping_session.dart';
+import '../../../../services/frequent_items_service.dart';
 import '../widgets/add_item_sheet.dart';
 import '../widgets/shopping_item_tile.dart';
 
@@ -25,11 +27,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late ShoppingSession _currentSession;
   final ShoppingRepository _repository = LocalShoppingRepository();
+  late final FrequentItemsService _frequentItemsService;
+  List<FrequentItemSuggestion> _frequentSuggestions = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _frequentItemsService = FrequentItemsService(_repository);
     _loadSession();
   }
 
@@ -40,6 +45,18 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _currentSession = session;
         _isLoading = false;
+      });
+      await _refreshFrequentSuggestions();
+    }
+  }
+
+  Future<void> _refreshFrequentSuggestions() async {
+    final suggestions = await _frequentItemsService.getSuggestions(
+      excludeNames: _currentSession.items.map((item) => item.name),
+    );
+    if (mounted) {
+      setState(() {
+        _frequentSuggestions = suggestions;
       });
     }
   }
@@ -65,6 +82,13 @@ class _HomePageState extends State<HomePage> {
       _currentSession.items.add(item);
     });
     await _persistSession();
+    await _refreshFrequentSuggestions();
+  }
+
+  Future<void> _quickAddSuggestion(FrequentItemSuggestion suggestion) async {
+    await _addItem(
+      suggestion.toNewItem(position: _currentSession.items.length),
+    );
   }
 
   Future<void> _updateItem(ShoppingItem updatedItem) async {
@@ -101,11 +125,13 @@ class _HomePageState extends State<HomePage> {
                       index < _currentSession.items.length ? index : _currentSession.items.length, item);
                 });
                 await _persistSession();
+                await _refreshFrequentSuggestions();
               },
             ),
           ),
         );
       }
+      await _refreshFrequentSuggestions();
     }
   }
 
@@ -196,6 +222,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               const SizedBox(height: 20),
+              if (_frequentSuggestions.isNotEmpty)
+                _buildFrequentSuggestionsRow(),
 
               // Content Area
               Expanded(
@@ -306,7 +334,10 @@ class _HomePageState extends State<HomePage> {
               context: context,
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
-              builder: (context) => AddItemSheet(nextPosition: _currentSession.items.length),
+              builder: (context) => AddItemSheet(
+                nextPosition: _currentSession.items.length,
+                frequentSuggestions: _frequentSuggestions,
+              ),
             );
 
             if (newItem is ShoppingItem) {
@@ -412,6 +443,41 @@ class _HomePageState extends State<HomePage> {
       });
     }
     _persistSession();
+  }
+
+  Widget _buildFrequentSuggestionsRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Often bought',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _frequentSuggestions.map((suggestion) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ActionChip(
+                    avatar: const Icon(Icons.add, size: 16),
+                    label: Text(suggestion.name),
+                    onPressed: () => _quickAddSuggestion(suggestion),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEmptyState() {

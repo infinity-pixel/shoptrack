@@ -8,6 +8,7 @@ import '../../../../models/monthly_summary.dart';
 import '../../../../models/shopping_session.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../widgets/session_card.dart';
+import 'history_search_page.dart';
 import 'monthly_history_page.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -73,6 +74,15 @@ class _HistoryPageState extends State<HistoryPage> {
       appBar: AppBar(
         title: const Text('History'),
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HistorySearchPage()),
+            ),
+          ),
+        ],
       ),
       body: _sessions.isEmpty
           ? _buildEmptyState()

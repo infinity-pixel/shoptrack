@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/utils/pricing_calculator.dart';
+import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_item.dart';
 
 class AddItemSheet extends StatefulWidget {
   final int nextPosition;
   final ShoppingItem? initialItem;
+  final List<FrequentItemSuggestion> frequentSuggestions;
 
   const AddItemSheet({
     super.key,
     required this.nextPosition,
     this.initialItem,
+    this.frequentSuggestions = const [],
   });
 
   @override
@@ -142,6 +145,29 @@ class _AddItemSheetState extends State<AddItemSheet> {
     Navigator.pop(context, item);
   }
 
+  void _applySuggestion(FrequentItemSuggestion suggestion) {
+    final item = suggestion.latestItem;
+    _nameController.text = item.name;
+    _quantityController.text =
+        item.quantityValue != null ? _formatQty(item.quantityValue) : '';
+    _priceController.text = item.priceValue != null
+        ? item.priceValue!.toStringAsFixed(
+            item.priceValue == item.priceValue!.roundToDouble() ? 0 : 2)
+        : '';
+    _notesController.text = item.notes ?? '';
+
+    setState(() {
+      _errorText = null;
+      _pricingMode = item.pricingMode;
+      _selectedUnit = item.shoppingUnit;
+      _selectedPriceBasis = item.priceBasis;
+      _showMoreOptions = item.quantityValue != null ||
+          item.priceValue != null ||
+          (item.notes != null && item.notes!.isNotEmpty);
+    });
+    _updateCalculation();
+  }
+
   Future<void> _onDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -241,6 +267,28 @@ class _AddItemSheetState extends State<AddItemSheet> {
                 }
               },
             ),
+            if (!_isEditing && widget.frequentSuggestions.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Often bought',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.frequentSuggestions.map((suggestion) {
+                  return ActionChip(
+                    label: Text(suggestion.name),
+                    onPressed: () => _applySuggestion(suggestion),
+                  );
+                }).toList(),
+              ),
+            ],
             const SizedBox(height: 16),
             InkWell(
               onTap: () {
