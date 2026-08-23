@@ -46,4 +46,12 @@ class SettingsService extends ChangeNotifier {
     await _repository.saveSettings(_settings);
     notifyListeners();
   }
+
+  int _dataToken = 0;
+  int get dataToken => _dataToken;
+
+  void notifyDataRestored() {
+    _dataToken++;
+    notifyListeners();
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../app.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../history/presentation/pages/history_page.dart';
 import '../../../account/presentation/pages/account_page.dart';
@@ -29,52 +30,60 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-            // Clear historical date when switching tabs (unless it's the home tab)
-            if (index != 0) {
-              _selectedHistoricalDate = null;
-            }
-          });
-        },
-        physics: const ClampingScrollPhysics(),
-        children: [
-          _buildHomeTab(),
-          _buildHistoryTab(),
-          _buildAccountTab(),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          _pageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        },
-        elevation: 0,
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
+    final settingsService = ShopTrackApp.of(context);
+    
+    return ListenableBuilder(
+      listenable: settingsService,
+      builder: (context, _) {
+        return Scaffold(
+          key: ValueKey('main_scaffold_${settingsService.dataToken}'),
+          body: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+                // Clear historical date when switching tabs (unless it's the home tab)
+                if (index != 0) {
+                  _selectedHistoricalDate = null;
+                }
+              });
+            },
+            physics: const ClampingScrollPhysics(),
+            children: [
+              _buildHomeTab(),
+              _buildHistoryTab(),
+              _buildAccountTab(),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'History',
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              _pageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            elevation: 0,
+            backgroundColor: Colors.white,
+            type: BottomNavigationBarType.fixed,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_filled),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.history),
+                label: 'History',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                label: 'Account',
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Account',
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

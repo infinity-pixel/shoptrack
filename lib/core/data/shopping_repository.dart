@@ -10,6 +10,7 @@ abstract class ShoppingRepository {
   Future<List<ShoppingSession>> getAllSessions({bool includeEmpty = false});
   Future<void> saveSession(ShoppingSession session);
   Future<void> deleteSession(String id);
+  Future<void> replaceSessions(List<ShoppingSession> sessions);
   Future<void> clearAll();
 }
 
@@ -122,6 +123,18 @@ class LocalShoppingRepository implements ShoppingRepository {
       await prefs.setString(_sessionsKey, updatedJson);
     } catch (e) {
       debugPrint('Error deleting session: $e');
+    }
+  }
+
+  @override
+  Future<void> replaceSessions(List<ShoppingSession> sessions) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String updatedJson = jsonEncode(sessions.map((s) => s.toJson()).toList());
+      await prefs.setString(_sessionsKey, updatedJson);
+    } catch (e) {
+      debugPrint('Error replacing sessions: $e');
+      rethrow;
     }
   }
 

@@ -3,6 +3,7 @@ import '../../../../app.dart';
 import '../../../../models/app_settings.dart';
 import '../../../../services/settings_service.dart';
 import 'about_page.dart';
+import 'backup_restore_page.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -56,7 +57,10 @@ class AccountPage extends StatelessWidget {
             icon: Icons.settings_backup_restore_outlined,
             title: 'Backup & Restore',
             subtitle: 'Export or import your local data',
-            onTap: () => _showFutureFeatureDialog(context, 'Backup & Restore'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BackupRestorePage()),
+            ),
           ),
           const SizedBox(height: 16),
           
