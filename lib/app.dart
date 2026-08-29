@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'core/data/settings_repository.dart';
 import 'features/main/presentation/pages/main_page.dart';
+import 'services/auth_service.dart';
+import 'services/cloud_backup_service.dart';
 import 'services/settings_service.dart';
+import 'models/auth_state.dart';
 
 class ShopTrackApp extends StatefulWidget {
   const ShopTrackApp({super.key});
@@ -15,16 +18,46 @@ class ShopTrackApp extends StatefulWidget {
   static SettingsService of(BuildContext context) {
     return context.findAncestorStateOfType<_ShopTrackAppState>()!.settingsService;
   }
+
+  static AuthService authOf(BuildContext context) {
+    return context.findAncestorStateOfType<_ShopTrackAppState>()!.authService;
+  }
+
+  static CloudBackupService cloudBackupOf(BuildContext context) {
+    return context.findAncestorStateOfType<_ShopTrackAppState>()!.cloudBackupService;
+  }
 }
 
 class _ShopTrackAppState extends State<ShopTrackApp> {
   late final SettingsService settingsService;
+  late final AuthService authService;
+  late final CloudBackupService cloudBackupService;
 
   @override
   void initState() {
     super.initState();
     settingsService = SettingsService(LocalSettingsRepository());
     settingsService.loadSettings();
+    
+    authService = GoogleAuthService(
+      serverClientId: '1073842238529-h0oadkbch0vlhkp0469lkbbgk2vr8na0.apps.googleusercontent.com',
+    );
+    cloudBackupService = GoogleDriveBackupService();
+    
+    authService.addListener(_handleAuthChange);
+  }
+
+  @override
+  void dispose() {
+    authService.removeListener(_handleAuthChange);
+    super.dispose();
+  }
+
+  void _handleAuthChange() {
+    final state = authService.state;
+    if (cloudBackupService is GoogleDriveBackupService) {
+      (cloudBackupService as GoogleDriveBackupService).updateSignInState(state is AuthAuthenticated);
+    }
   }
 
   @override

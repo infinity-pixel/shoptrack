@@ -13,11 +13,13 @@ import '../widgets/shopping_item_tile.dart';
 class HomePage extends StatefulWidget {
   final DateTime? sessionDate;
   final VoidCallback? onBackToHistory;
+  final FrequentItemSuggestion? initialNewItemSuggestion;
 
   const HomePage({
     super.key,
     this.sessionDate,
     this.onBackToHistory,
+    this.initialNewItemSuggestion,
   });
 
   @override
@@ -35,7 +37,13 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _frequentItemsService = FrequentItemsService(_repository);
-    _loadSession();
+    _loadSession().then((_) {
+      if (widget.initialNewItemSuggestion != null && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _openAddSheet(suggestion: widget.initialNewItemSuggestion);
+        });
+      }
+    });
   }
 
   Future<void> _loadSession() async {
@@ -47,6 +55,23 @@ class _HomePageState extends State<HomePage> {
         _isLoading = false;
       });
       await _refreshFrequentSuggestions();
+    }
+  }
+
+  Future<void> _openAddSheet({FrequentItemSuggestion? suggestion}) async {
+    final newItem = await showModalBottomSheet<dynamic>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddItemSheet(
+        nextPosition: _currentSession.items.length,
+        frequentSuggestions: _frequentSuggestions,
+        initialSuggestion: suggestion,
+      ),
+    );
+
+    if (newItem is ShoppingItem) {
+      _addItem(newItem);
     }
   }
 
@@ -329,21 +354,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            final newItem = await showModalBottomSheet<dynamic>(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => AddItemSheet(
-                nextPosition: _currentSession.items.length,
-                frequentSuggestions: _frequentSuggestions,
-              ),
-            );
-
-            if (newItem is ShoppingItem) {
-              _addItem(newItem);
-            }
-          },
+          onPressed: () => _openAddSheet(),
           child: const Icon(Icons.add),
         ),
       ),
@@ -452,7 +463,7 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Often bought',
+            'Often Bought',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,

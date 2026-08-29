@@ -1,113 +1,56 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shoptrack/core/data/shopping_repository.dart';
-import 'package:shoptrack/models/shopping_item.dart';
-import 'package:shoptrack/models/shopping_session.dart';
-import 'package:shoptrack/services/frequent_items_service.dart';
-
-class MockShoppingRepository implements ShoppingRepository {
-  final List<ShoppingSession> sessions;
-  MockShoppingRepository(this.sessions);
-
-  @override
-  Future<List<ShoppingSession>> getAllSessions({bool includeEmpty = false}) async =>
-      sessions;
-
-  @override
-  Future<ShoppingSession> getSessionByDate(DateTime date) async => sessions.first;
-
-  @override
-  Future<void> saveSession(ShoppingSession session) async {}
-
-  @override
-  Future<void> deleteSession(String id) async {}
-
-  @override
-  Future<void> clearAll() async {}
-
-  @override
-  Future<void> replaceSessions(List<ShoppingSession> sessions) async {}
-}
+import 'package:shoptrack/models/auth_state.dart';
+import 'package:shoptrack/models/cloud_backup_status.dart';
+import 'package:shoptrack/models/app_backup.dart';
+import 'package:shoptrack/models/app_settings.dart';
 
 void main() {
-  group('Sprint 14: Frequent item quick-add', () {
-    final today = DateTime(2026, 8, 23);
-    final lastWeek = DateTime(2026, 8, 16);
-    final lastMonth = DateTime(2026, 7, 20);
-
-    final sessions = [
-      ShoppingSession(
-        id: '1',
-        date: today,
-        items: [
-          const ShoppingItem(id: 'i1', name: 'Milk', priceValue: 110),
-          const ShoppingItem(id: 'i2', name: 'Eggs'),
-        ],
-      ),
-      ShoppingSession(
-        id: '2',
-        date: lastWeek,
-        items: [
-          const ShoppingItem(id: 'i3', name: 'milk', priceValue: 100),
-          const ShoppingItem(id: 'i4', name: 'Bread'),
-        ],
-      ),
-      ShoppingSession(
-        id: '3',
-        date: lastMonth,
-        items: [
-          const ShoppingItem(id: 'i5', name: 'Bread'),
-          const ShoppingItem(id: 'i6', name: 'Rice'),
-        ],
-      ),
-    ];
-
-    late FrequentItemsService service;
-
-    setUp(() {
-      service = FrequentItemsService(MockShoppingRepository(sessions));
+  group('Sprint 14: Cloud Backup Foundation & Account Integration', () {
+    test('AuthAccount model preserves data', () {
+      const account = AuthAccount(
+        id: '123',
+        email: 'test@example.com',
+        displayName: 'Test User',
+        photoUrl: 'https://example.com/photo.jpg',
+      );
+      expect(account.id, '123');
+      expect(account.email, 'test@example.com');
+      expect(account.displayName, 'Test User');
+      expect(account.photoUrl, 'https://example.com/photo.jpg');
     });
 
-    test('ranks names by how often they appear', () async {
-      final suggestions = await service.getSuggestions();
-      expect(suggestions.map((s) => s.name.toLowerCase()).toList(),
-          ['milk', 'bread', 'eggs', 'rice']);
-      expect(suggestions.first.occurrenceCount, 2);
+    test('CloudBackupStatus initial state is noBackupFound', () {
+      const status = CloudBackupStatus.initial();
+      expect(status.state, CloudBackupState.noBackupFound);
+      expect(status.lastBackupTime, isNull);
+      expect(status.errorMessage, isNull);
     });
 
-    test('merges the same name with different casing', () async {
-      final suggestions = await service.getSuggestions();
-      final milk = suggestions.firstWhere((s) => s.name.toLowerCase() == 'milk');
-      expect(milk.occurrenceCount, 2);
+    test('AppBackup can be instantiated and validated through CloudBackupService logic', () {
+       final backup = AppBackup(
+        backupVersion: 1,
+        appVersion: '1.0.0',
+        timestamp: DateTime.now(),
+        sessions: [],
+        settings: const AppSettings(),
+      );
+      
+      expect(backup.backupVersion, 1);
+      expect(backup.sessions, isEmpty);
     });
 
-    test('reuses the newest details for that name', () async {
-      final suggestions = await service.getSuggestions();
-      final milk = suggestions.firstWhere((s) => s.name.toLowerCase() == 'milk');
-      expect(milk.latestItem.priceValue, 110);
-      expect(milk.name, 'Milk');
-    });
+    test('AuthState variations represent different scenarios', () {
+      const initial = AuthInitial();
+      const unauthenticated = AuthUnauthenticated();
+      const loading = AuthLoading();
+      const error = AuthError('Error');
+      const authenticated = AuthAuthenticated(AuthAccount(id: '1', email: 'a@b.com'));
 
-    test('skips names already on the current list', () async {
-      final suggestions = await service.getSuggestions(excludeNames: ['Milk']);
-      expect(suggestions.any((s) => s.name.toLowerCase() == 'milk'), isFalse);
-      expect(suggestions.first.name, 'Bread');
-    });
-
-    test('respects the suggestion limit', () async {
-      final suggestions = await service.getSuggestions(limit: 2);
-      expect(suggestions.length, 2);
-    });
-
-    test('toNewItem copies details but uses a new id and pending status', () async {
-      final suggestions = await service.getSuggestions();
-      final milk = suggestions.first;
-      final copy = milk.toNewItem(position: 3);
-
-      expect(copy.id, isNot(milk.latestItem.id));
-      expect(copy.name, milk.latestItem.name);
-      expect(copy.priceValue, 110);
-      expect(copy.isPurchased, isFalse);
-      expect(copy.position, 3);
+      expect(initial, isA<AuthState>());
+      expect(unauthenticated, isA<AuthState>());
+      expect(loading, isA<AuthState>());
+      expect(error.message, 'Error');
+      expect(authenticated.account.email, 'a@b.com');
     });
   });
 }

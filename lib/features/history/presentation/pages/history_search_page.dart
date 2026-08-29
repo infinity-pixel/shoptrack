@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/utils/number_formatter.dart';
+import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_item.dart';
 import '../../../../models/shopping_search_result.dart';
+import '../../../../services/frequent_items_service.dart';
 import '../../../../services/search_service.dart';
 import '../../../home/presentation/pages/home_page.dart';
+import '../widgets/smart_date_range_picker.dart';
 
 class HistorySearchPage extends StatefulWidget {
   const HistorySearchPage({super.key});
@@ -18,8 +21,10 @@ class HistorySearchPage extends StatefulWidget {
 class _HistorySearchPageState extends State<HistorySearchPage> {
   final TextEditingController _searchController = TextEditingController();
   final SearchService _searchService = SearchService(LocalShoppingRepository());
+  final FrequentItemsService _frequentItemsService = FrequentItemsService(LocalShoppingRepository());
   
   List<ShoppingSearchResult> _results = [];
+  List<FrequentItemSuggestion> _oftenBought = [];
   bool _isSearching = false;
   
   // Filters
@@ -29,10 +34,25 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
   Timer? _debounce;
 
   @override
+  void initState() {
+    super.initState();
+    _loadOftenBought();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _debounce?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadOftenBought() async {
+    final items = await _frequentItemsService.getSuggestions(limit: 5);
+    if (mounted) {
+      setState(() {
+        _oftenBought = items;
+      });
+    }
   }
 
   void _onSearchChanged(String query) {
@@ -77,19 +97,11 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
   }
 
   Future<void> _selectDateRange() async {
-    final DateTimeRange? picked = await showDateRangePicker(
+    final DateTimeRange? picked = await showModalBottomSheet<DateTimeRange>(
       context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      initialDateRange: _dateRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          ),
-          child: child!,
-        );
-      },
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SmartDateRangePicker(initialRange: _dateRange),
     );
 
     if (picked != null && picked != _dateRange) {
@@ -249,8 +261,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_searchController.text.trim().isEmpty && _statusFilter == null && _dateRange == null) {
-      return _buildEmptyState('Search your shopping history', 'No query entered yet.');
+    final query = _searchController.text.trim();
+    if (query.isEmpty && _statusFilter == null && _dateRange == null) {
+      return _buildInitialState();
     }
 
     if (_results.isEmpty) {
@@ -265,6 +278,69 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
         return _buildResultCard(result);
       },
     );
+  }
+
+  Widget _buildInitialState() {
+    return ListView(
+      children: [
+        if (_oftenBought.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+            child: Text(
+              'Often Bought',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue[800],
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          ..._oftenBought.map((suggestion) => ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Colors.blue,
+              radius: 16,
+              child: Icon(Icons.add, size: 16, color: Colors.white),
+            ),
+            title: Text(suggestion.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(_getOftenBoughtSubtitle(suggestion)),
+            onTap: () => _applyOftenBought(suggestion),
+          )),
+        ],
+        _buildEmptyState('Search your shopping history', 'Type to search for items or use filters.'),
+      ],
+    );
+  }
+
+  String _getOftenBoughtSubtitle(FrequentItemSuggestion suggestion) {
+    final item = suggestion.latestItem;
+    String details = '';
+    if (item.quantityValue != null && item.shoppingUnit != null) {
+      details += '${NumberFormatter.format(item.quantityValue!)} ${item.shoppingUnit!.symbol} • ';
+    }
+    if (item.priceValue != null) {
+      details += 'Last price ${NumberFormatter.formatPrice(item.priceValue!)}';
+    } else {
+      details += 'No previous price';
+    }
+    return details;
+  }
+
+  void _applyOftenBought(FrequentItemSuggestion suggestion) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomePage(
+          sessionDate: today,
+          onBackToHistory: () => Navigator.pop(context),
+          initialNewItemSuggestion: suggestion,
+        ),
+      ),
+    );
+    _loadOftenBought();
   }
 
   Widget _buildResultCard(ShoppingSearchResult result) {

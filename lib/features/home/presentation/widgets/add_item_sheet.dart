@@ -9,12 +9,14 @@ class AddItemSheet extends StatefulWidget {
   final int nextPosition;
   final ShoppingItem? initialItem;
   final List<FrequentItemSuggestion> frequentSuggestions;
+  final FrequentItemSuggestion? initialSuggestion;
 
   const AddItemSheet({
     super.key,
     required this.nextPosition,
     this.initialItem,
     this.frequentSuggestions = const [],
+    this.initialSuggestion,
   });
 
   @override
@@ -30,6 +32,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
   bool _showMoreOptions = false;
   String? _errorText;
   String? _priceErrorText;
+  String? _priceReferenceText;
   late PricingMode _pricingMode;
   late ShoppingUnit? _selectedUnit;
   late ShoppingUnit? _selectedPriceBasis;
@@ -62,6 +65,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
     _quantityController.addListener(_updateCalculation);
     _priceController.addListener(_updateCalculation);
     
+    if (widget.initialSuggestion != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applySuggestion(widget.initialSuggestion!);
+      });
+    }
+
     // Initial calculation if editing
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateCalculation());
   }
@@ -164,6 +173,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
       _showMoreOptions = item.quantityValue != null ||
           item.priceValue != null ||
           (item.notes != null && item.notes!.isNotEmpty);
+      
+      if (item.priceValue != null) {
+        _priceReferenceText = 'Last used price: ${NumberFormatter.formatPrice(item.priceValue!)}';
+      } else {
+        _priceReferenceText = null;
+      }
     });
     _updateCalculation();
   }
@@ -270,7 +285,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
             if (!_isEditing && widget.frequentSuggestions.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
-                'Often bought',
+                'Often Bought',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -417,6 +432,8 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   labelText: _getPriceLabel(),
                   prefixText: '৳ ',
                   errorText: _priceErrorText,
+                  helperText: _priceReferenceText,
+                  helperStyle: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

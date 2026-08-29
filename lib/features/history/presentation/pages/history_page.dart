@@ -60,72 +60,95 @@ class _HistoryPageState extends State<HistoryPage> {
     
     final todaySessions = _sessions.where((s) => s.isToday).toList();
     
-    // Past sessions for the CURRENT month only
     final pastCurrentMonth = _sessions.where((s) => 
       s.isPast && 
       s.date.year == now.year && 
       s.date.month == now.month
     ).toList()..sort((a, b) => b.date.compareTo(a.date));
 
-    // Completed months aggregation
     final monthlyHistory = SessionGrouper.groupIntoMonths(_sessions, now);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('History'),
         centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const HistorySearchPage()),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HistorySearchPage()),
+              ),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: Colors.grey[600]),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Search items...',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
             ),
+          ),
+          Expanded(
+            child: _sessions.isEmpty
+                ? _buildEmptyState()
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                    children: [
+                      if (upcoming.isNotEmpty) ...[
+                        _buildSectionHeader('UPCOMING', Colors.purple),
+                        ...upcoming.map((s) => SessionCard(
+                          session: s,
+                          onTap: () => _openSession(s.date),
+                          onEdit: () => _editSessionDate(s),
+                          onDelete: () => _deleteSession(s),
+                        )),
+                        const SizedBox(height: 24),
+                      ],
+                      if (todaySessions.isNotEmpty) ...[
+                        _buildSectionHeader('TODAY', Colors.blue),
+                        ...todaySessions.map((s) => SessionCard(
+                          session: s,
+                          onTap: () => _openSession(s.date),
+                          onEdit: () => _editSessionDate(s),
+                          onDelete: () => _deleteSession(s),
+                        )),
+                        const SizedBox(height: 24),
+                      ],
+                      if (pastCurrentMonth.isNotEmpty) ...[
+                        _buildSectionHeader('PAST', Colors.grey),
+                        ...pastCurrentMonth.map((s) => SessionCard(
+                          session: s,
+                          onTap: () => _openSession(s.date),
+                          onEdit: () => _editSessionDate(s),
+                          onDelete: () => _deleteSession(s),
+                        )),
+                        const SizedBox(height: 24),
+                      ],
+                      if (monthlyHistory.isNotEmpty) ...[
+                        _buildSectionHeader('MONTHLY HISTORY', Colors.indigo),
+                        ...monthlyHistory.map((summary) => _buildMonthlySummaryCard(summary)),
+                        const SizedBox(height: 24),
+                      ],
+                    ],
+                  ),
           ),
         ],
       ),
-      body: _sessions.isEmpty
-          ? _buildEmptyState()
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-              children: [
-                if (upcoming.isNotEmpty) ...[
-                  _buildSectionHeader('UPCOMING', Colors.purple),
-                  ...upcoming.map((s) => SessionCard(
-                    session: s,
-                    onTap: () => _openSession(s.date),
-                    onEdit: () => _editSessionDate(s),
-                    onDelete: () => _deleteSession(s),
-                  )),
-                  const SizedBox(height: 24),
-                ],
-                if (todaySessions.isNotEmpty) ...[
-                  _buildSectionHeader('TODAY', Colors.blue),
-                  ...todaySessions.map((s) => SessionCard(
-                    session: s,
-                    onTap: () => _openSession(s.date),
-                    onEdit: () => _editSessionDate(s),
-                    onDelete: () => _deleteSession(s),
-                  )),
-                  const SizedBox(height: 24),
-                ],
-                if (pastCurrentMonth.isNotEmpty) ...[
-                  _buildSectionHeader('PAST', Colors.grey),
-                  ...pastCurrentMonth.map((s) => SessionCard(
-                    session: s,
-                    onTap: () => _openSession(s.date),
-                    onEdit: () => _editSessionDate(s),
-                    onDelete: () => _deleteSession(s),
-                  )),
-                  const SizedBox(height: 24),
-                ],
-                if (monthlyHistory.isNotEmpty) ...[
-                  _buildSectionHeader('MONTHLY HISTORY', Colors.indigo),
-                  ...monthlyHistory.map((summary) => _buildMonthlySummaryCard(summary)),
-                  const SizedBox(height: 24),
-                ],
-              ],
-            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddCustomDateDialog,
         child: const Icon(Icons.add),

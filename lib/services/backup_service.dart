@@ -14,22 +14,25 @@ class BackupService {
 
   BackupService(this._shoppingRepository, this._settingsRepository);
 
+  Future<AppBackup> createBackupObject() async {
+    final sessions = await _shoppingRepository.getAllSessions(includeEmpty: true);
+    final settings = await _settingsRepository.getSettings();
+
+    return AppBackup(
+      backupVersion: AppBackup.currentVersion,
+      appVersion: '1.0.0+1',
+      timestamp: DateTime.now(),
+      sessions: sessions,
+      settings: settings,
+    );
+  }
+
   Future<void> createBackup() async {
     try {
-      // 1. Collect data
-      final sessions = await _shoppingRepository.getAllSessions(includeEmpty: true);
-      final settings = await _settingsRepository.getSettings();
+      // 1. Create backup object
+      final backup = await createBackupObject();
 
-      // 2. Create backup object
-      final backup = AppBackup(
-        backupVersion: AppBackup.currentVersion,
-        appVersion: '1.0.0+1',
-        timestamp: DateTime.now(),
-        sessions: sessions,
-        settings: settings,
-      );
-
-      // 3. Convert to JSON
+      // 2. Convert to JSON
       final jsonStr = jsonEncode(backup.toJson());
 
       // 4. Save to temporary file

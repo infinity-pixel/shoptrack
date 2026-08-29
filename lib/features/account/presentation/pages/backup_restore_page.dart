@@ -1,42 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../../app.dart';
 import '../../../../core/data/settings_repository.dart';
 import '../../../../core/data/shopping_repository.dart';
+import '../../../../models/cloud_backup_status.dart';
 import '../../../../services/backup_service.dart';
 
 class BackupRestorePage extends StatefulWidget {
-  const BackupRestorePage({super.key});
+  final int initialTab;
+  const BackupRestorePage({super.key, this.initialTab = 0});
 
   @override
   State<BackupRestorePage> createState() => _BackupRestorePageState();
 }
 
 class _BackupRestorePageState extends State<BackupRestorePage> {
-  late final BackupService _backupService;
+  late final BackupService _localBackupService;
   bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    _backupService = BackupService(
+    _localBackupService = BackupService(
       LocalShoppingRepository(),
       LocalSettingsRepository(),
     );
   }
 
-  Future<void> _createBackup() async {
+  Future<void> _createLocalBackup() async {
     setState(() => _isProcessing = true);
     try {
-      await _backupService.createBackup();
+      await _localBackupService.createBackup();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Backup created successfully')),
+          const SnackBar(content: Text('Local backup created successfully')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create backup: $e')),
+          SnackBar(content: Text('Failed to create local backup: $e')),
         );
       }
     } finally {
@@ -44,101 +47,253 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
     }
   }
 
-  Future<void> _restoreBackup() async {
+  Future<void> _restoreLocalBackup() async {
     try {
-      final backup = await _backupService.pickAndValidateBackup();
+      final backup = await _localBackupService.pickAndValidateBackup();
       if (backup == null) return;
 
       if (!mounted) return;
 
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Restore Backup?'),
-          content: const Text(
-            'Restoring this backup will replace your current local ShopTrack data. '
-            'This action cannot be undone unless you have another backup.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Restore'),
-            ),
-          ],
-        ),
-      );
-
+      final confirmed = await _showRestoreConfirmation();
       if (confirmed == true && mounted) {
         setState(() => _isProcessing = true);
-        await _backupService.restoreBackup(backup);
-        
-        // Refresh app state
-        if (mounted) {
-          final service = ShopTrackApp.of(context);
-          await service.loadSettings();
-          service.notifyDataRestored();
-        }
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Data restored successfully')),
-          );
-          // Return true to parent to trigger data reload if needed
-          Navigator.pop(context, true);
-        }
+        await _localBackupService.restoreBackup(backup);
+        await _refreshAfterRestore();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to restore backup: $e')),
+          SnackBar(content: Text('Failed to restore local backup: $e')),
         );
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _createCloudBackup() async {
+    setState(() => _isProcessing = true);
+    try {
+      final cloudService = ShopTrackApp.cloudBackupOf(context);
+      final appBackup = await _localBackupService.createBackupObject();
+      await cloudService.createCloudBackup(appBackup);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cloud backup failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _restoreCloudBackup() async {
+    final cloudService = ShopTrackApp.cloudBackupOf(context);
+    try {
+      final backup = await cloudService.downloadCloudBackup();
+      if (backup == null) return;
+
+      if (!mounted) return;
+      final confirmed = await _showRestoreConfirmation();
+      if (confirmed == true && mounted) {
+        setState(() => _isProcessing = true);
+        await _localBackupService.restoreBackup(backup);
+        await _refreshAfterRestore();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cloud restore failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<bool?> _showRestoreConfirmation() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restore Backup?'),
+        content: const Text(
+          'Restoring this backup will replace your current local ShopTrack data. '
+          'This action cannot be undone unless you have another backup.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _refreshAfterRestore() async {
+    if (mounted) {
+      final service = ShopTrackApp.of(context);
+      await service.loadSettings();
+      if (mounted) {
+        service.notifyDataRestored();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data restored successfully')),
+        );
+        Navigator.pop(context, true);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Backup & Restore'),
-        centerTitle: true,
-      ),
-      body: Stack(
-        children: [
-          ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildSectionHeader('BACKUP'),
-              _buildTile(
-                icon: Icons.upload_file_outlined,
-                title: 'Create Backup',
-                subtitle: 'Export your shopping data and settings to a JSON file',
-                onTap: _isProcessing ? null : _createBackup,
-              ),
-              const SizedBox(height: 24),
-              _buildSectionHeader('RESTORE'),
-              _buildTile(
-                icon: Icons.file_download_outlined,
-                title: 'Restore from Backup',
-                subtitle: 'Select a previously saved ShopTrack backup file',
-                onTap: _isProcessing ? null : _restoreBackup,
-                isDestructive: true,
-              ),
+    return DefaultTabController(
+      length: 2,
+      initialIndex: widget.initialTab,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Backup & Restore'),
+          centerTitle: true,
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Local'),
+              Tab(text: 'Cloud'),
             ],
           ),
-          if (_isProcessing)
-            Container(
-              color: Colors.black.withValues(alpha: 0.1),
-              child: const Center(child: CircularProgressIndicator()),
+        ),
+        body: Stack(
+          children: [
+            TabBarView(
+              children: [
+                _buildLocalTab(),
+                _buildCloudTab(),
+              ],
             ),
-        ],
+            if (_isProcessing)
+              Container(
+                color: Colors.black.withValues(alpha: 0.1),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocalTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionHeader('LOCAL BACKUP'),
+        _buildTile(
+          icon: Icons.upload_file_outlined,
+          title: 'Create Local Backup',
+          subtitle: 'Export your data to a JSON file',
+          onTap: _isProcessing ? null : _createLocalBackup,
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('LOCAL RESTORE'),
+        _buildTile(
+          icon: Icons.file_download_outlined,
+          title: 'Restore from Local File',
+          subtitle: 'Select a previously saved JSON backup',
+          onTap: _isProcessing ? null : _restoreLocalBackup,
+          isDestructive: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCloudTab() {
+    final cloudService = ShopTrackApp.cloudBackupOf(context);
+    
+    return ListenableBuilder(
+      listenable: cloudService,
+      builder: (context, _) {
+        final status = cloudService.status;
+        final bool isNotSignedIn = status.state == CloudBackupState.notSignedIn;
+        
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            if (isNotSignedIn)
+              _buildSignInNotice()
+            else ...[
+              _buildSectionHeader('CLOUD BACKUP'),
+              _buildTile(
+                icon: Icons.cloud_upload_outlined,
+                title: 'Back up to Cloud',
+                subtitle: 'Sync your data to Google Drive App Data',
+                onTap: _isProcessing ? null : _createCloudBackup,
+              ),
+              if (status.lastBackupTime != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: Text(
+                    'Last backup: ${DateFormat('d MMM yyyy, HH:mm').format(status.lastBackupTime!)}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              _buildSectionHeader('CLOUD RESTORE'),
+              _buildTile(
+                icon: Icons.cloud_download_outlined,
+                title: 'Restore from Cloud',
+                subtitle: 'Download your latest cloud backup',
+                onTap: _isProcessing || status.state == CloudBackupState.noBackupFound ? null : _restoreCloudBackup,
+                isDestructive: true,
+              ),
+              if (status.state == CloudBackupState.noBackupFound)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Text('No backup found in your cloud storage.', style: TextStyle(color: Colors.orange, fontSize: 12)),
+                ),
+            ],
+            if (status.errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(status.errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSignInNotice() {
+    return Card(
+      color: Colors.blue[50],
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 48, color: Colors.blue),
+            const SizedBox(height: 16),
+            const Text('Sign in Required', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text(
+              'You need to sign in with your Google account to use cloud backup features.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                if (mounted) {
+                  ShopTrackApp.authOf(context).signIn();
+                }
+              },
+              child: const Text('Sign In with Google'),
+            ),
+          ],
+        ),
       ),
     );
   }
