@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
+import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_item.dart';
@@ -333,77 +334,109 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHeader(String date) {
+    final tokens = ShopTrackThemeTokens.of(context);
+    final palette = tokens.palette;
+
     return Container(
+      height: 240,
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 20),
       decoration: BoxDecoration(
-        color: Colors.teal[50]?.withValues(alpha: 0.5),
+        color: palette.surface,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: palette.border),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, size: 16, color: Colors.teal[700]),
-                    const SizedBox(width: 8),
-                    Text(
-                      date,
-                      style: TextStyle(
-                        color: Colors.teal[700],
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(23),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (tokens.headerArtworkPath != null)
+              Image.asset(
+                tokens.headerArtworkPath!,
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+              ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    palette.surface.withValues(alpha: 0.90),
+                    palette.surface.withValues(alpha: 0.58),
+                    palette.surface.withValues(alpha: 0.12),
                   ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _currentSession.isToday ? "Today's Shopping" : "Shopping Record",
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "Stay organized. Shop smarter.",
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-          Icon(Icons.shopping_basket_outlined, size: 56, color: Colors.teal[200]),
-        ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.calendar_today, size: 18, color: palette.secondary),
+                      const SizedBox(width: 8),
+                      Text(
+                        date,
+                        style: TextStyle(
+                          color: palette.secondary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _currentSession.isToday ? "Today's Shopping" : "Shopping Record",
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.8,
+                      color: palette.onBackground,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Stay organized. Shop smarter.',
+                    style: TextStyle(color: palette.textSecondary, fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSectionLabel(String label, IconData icon, int count) {
+    final palette = ShopTrackThemeTokens.of(context).palette;
+    final isPurchased = label == 'Purchased';
+    final color = isPurchased ? palette.purchased : palette.secondary;
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.blue),
+        Icon(icon, size: 24, color: color),
         const SizedBox(width: 12),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: palette.onBackground,
           ),
         ),
         const Spacer(),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
+            color: (isPurchased ? palette.surfacePurchased : palette.primary)
+                .withValues(alpha: isPurchased ? 1 : 0.18),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -411,7 +444,7 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.blue[700],
+              color: isPurchased ? palette.purchased : palette.secondary,
             ),
           ),
         ),
@@ -532,6 +565,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildFrequentSuggestionsRow() {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       child: Column(
@@ -542,7 +576,7 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+              color: palette.onBackground,
             ),
           ),
           const SizedBox(height: 8),
@@ -567,27 +601,29 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildEmptyState() {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     return Center(
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: palette.surfaceToBuy,
+          border: Border.all(color: palette.border),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey[400]),
+            Icon(Icons.shopping_bag_outlined, size: 64, color: palette.secondary),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               "No items yet",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: palette.onBackground),
             ),
             const SizedBox(height: 8),
             Text(
               "Tap + to add your first item.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              style: TextStyle(color: palette.textSecondary, fontSize: 14),
             ),
           ],
         ),
@@ -596,25 +632,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildCompletedState() {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     return Container(
       margin: const EdgeInsets.only(bottom: 30),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: palette.surfacePurchased,
+        border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         children: [
-          const Icon(Icons.receipt_long_outlined, size: 48, color: Colors.blue),
+          Icon(Icons.receipt_long_outlined, size: 48, color: palette.purchased),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "Shopping Completed",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: palette.purchased),
           ),
           const SizedBox(height: 8),
           Text(
             "All items have been purchased.",
-            style: TextStyle(color: Colors.blue[700], fontSize: 14),
+            style: TextStyle(color: palette.textSecondary, fontSize: 14),
           ),
         ],
       ),
@@ -622,11 +660,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTotalAmountRow() {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey[100]?.withValues(alpha: 0.5),
+        color: palette.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -635,15 +675,16 @@ class _HomePageState extends State<HomePage> {
             'Total Amount',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[700],
+              color: palette.onBackground,
               fontWeight: FontWeight.w600,
             ),
           ),
           RollingDigitText(
             text: NumberFormatter.formatPrice(_totalAmount),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
+              color: palette.onBackground,
             ),
           ),
         ],
@@ -652,47 +693,49 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildPurchasedAmountCard() {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.teal[50]?.withValues(alpha: 0.5),
+        color: palette.surfacePurchased,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.teal.withValues(alpha: 0.1)),
+        border: Border.all(color: palette.border),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: palette.surface,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.teal.withValues(alpha: 0.1),
+                  color: palette.purchased.withValues(alpha: 0.12),
                   blurRadius: 10,
                   spreadRadius: 2,
                 ),
               ],
             ),
-            child: const Icon(Icons.account_balance_wallet_outlined, color: Colors.teal, size: 28),
+            child: Icon(Icons.account_balance_wallet_outlined, color: palette.purchased, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Purchased Amount",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: palette.onBackground,
                   ),
                 ),
                 Text(
                   "Total of all purchased items",
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: palette.textSecondary,
                   ),
                 ),
               ],
@@ -703,7 +746,7 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.teal[700],
+              color: palette.purchased,
             ),
           ),
         ],

@@ -24,12 +24,14 @@ class ThemeDefinition {
   final ShopTrackTypography typography;
   final AtmosphericConfig atmosphericConfig;
   final Brightness brightness;
+  final String? headerArtworkPath;
 
   ThemeDefinition({
     required this.name,
     required this.palette,
     required this.brightness,
     required this.atmosphericConfig,
+    this.headerArtworkPath,
   }) : typography = ShopTrackTypography.standard(
           brightness == Brightness.light ? palette.onBackground : palette.onBackground,
         );
@@ -96,10 +98,16 @@ class ThemeDefinition {
         ),
       ),
       dividerTheme: DividerThemeData(
-        color: palette.onSurface.withValues(alpha: 0.1),
+        color: palette.border,
         thickness: 1,
         space: 1,
       ),
+      extensions: [
+        ShopTrackThemeTokens(
+          palette: palette,
+          headerArtworkPath: headerArtworkPath,
+        ),
+      ],
     );
   }
 }
@@ -113,13 +121,23 @@ class ThemePresets {
       name: 'Summer',
       brightness: Brightness.light,
       palette: ShopTrackPalette.light(
-        primary: const Color(0xFFFF8C00), // Sun orange
-        today: const Color(0xFFFFD700), // Golden yellow
+        primary: const Color(0xFFFFB44D),
+        secondary: const Color(0xFFF48C06),
+        today: const Color(0xFFF48C06),
+        purchased: const Color(0xFF2E7D32),
+        background: const Color(0xFFFFF3E1),
+        surface: const Color(0xFFFFFDFA),
+        surfaceToBuy: const Color(0xFFFFFDFA),
+        surfacePurchased: const Color(0xFFE8F6EA),
+        border: const Color(0xFFF1E2C6),
+        onBackground: const Color(0xFF3E2E1F),
+        textSecondary: const Color(0xFF6B6B6B),
       ),
       atmosphericConfig: const AtmosphericConfig(
         gradientColors: [Color(0xFFFFF9C4), Color(0xFFFFECB3)],
         opacity: 0.1,
       ),
+      headerArtworkPath: 'assets/images/theme_light_summer.webp',
     ),
     LightPreset.spring: ThemeDefinition(
       name: 'Spring',
@@ -223,4 +241,34 @@ class ThemePresets {
       return lightPresets[settings.lightPreset] ?? lightPresets[LightPreset.summer]!;
     }
   }
+}
+
+@immutable
+class ShopTrackThemeTokens extends ThemeExtension<ShopTrackThemeTokens> {
+  final ShopTrackPalette palette;
+  final String? headerArtworkPath;
+
+  const ShopTrackThemeTokens({
+    required this.palette,
+    this.headerArtworkPath,
+  });
+
+  static ShopTrackThemeTokens of(BuildContext context) {
+    final tokens = Theme.of(context).extension<ShopTrackThemeTokens>();
+    assert(tokens != null, 'ShopTrack theme tokens are required.');
+    return tokens!;
+  }
+
+  @override
+  ShopTrackThemeTokens copyWith({
+    ShopTrackPalette? palette,
+    String? headerArtworkPath,
+  }) => ShopTrackThemeTokens(
+        palette: palette ?? this.palette,
+        headerArtworkPath: headerArtworkPath ?? this.headerArtworkPath,
+      );
+
+  @override
+  ShopTrackThemeTokens lerp(ShopTrackThemeTokens? other, double t) =>
+      t < 0.5 ? this : (other ?? this);
 }

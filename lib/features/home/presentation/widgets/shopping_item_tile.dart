@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../models/shopping_item.dart';
 
@@ -22,6 +23,7 @@ class ShoppingItemTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPurchased = item.isPurchased;
     final pricing = item.pricing;
+    final palette = ShopTrackThemeTokens.of(context).palette;
 
     // Use resolved values from the pricing engine for display
     final displayQty = pricing.resolvedQuantity;
@@ -35,18 +37,18 @@ class ShoppingItemTile extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24.0),
         decoration: BoxDecoration(
-          color: Colors.red[400],
+          color: Theme.of(context).colorScheme.error,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(Icons.delete_outline, color: Colors.white),
+        child: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.onError),
       ),
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4.0),
         decoration: BoxDecoration(
-          color: isPurchased ? Colors.blue.withValues(alpha: 0.03) : Colors.white,
+          color: isPurchased ? palette.surfacePurchased : palette.surfaceToBuy,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isPurchased ? Colors.blue.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.1),
+            color: palette.border,
           ),
         ),
         child: InkWell(
@@ -64,7 +66,7 @@ class ShoppingItemTile extends StatelessWidget {
                     padding: const EdgeInsets.all(8.0),
                     child: Icon(
                       Icons.drag_indicator,
-                      color: Colors.grey[300],
+                      color: palette.textSecondary.withValues(alpha: 0.55),
                       size: 20,
                     ),
                   ),
@@ -79,17 +81,17 @@ class ShoppingItemTile extends StatelessWidget {
                     height: 26,
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: isPurchased ? Colors.blue : Colors.grey[300]!,
+                        color: isPurchased ? palette.purchased : palette.border,
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(8),
-                      color: isPurchased ? Colors.blue : Colors.transparent,
+                      color: isPurchased ? palette.purchased : Colors.transparent,
                     ),
                     child: isPurchased
-                        ? const Icon(
+                        ? Icon(
                             Icons.check,
                             size: 18,
-                            color: Colors.white,
+                            color: palette.onStatus,
                           )
                         : null,
                   ),
@@ -108,7 +110,9 @@ class ShoppingItemTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: isPurchased ? Colors.grey[400] : Colors.black87,
+                          color: isPurchased
+                              ? palette.textSecondary
+                              : palette.onBackground,
                           decoration: isPurchased ? TextDecoration.lineThrough : null,
                         ),
                       ),
@@ -120,7 +124,7 @@ class ShoppingItemTile extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: Colors.grey[500],
+                              color: palette.textSecondary,
                             ),
                           ),
                         ),
@@ -141,9 +145,7 @@ class ShoppingItemTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: isPurchased
-                              ? Colors.blue.withValues(alpha: 0.4)
-                              : Colors.blue[700],
+                          color: isPurchased ? palette.purchased : palette.secondary,
                         ),
                       ),
                     if (pricing.unitPrice > 0)
@@ -152,7 +154,7 @@ class ShoppingItemTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: isPurchased ? Colors.grey[300] : Colors.grey[500],
+                          color: palette.textSecondary,
                         ),
                       ),
                   ],

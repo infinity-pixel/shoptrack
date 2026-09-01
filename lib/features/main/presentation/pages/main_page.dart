@@ -44,12 +44,11 @@ class _MainPageState extends State<MainPage> {
               });
             },
             elevation: 0,
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             type: BottomNavigationBarType.fixed,
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.description_outlined),
-                activeIcon: Icon(Icons.description),
+                icon: Icon(Icons.description),
                 label: 'Lists',
               ),
               BottomNavigationBarItem(

@@ -113,5 +113,23 @@ void main() {
       expect(definition.name, 'Aurora');
       expect(definition.brightness, Brightness.dark);
     });
+
+    test('Summer preset supplies artwork and semantic list surfaces', () {
+      final summer = ThemePresets.lightPresets[LightPreset.summer]!;
+
+      expect(summer.headerArtworkPath, 'assets/images/theme_light_summer.webp');
+      expect(summer.palette.surfaceToBuy, const Color(0xFFFFFDFA));
+      expect(summer.palette.surfacePurchased, const Color(0xFFE8F6EA));
+      expect(summer.palette.purchased, const Color(0xFF2E7D32));
+    });
+
+    test('Theme data exposes ShopTrack theme tokens', () {
+      final theme = ThemePresets.lightPresets[LightPreset.summer]!.toThemeData();
+      final tokens = theme.extension<ShopTrackThemeTokens>();
+
+      expect(tokens, isNotNull);
+      expect(tokens!.headerArtworkPath, 'assets/images/theme_light_summer.webp');
+      expect(tokens.palette.border, const Color(0xFFF1E2C6));
+    });
   });
 }
