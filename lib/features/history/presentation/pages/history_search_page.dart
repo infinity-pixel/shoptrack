@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../models/frequent_item_suggestion.dart';
@@ -382,8 +383,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      NumberFormatter.formatPrice(item.pricing.totalPrice),
+                    RollingDigitText(
+                      text: NumberFormatter.formatPrice(item.pricing.totalPrice),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

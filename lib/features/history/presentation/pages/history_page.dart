@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/utils/session_grouper.dart';
@@ -263,8 +264,8 @@ class _HistoryPageState extends State<HistoryPage> {
                       fontSize: 14,
                     ),
                   ),
-                  Text(
-                    NumberFormatter.formatPrice(summary.totalPurchasedAmount),
+                  RollingDigitText(
+                    text: NumberFormatter.formatPrice(summary.totalPurchasedAmount),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,

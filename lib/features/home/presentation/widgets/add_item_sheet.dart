@@ -264,6 +264,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
             TextField(
               controller: _nameController,
               autofocus: !_isEditing,
+              textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
                 labelText: 'Item Name',
                 hintText: 'e.g. Eggs',
@@ -281,6 +282,56 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   });
                 }
               },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: _quantityController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Quantity',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 3,
+                  child: DropdownButtonFormField<ShoppingUnit?>(
+                    initialValue: _selectedUnit,
+                    decoration: InputDecoration(
+                      labelText: 'Unit',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: [
+                      const DropdownMenuItem<ShoppingUnit?>(
+                        value: null,
+                        child: Text('No Unit'),
+                      ),
+                      ...ShoppingUnit.values.map((unit) {
+                        return DropdownMenuItem<ShoppingUnit?>(
+                          value: unit,
+                          child: Text(unit.displayName),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedUnit = value;
+                        _updatePriceBasisDefault(_selectedUnit);
+                        _updateCalculation();
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
             if (!_isEditing && widget.frequentSuggestions.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -322,7 +373,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _showMoreOptions ? 'Less options' : 'More options',
+                      _showMoreOptions ? 'Fewer Options' : 'More Options',
                       style: const TextStyle(
                         color: Colors.blue,
                         fontWeight: FontWeight.w600,
@@ -347,56 +398,6 @@ class _AddItemSheetState extends State<AddItemSheet> {
                     _updateCalculation();
                   });
                 },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      controller: _quantityController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        labelText: 'Quantity',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 3,
-                    child: DropdownButtonFormField<ShoppingUnit?>(
-                      initialValue: _selectedUnit,
-                      decoration: InputDecoration(
-                        labelText: 'Unit',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      items: [
-                        const DropdownMenuItem<ShoppingUnit?>(
-                          value: null,
-                          child: Text('No unit'),
-                        ),
-                        ...ShoppingUnit.values.map((unit) {
-                          return DropdownMenuItem<ShoppingUnit?>(
-                            value: unit,
-                            child: Text(unit.displayName),
-                          );
-                        }),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedUnit = value;
-                          _updatePriceBasisDefault(_selectedUnit);
-                          _updateCalculation();
-                        });
-                      },
-                    ),
-                  ),
-                ],
               ),
               if (showBasisSelector) ...[
                 const SizedBox(height: 16),

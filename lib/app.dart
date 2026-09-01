@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'core/data/settings_repository.dart';
 import 'features/main/presentation/pages/main_page.dart';
+import 'core/theme/theme_presets.dart';
+import 'core/theme/atmospheric_background.dart';
 import 'services/auth_service.dart';
 import 'services/cloud_backup_service.dart';
 import 'services/settings_service.dart';
 import 'models/auth_state.dart';
+import 'models/app_settings.dart';
 
 class ShopTrackApp extends StatefulWidget {
   const ShopTrackApp({super.key});
@@ -65,22 +68,22 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
     return ListenableBuilder(
       listenable: settingsService,
       builder: (context, child) {
+        final platformBrightness = MediaQuery.of(context).platformBrightness;
+        final themeDefinition = ThemePresets.getDefinition(settingsService.settings, platformBrightness);
+
         return MaterialApp(
           title: 'ShopTrack',
           debugShowCheckedModeBanner: false,
           scaffoldMessengerKey: ShopTrackApp.scaffoldMessengerKey,
           themeMode: settingsService.themeMode,
-          theme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.light,
-            colorSchemeSeed: Colors.blue,
+          theme: ThemePresets.lightPresets[settingsService.settings.lightPreset]?.toThemeData() ??
+              ThemePresets.lightPresets[LightPreset.summer]!.toThemeData(),
+          darkTheme: ThemePresets.darkPresets[settingsService.settings.darkPreset]?.toThemeData() ??
+              ThemePresets.darkPresets[DarkPreset.midnight]!.toThemeData(),
+          home: AtmosphericBackground(
+            config: themeDefinition.atmosphericConfig,
+            child: const MainPage(),
           ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            colorSchemeSeed: Colors.blue,
-          ),
-          home: const MainPage(),
         );
       },
     );

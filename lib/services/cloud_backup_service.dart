@@ -34,8 +34,20 @@ class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupServ
       }
       updateSignInState(_currentUser != null);
     });
-    // Check initial sign-in state
-    _googleSignIn.attemptLightweightAuthentication();
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      final account = await _googleSignIn.attemptLightweightAuthentication();
+      if (account != null) {
+        _currentUser = account;
+        updateSignInState(true);
+      }
+    } catch (e) {
+      // Ignore errors in environments where Google Sign-In is not available (e.g., tests)
+      debugPrint('CloudBackupService _init error: $e');
+    }
   }
 
   @override

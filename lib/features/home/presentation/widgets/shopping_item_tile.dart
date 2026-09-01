@@ -49,7 +49,7 @@ class ShoppingItemTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
+            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [

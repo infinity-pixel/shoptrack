@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../app.dart';
+import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../models/frequent_item_suggestion.dart';
@@ -134,28 +134,27 @@ class _HomePageState extends State<HomePage> {
       });
       await _persistSession();
 
-      final messenger = ShopTrackApp.scaffoldMessengerKey.currentState;
-      if (messenger != null) {
-        messenger.clearSnackBars();
-        messenger.showSnackBar(
-          SnackBar(
-            content: const Text('Item deleted'),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () async {
-                messenger.hideCurrentSnackBar();
-                setState(() {
-                  _currentSession.items.insert(
-                      index < _currentSession.items.length ? index : _currentSession.items.length, item);
-                });
-                await _persistSession();
-                await _refreshFrequentSuggestions();
-              },
-            ),
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text('Item deleted'),
+          duration: const Duration(seconds: 4),
+          persist: false,
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () {
+              setState(() {
+                _currentSession.items.insert(
+                    index < _currentSession.items.length ? index : _currentSession.items.length, item);
+              });
+              _persistSession();
+              _refreshFrequentSuggestions();
+            },
           ),
-        );
-      }
+        ),
+      );
       await _refreshFrequentSuggestions();
     }
   }
@@ -437,8 +436,9 @@ class _HomePageState extends State<HomePage> {
       todaySession.items.add(movedItem);
       await _repository.saveSession(todaySession);
       
-      final messenger = ShopTrackApp.scaffoldMessengerKey.currentState;
-      messenger?.showSnackBar(
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(
         SnackBar(
           content: Text('${item.name} moved to Today\'s list'),
           duration: const Duration(seconds: 3),
@@ -560,8 +560,8 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          Text(
-            NumberFormatter.formatPrice(_totalAmount),
+          RollingDigitText(
+            text: NumberFormatter.formatPrice(_totalAmount),
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -591,8 +591,8 @@ class _HomePageState extends State<HomePage> {
               color: Colors.blue,
             ),
           ),
-          Text(
-            NumberFormatter.formatPrice(_purchasedAmount),
+          RollingDigitText(
+            text: NumberFormatter.formatPrice(_purchasedAmount),
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,

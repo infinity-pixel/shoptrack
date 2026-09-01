@@ -35,6 +35,18 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateLightPreset(LightPreset preset) async {
+    _settings = _settings.copyWith(lightPreset: preset);
+    await _repository.saveSettings(_settings);
+    notifyListeners();
+  }
+
+  Future<void> updateDarkPreset(DarkPreset preset) async {
+    _settings = _settings.copyWith(darkPreset: preset);
+    await _repository.saveSettings(_settings);
+    notifyListeners();
+  }
+
   Future<void> updateCurrency(String currency) async {
     _settings = _settings.copyWith(currency: currency);
     await _repository.saveSettings(_settings);

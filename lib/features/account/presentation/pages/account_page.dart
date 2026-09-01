@@ -41,6 +41,18 @@ class AccountPage extends StatelessWidget {
                 onTap: () => _showAppearanceDialog(context, settingsService),
               ),
               _buildSettingsTile(
+                icon: Icons.light_mode_outlined,
+                title: 'Light Theme',
+                subtitle: settings.lightPreset.displayName,
+                onTap: () => _showLightPresetDialog(context, settingsService),
+              ),
+              _buildSettingsTile(
+                icon: Icons.dark_mode_outlined,
+                title: 'Dark Theme',
+                subtitle: settings.darkPreset.displayName,
+                onTap: () => _showDarkPresetDialog(context, settingsService),
+              ),
+              _buildSettingsTile(
                 icon: Icons.payments_outlined,
                 title: 'Currency',
                 subtitle: settings.currency,
@@ -218,12 +230,60 @@ class AccountPage extends StatelessWidget {
             return RadioListTile<AppTheme>(
               title: Text(theme.displayName),
               value: theme,
-              // ignore: deprecated_member_use
               groupValue: service.settings.theme,
-              // ignore: deprecated_member_use
               onChanged: (value) {
                 if (value != null) {
                   service.updateTheme(value);
+                  Navigator.pop(context);
+                }
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  void _showLightPresetDialog(BuildContext context, SettingsService service) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Light Theme Preset'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: LightPreset.values.map((preset) {
+            return RadioListTile<LightPreset>(
+              title: Text(preset.displayName),
+              value: preset,
+              groupValue: service.settings.lightPreset,
+              onChanged: (value) {
+                if (value != null) {
+                  service.updateLightPreset(value);
+                  Navigator.pop(context);
+                }
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  void _showDarkPresetDialog(BuildContext context, SettingsService service) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Dark Theme Preset'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: DarkPreset.values.map((preset) {
+            return RadioListTile<DarkPreset>(
+              title: Text(preset.displayName),
+              value: preset,
+              groupValue: service.settings.darkPreset,
+              onChanged: (value) {
+                if (value != null) {
+                  service.updateDarkPreset(value);
                   Navigator.pop(context);
                 }
               },

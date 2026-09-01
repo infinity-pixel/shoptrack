@@ -14,19 +14,6 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
   DateTime? _selectedHistoricalDate;
-  late PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: _currentIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,18 +24,8 @@ class _MainPageState extends State<MainPage> {
       builder: (context, _) {
         return Scaffold(
           key: ValueKey('main_scaffold_${settingsService.dataToken}'),
-          body: PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentIndex = index;
-                // Clear historical date when switching tabs (unless it's the home tab)
-                if (index != 0) {
-                  _selectedHistoricalDate = null;
-                }
-              });
-            },
-            physics: const ClampingScrollPhysics(),
+          body: IndexedStack(
+            index: _currentIndex,
             children: [
               _buildHomeTab(),
               _buildHistoryTab(),
@@ -58,19 +35,21 @@ class _MainPageState extends State<MainPage> {
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) {
-              _pageController.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
+              setState(() {
+                _currentIndex = index;
+                // Clear historical date when switching tabs (unless it's the home tab)
+                if (index != 0) {
+                  _selectedHistoricalDate = null;
+                }
+              });
             },
             elevation: 0,
             backgroundColor: Colors.white,
             type: BottomNavigationBarType.fixed,
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.home_filled),
-                label: 'Home',
+                icon: Icon(Icons.description),
+                label: 'Lists',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.history),
@@ -95,7 +74,7 @@ class _MainPageState extends State<MainPage> {
           ? () {
               setState(() {
                 _selectedHistoricalDate = null;
-                _pageController.jumpToPage(1);
+                _currentIndex = 1;
               });
             }
           : null,
@@ -107,7 +86,7 @@ class _MainPageState extends State<MainPage> {
       onSessionSelected: (date) {
         setState(() {
           _selectedHistoricalDate = date;
-          _pageController.jumpToPage(0);
+          _currentIndex = 0;
         });
       },
     );
