@@ -22,16 +22,18 @@ class HistorySearchPage extends StatefulWidget {
 class _HistorySearchPageState extends State<HistorySearchPage> {
   final TextEditingController _searchController = TextEditingController();
   final SearchService _searchService = SearchService(LocalShoppingRepository());
-  final FrequentItemsService _frequentItemsService = FrequentItemsService(LocalShoppingRepository());
-  
+  final FrequentItemsService _frequentItemsService = FrequentItemsService(
+    LocalShoppingRepository(),
+  );
+
   List<ShoppingSearchResult> _results = [];
   List<FrequentItemSuggestion> _oftenBought = [];
   bool _isSearching = false;
-  
+
   // Filters
   SearchItemStatus? _statusFilter;
   DateTimeRange? _dateRange;
-  
+
   Timer? _debounce;
 
   @override
@@ -65,7 +67,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
   Future<void> _performSearch() async {
     final query = _searchController.text;
-    
+
     if (query.trim().isEmpty && _statusFilter == null && _dateRange == null) {
       setState(() {
         _results = [];
@@ -80,7 +82,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
       statusFilter: _statusFilter,
       dateRange: _dateRange,
     );
-    
+
     if (mounted) {
       setState(() {
         _results = results;
@@ -201,10 +203,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
           ),
           if (_statusFilter != null || _dateRange != null) ...[
             const SizedBox(width: 8),
-            TextButton(
-              onPressed: _resetFilters,
-              child: const Text('Reset'),
-            ),
+            TextButton(onPressed: _resetFilters, child: const Text('Reset')),
           ],
         ],
       ),
@@ -227,7 +226,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
   Widget _buildActiveFilterBadges() {
     if (_dateRange == null) return const SizedBox.shrink();
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
@@ -268,7 +267,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
     }
 
     if (_results.isEmpty) {
-      return _buildEmptyState('No matching items found', 'You may refine the search or filters.');
+      return _buildEmptyState(
+        'No matching items found',
+        'You may refine the search or filters.',
+      );
     }
 
     return ListView.builder(
@@ -288,7 +290,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
             child: Text(
-              'Often Bought',
+              'Frequently Purchased',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -297,18 +299,26 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
               ),
             ),
           ),
-          ..._oftenBought.map((suggestion) => ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: Colors.blue,
-              radius: 16,
-              child: Icon(Icons.add, size: 16, color: Colors.white),
+          ..._oftenBought.map(
+            (suggestion) => ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Colors.green,
+                radius: 16,
+                child: Icon(Icons.history, size: 16, color: Colors.white),
+              ),
+              title: Text(
+                suggestion.name,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(_getOftenBoughtSubtitle(suggestion)),
+              onTap: () => _searchPurchasedDates(suggestion),
             ),
-            title: Text(suggestion.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(_getOftenBoughtSubtitle(suggestion)),
-            onTap: () => _applyOftenBought(suggestion),
-          )),
+          ),
         ],
-        _buildEmptyState('Search your shopping history', 'Type to search for items or use filters.'),
+        _buildEmptyState(
+          'Search your shopping history',
+          'Type to search for items or use filters.',
+        ),
       ],
     );
   }
@@ -317,7 +327,8 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
     final item = suggestion.latestItem;
     String details = '';
     if (item.quantityValue != null && item.shoppingUnit != null) {
-      details += '${NumberFormatter.format(item.quantityValue!)} ${item.shoppingUnit!.symbol} • ';
+      details +=
+          '${NumberFormatter.format(item.quantityValue!)} ${item.shoppingUnit!.symbol} • ';
     }
     if (item.priceValue != null) {
       details += 'Last price ${NumberFormatter.formatPrice(item.priceValue!)}';
@@ -327,27 +338,21 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
     return details;
   }
 
-  void _applyOftenBought(FrequentItemSuggestion suggestion) async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomePage(
-          sessionDate: today,
-          onBackToHistory: () => Navigator.pop(context),
-          initialNewItemSuggestion: suggestion,
-        ),
-      ),
-    );
-    _loadOftenBought();
+  void _searchPurchasedDates(FrequentItemSuggestion suggestion) {
+    _debounce?.cancel();
+    _searchController.text = suggestion.name;
+    setState(() {
+      _statusFilter = SearchItemStatus.purchased;
+      _dateRange = null;
+    });
+    FocusScope.of(context).unfocus();
+    _performSearch();
   }
 
   Widget _buildResultCard(ShoppingSearchResult result) {
     final item = result.item;
     final session = result.session;
-    
+
     return InkWell(
       onTap: () => _navigateToSession(session.date),
       child: Padding(
@@ -372,10 +377,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                       const SizedBox(height: 4),
                       Text(
                         DateFormat('d MMMM yyyy').format(session.date),
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -384,7 +386,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     RollingDigitText(
-                      text: NumberFormatter.formatPrice(item.pricing.totalPrice),
+                      text: NumberFormatter.formatPrice(
+                        item.pricing.totalPrice,
+                      ),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -394,10 +398,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                     const SizedBox(height: 2),
                     Text(
                       _getPriceSubtitle(result),
-                      style: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
                     ),
                   ],
                 ),
@@ -439,10 +440,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
         Text(
@@ -468,10 +466,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(

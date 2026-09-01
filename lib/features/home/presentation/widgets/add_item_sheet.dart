@@ -28,6 +28,8 @@ class _AddItemSheetState extends State<AddItemSheet> {
   late final TextEditingController _quantityController;
   late final TextEditingController _priceController;
   late final TextEditingController _notesController;
+  late final FocusNode _quantityFocusNode;
+  late final FocusNode _unitFocusNode;
 
   bool _showMoreOptions = false;
   String? _errorText;
@@ -43,28 +45,37 @@ class _AddItemSheetState extends State<AddItemSheet> {
   @override
   void initState() {
     super.initState();
-    
+
     final item = widget.initialItem;
     _nameController = TextEditingController(text: item?.name);
     _quantityController = TextEditingController(
       text: item?.quantityValue != null ? _formatQty(item!.quantityValue) : '',
     );
     _priceController = TextEditingController(
-      text: item?.priceValue != null ? item!.priceValue!.toStringAsFixed(item.priceValue == item.priceValue!.roundToDouble() ? 0 : 2) : '',
+      text: item?.priceValue != null
+          ? item!.priceValue!.toStringAsFixed(
+              item.priceValue == item.priceValue!.roundToDouble() ? 0 : 2,
+            )
+          : '',
     );
     _notesController = TextEditingController(text: item?.notes);
-    
+    _quantityFocusNode = FocusNode();
+    _unitFocusNode = FocusNode();
+
     _pricingMode = item?.pricingMode ?? PricingMode.total;
     _selectedUnit = item?.shoppingUnit;
     _selectedPriceBasis = item?.priceBasis;
-    
-    if (item != null && (item.notes != null || item.quantityValue != null || item.priceValue != null)) {
+
+    if (item != null &&
+        (item.notes != null ||
+            item.quantityValue != null ||
+            item.priceValue != null)) {
       _showMoreOptions = true;
     }
 
     _quantityController.addListener(_updateCalculation);
     _priceController.addListener(_updateCalculation);
-    
+
     if (widget.initialSuggestion != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _applySuggestion(widget.initialSuggestion!);
@@ -81,6 +92,8 @@ class _AddItemSheetState extends State<AddItemSheet> {
     _quantityController.dispose();
     _priceController.dispose();
     _notesController.dispose();
+    _quantityFocusNode.dispose();
+    _unitFocusNode.dispose();
     super.dispose();
   }
 
@@ -94,7 +107,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
     final qty = double.tryParse(_quantityController.text);
     final price = double.tryParse(_priceController.text);
 
-    if (_pricingMode == PricingMode.unit && price != null && _selectedUnit == null) {
+    if (_pricingMode == PricingMode.unit &&
+        price != null &&
+        _selectedUnit == null) {
       if (mounted) {
         setState(() {
           _calcResult = PricingResult.zero;
@@ -131,7 +146,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
     }
 
     final price = double.tryParse(_priceController.text);
-    if (_pricingMode == PricingMode.unit && price != null && _selectedUnit == null) {
+    if (_pricingMode == PricingMode.unit &&
+        price != null &&
+        _selectedUnit == null) {
       setState(() {
         _priceErrorText = 'Unit required for Price per Unit';
       });
@@ -157,11 +174,13 @@ class _AddItemSheetState extends State<AddItemSheet> {
   void _applySuggestion(FrequentItemSuggestion suggestion) {
     final item = suggestion.latestItem;
     _nameController.text = item.name;
-    _quantityController.text =
-        item.quantityValue != null ? _formatQty(item.quantityValue) : '';
+    _quantityController.text = item.quantityValue != null
+        ? _formatQty(item.quantityValue)
+        : '';
     _priceController.text = item.priceValue != null
         ? item.priceValue!.toStringAsFixed(
-            item.priceValue == item.priceValue!.roundToDouble() ? 0 : 2)
+            item.priceValue == item.priceValue!.roundToDouble() ? 0 : 2,
+          )
         : '';
     _notesController.text = item.notes ?? '';
 
@@ -170,12 +189,14 @@ class _AddItemSheetState extends State<AddItemSheet> {
       _pricingMode = item.pricingMode;
       _selectedUnit = item.shoppingUnit;
       _selectedPriceBasis = item.priceBasis;
-      _showMoreOptions = item.quantityValue != null ||
+      _showMoreOptions =
+          item.quantityValue != null ||
           item.priceValue != null ||
           (item.notes != null && item.notes!.isNotEmpty);
-      
+
       if (item.priceValue != null) {
-        _priceReferenceText = 'Last used price: ${NumberFormatter.formatPrice(item.priceValue!)}';
+        _priceReferenceText =
+            'Last used price: ${NumberFormatter.formatPrice(item.priceValue!)}';
       } else {
         _priceReferenceText = null;
       }
@@ -222,9 +243,14 @@ class _AddItemSheetState extends State<AddItemSheet> {
     }
   }
 
+  void _moveToUnitPicker() {
+    FocusScope.of(context).requestFocus(_unitFocusNode);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool showBasisSelector = _pricingMode == PricingMode.unit &&
+    final bool showBasisSelector =
+        _pricingMode == PricingMode.unit &&
         _selectedUnit != null &&
         (_selectedUnit == ShoppingUnit.g || _selectedUnit == ShoppingUnit.ml);
 
@@ -265,6 +291,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
               controller: _nameController,
               autofocus: !_isEditing,
               textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 labelText: 'Item Name',
                 hintText: 'e.g. Eggs',
@@ -282,6 +309,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   });
                 }
               },
+              onSubmitted: (_) => _quantityFocusNode.requestFocus(),
             ),
             const SizedBox(height: 16),
             Row(
@@ -290,19 +318,25 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   flex: 2,
                   child: TextField(
                     controller: _quantityController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    focusNode: _quantityFocusNode,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: 'Quantity',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
+                    onSubmitted: (_) => _moveToUnitPicker(),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 3,
                   child: DropdownButtonFormField<ShoppingUnit?>(
+                    focusNode: _unitFocusNode,
                     initialValue: _selectedUnit,
                     decoration: InputDecoration(
                       labelText: 'Unit',
@@ -387,8 +421,14 @@ class _AddItemSheetState extends State<AddItemSheet> {
               const SizedBox(height: 16),
               SegmentedButton<PricingMode>(
                 segments: const [
-                  ButtonSegment(value: PricingMode.total, label: Text('Total Price')),
-                  ButtonSegment(value: PricingMode.unit, label: Text('Price per Unit')),
+                  ButtonSegment(
+                    value: PricingMode.total,
+                    label: Text('Total Price'),
+                  ),
+                  ButtonSegment(
+                    value: PricingMode.unit,
+                    label: Text('Price per Unit'),
+                  ),
                 ],
                 selected: {_pricingMode},
                 onSelectionChanged: (newSelection) {
@@ -412,11 +452,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   items: ShoppingUnit.values
                       .where((u) => u.isCompatibleWith(_selectedUnit!))
                       .map((unit) {
-                    return DropdownMenuItem(
-                      value: unit,
-                      child: Text(unit.displayName),
-                    );
-                  }).toList(),
+                        return DropdownMenuItem(
+                          value: unit,
+                          child: Text(unit.displayName),
+                        );
+                      })
+                      .toList(),
                   onChanged: (value) {
                     setState(() {
                       _selectedPriceBasis = value;
@@ -428,13 +469,18 @@ class _AddItemSheetState extends State<AddItemSheet> {
               const SizedBox(height: 16),
               TextField(
                 controller: _priceController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: _getPriceLabel(),
                   prefixText: '৳ ',
                   errorText: _priceErrorText,
                   helperText: _priceReferenceText,
-                  helperStyle: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
+                  helperStyle: const TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

@@ -40,22 +40,23 @@ class ShoppingItemTile extends StatelessWidget {
           color: Theme.of(context).colorScheme.error,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.onError),
+        child: Icon(
+          Icons.delete_outline,
+          color: Theme.of(context).colorScheme.onError,
+        ),
       ),
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4.0),
+        margin: const EdgeInsets.symmetric(vertical: 3.0),
         decoration: BoxDecoration(
           color: isPurchased ? palette.surfacePurchased : palette.surfaceToBuy,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: palette.border,
-          ),
+          border: Border.all(color: palette.border),
         ),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 12, 16, 12),
+            padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -85,14 +86,12 @@ class ShoppingItemTile extends StatelessWidget {
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(8),
-                      color: isPurchased ? palette.purchased : Colors.transparent,
+                      color: isPurchased
+                          ? palette.purchased
+                          : Colors.transparent,
                     ),
                     child: isPurchased
-                        ? Icon(
-                            Icons.check,
-                            size: 18,
-                            color: palette.onStatus,
-                          )
+                        ? Icon(Icons.check, size: 18, color: palette.onStatus)
                         : null,
                   ),
                 ),
@@ -113,14 +112,17 @@ class ShoppingItemTile extends StatelessWidget {
                           color: isPurchased
                               ? palette.textSecondary
                               : palette.onBackground,
-                          decoration: isPurchased ? TextDecoration.lineThrough : null,
+                          decoration: isPurchased
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                       ),
                       if (displayQty != null || displayUnit != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            '${NumberFormatter.format(displayQty ?? 0)} ${displayUnit ?? ''}'.trim(),
+                            '${NumberFormatter.format(displayQty ?? 0)} ${displayUnit ?? ''}'
+                                .trim(),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -132,8 +134,9 @@ class ShoppingItemTile extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(width: 12), // Breathing room between qty and price
-
+                const SizedBox(
+                  width: 12,
+                ), // Breathing room between qty and price
                 // RIGHT: Price Column
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -145,7 +148,9 @@ class ShoppingItemTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: isPurchased ? palette.purchased : palette.secondary,
+                          color: isPurchased
+                              ? palette.purchased
+                              : palette.secondary,
                         ),
                       ),
                     if (pricing.unitPrice > 0)

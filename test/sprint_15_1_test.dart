@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shoptrack/core/animation/rolling_digit.dart';
 import 'package:shoptrack/core/theme/design_system.dart';
 import 'package:shoptrack/core/theme/theme_presets.dart';
+import 'package:shoptrack/features/home/presentation/widgets/add_item_sheet.dart';
 import 'package:shoptrack/models/app_settings.dart';
 
 void main() {
@@ -24,11 +25,7 @@ void main() {
     });
 
     test('AppSettings handles missing preset fields in fromJson', () {
-      final json = {
-        'theme': 'dark',
-        'currency': 'USD',
-        'language': 'Spanish',
-      };
+      final json = {'theme': 'dark', 'currency': 'USD', 'language': 'Spanish'};
       final settings = AppSettings.fromJson(json);
       expect(settings.theme, AppTheme.dark);
       expect(settings.lightPreset, LightPreset.summer); // Default
@@ -60,55 +57,60 @@ void main() {
       final typography = ShopTrackTypography.standard(Colors.black);
       expect(typography.screenTitle.fontSize, 28);
       expect(typography.price.fontWeight, FontWeight.bold);
-      expect(typography.price.fontFeatures, contains(const FontFeature.tabularFigures()));
+      expect(
+        typography.price.fontFeatures,
+        contains(const FontFeature.tabularFigures()),
+      );
     });
 
-    testWidgets('RollingDigitText updates only on value change', (WidgetTester tester) async {
+    testWidgets('RollingDigitText updates only on value change', (
+      WidgetTester tester,
+    ) async {
       String text = '100.00';
-      
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: RollingDigitText(
-            text: text,
-            style: const TextStyle(),
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RollingDigitText(text: text, style: const TextStyle()),
           ),
         ),
-      ));
+      );
 
       expect(find.byType(RollingDigit), findsAtLeastNWidgets(1));
       expect(find.text('1'), findsAtLeastNWidgets(1));
 
       // Rebuild with same text
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: RollingDigitText(
-            text: text,
-            style: const TextStyle(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RollingDigitText(text: text, style: const TextStyle()),
           ),
         ),
-      ));
+      );
       expect(find.text('1'), findsAtLeastNWidgets(1));
 
       // Update text
       text = '150.00';
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: RollingDigitText(
-            text: text,
-            style: const TextStyle(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RollingDigitText(text: text, style: const TextStyle()),
           ),
         ),
-      ));
-      
+      );
+
       // During transition
       await tester.pump(const Duration(milliseconds: 100));
-      
+
       await tester.pumpAndSettle();
       expect(find.text('5'), findsOneWidget);
     });
 
     test('ThemePresets.getDefinition resolves correctly', () {
-      const settings = AppSettings(theme: AppTheme.dark, darkPreset: DarkPreset.aurora);
+      const settings = AppSettings(
+        theme: AppTheme.dark,
+        darkPreset: DarkPreset.aurora,
+      );
       final definition = ThemePresets.getDefinition(settings, Brightness.light);
       expect(definition.name, 'Aurora');
       expect(definition.brightness, Brightness.dark);
@@ -124,12 +126,30 @@ void main() {
     });
 
     test('Theme data exposes ShopTrack theme tokens', () {
-      final theme = ThemePresets.lightPresets[LightPreset.summer]!.toThemeData();
+      final theme = ThemePresets.lightPresets[LightPreset.summer]!
+          .toThemeData();
       final tokens = theme.extension<ShopTrackThemeTokens>();
 
       expect(tokens, isNotNull);
-      expect(tokens!.headerArtworkPath, 'assets/images/theme_light_summer.webp');
+      expect(
+        tokens!.headerArtworkPath,
+        'assets/images/theme_light_summer.webp',
+      );
       expect(tokens.palette.border, const Color(0xFFF1E2C6));
+    });
+
+    testWidgets('Add Item uses keyboard next actions for name and quantity', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: AddItemSheet(nextPosition: 0))),
+      );
+
+      final fields = tester
+          .widgetList<TextField>(find.byType(TextField))
+          .toList();
+      expect(fields[0].textInputAction, TextInputAction.next);
+      expect(fields[1].textInputAction, TextInputAction.next);
     });
   });
 }

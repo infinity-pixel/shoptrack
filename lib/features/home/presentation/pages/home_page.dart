@@ -53,11 +53,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _scrollListener() {
-    if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.reverse) {
       if (_isFabExpanded) {
         setState(() => _isFabExpanded = false);
       }
-    } else if (_scrollController.position.userScrollDirection == ScrollDirection.forward) {
+    } else if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.forward) {
       if (!_isFabExpanded) {
         setState(() => _isFabExpanded = true);
       }
@@ -135,14 +137,10 @@ class _HomePageState extends State<HomePage> {
     await _refreshFrequentSuggestions();
   }
 
-  Future<void> _quickAddSuggestion(FrequentItemSuggestion suggestion) async {
-    await _addItem(
-      suggestion.toNewItem(position: _currentSession.items.length),
-    );
-  }
-
   Future<void> _updateItem(ShoppingItem updatedItem) async {
-    final index = _currentSession.items.indexWhere((it) => it.id == updatedItem.id);
+    final index = _currentSession.items.indexWhere(
+      (it) => it.id == updatedItem.id,
+    );
     if (index != -1) {
       setState(() {
         _currentSession.items[index] = updatedItem;
@@ -172,7 +170,11 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               setState(() {
                 _currentSession.items.insert(
-                    index < _currentSession.items.length ? index : _currentSession.items.length, item);
+                  index < _currentSession.items.length
+                      ? index
+                      : _currentSession.items.length,
+                  item,
+                );
               });
               _persistSession();
               _refreshFrequentSuggestions();
@@ -194,10 +196,12 @@ class _HomePageState extends State<HomePage> {
         ? DateFormat('EEEE, d MMMM yyyy').format(_currentSession.date)
         : DateFormat('EEEE, d MMMM').format(_currentSession.date);
 
-    final activeItems = _currentSession.items.where((i) => !i.isPurchased).toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
-    final purchasedItems = _currentSession.items.where((i) => i.isPurchased).toList()
-      ..sort((a, b) => a.position.compareTo(b.position));
+    final activeItems =
+        _currentSession.items.where((i) => !i.isPurchased).toList()
+          ..sort((a, b) => a.position.compareTo(b.position));
+    final purchasedItems =
+        _currentSession.items.where((i) => i.isPurchased).toList()
+          ..sort((a, b) => a.position.compareTo(b.position));
 
     final bool hasItems = _currentSession.items.isNotEmpty;
     final bool allPurchased = hasItems && activeItems.isEmpty;
@@ -206,7 +210,7 @@ class _HomePageState extends State<HomePage> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        
+
         if (!hasItems && widget.onBackToHistory != null) {
           final shouldDiscard = await _showDiscardWarning();
           if (shouldDiscard && mounted) {
@@ -236,7 +240,11 @@ class _HomePageState extends State<HomePage> {
                     }
                   },
                 ),
-                title: Text(_currentSession.isToday ? 'Today' : DateFormat('d MMM').format(_currentSession.date)),
+                title: Text(
+                  _currentSession.isToday
+                      ? 'Today'
+                      : DateFormat('d MMM').format(_currentSession.date),
+                ),
                 centerTitle: true,
               )
             : null,
@@ -245,9 +253,6 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(formattedDate),
-              if (_frequentSuggestions.isNotEmpty)
-                _buildFrequentSuggestionsRow(),
-
               // Content Area
               Expanded(
                 child: !hasItems
@@ -256,8 +261,7 @@ class _HomePageState extends State<HomePage> {
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         children: [
-                          if (allPurchased)
-                            _buildCompletedState(),
+                          if (allPurchased) _buildCompletedState(),
 
                           // To Buy Section
                           if (activeItems.isNotEmpty) ...[
@@ -266,7 +270,7 @@ class _HomePageState extends State<HomePage> {
                               Icons.shopping_cart_outlined,
                               activeItems.length,
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             ReorderableListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -286,9 +290,9 @@ class _HomePageState extends State<HomePage> {
                                 );
                               },
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             _buildTotalAmountRow(),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 24),
                           ],
 
                           // Purchased Section
@@ -298,14 +302,17 @@ class _HomePageState extends State<HomePage> {
                               Icons.check_circle_outline,
                               purchasedItems.length,
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             ReorderableListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: purchasedItems.length,
                               // ignore: deprecated_member_use
-                              onReorder: (oldIndex, newIndex) =>
-                                  _onReorder(purchasedItems, oldIndex, newIndex),
+                              onReorder: (oldIndex, newIndex) => _onReorder(
+                                purchasedItems,
+                                oldIndex,
+                                newIndex,
+                              ),
                               itemBuilder: (context, index) {
                                 final item = purchasedItems[index];
                                 return ShoppingItemTile(
@@ -318,7 +325,7 @@ class _HomePageState extends State<HomePage> {
                                 );
                               },
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             _buildPurchasedAmountCard(),
                           ],
                           const SizedBox(height: 100), // FAB Clearance
@@ -336,11 +343,12 @@ class _HomePageState extends State<HomePage> {
   Widget _buildHeader(String date) {
     final tokens = ShopTrackThemeTokens.of(context);
     final palette = tokens.palette;
+    final isCompactWidth = MediaQuery.sizeOf(context).width < 360;
 
     return Container(
-      height: 240,
+      height: isCompactWidth ? 138 : 150,
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 14),
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(24),
@@ -371,15 +379,18 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+              padding: const EdgeInsets.fromLTRB(22, 14, 22, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.calendar_today, size: 18, color: palette.secondary),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 18,
+                        color: palette.secondary,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         date,
@@ -391,20 +402,25 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const Spacer(),
                   Text(
-                    _currentSession.isToday ? "Today's Shopping" : "Shopping Record",
+                    _currentSession.isToday
+                        ? "Today's Shopping"
+                        : "Shopping Record",
                     style: TextStyle(
-                      fontSize: 30,
+                      fontSize: isCompactWidth ? 23 : 25,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.8,
                       color: palette.onBackground,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 2),
                   Text(
                     'Stay organized. Shop smarter.',
-                    style: TextStyle(color: palette.textSecondary, fontSize: 16),
+                    style: TextStyle(
+                      color: palette.textSecondary,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
@@ -462,7 +478,9 @@ class _HomePageState extends State<HomePage> {
         onPressed: () => _openAddSheet(),
         isExtended: _isFabExpanded,
         icon: const Icon(Icons.add),
-        label: _isFabExpanded ? const Text('Add Item') : const SizedBox.shrink(),
+        label: _isFabExpanded
+            ? const Text('Add Item')
+            : const SizedBox.shrink(),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
     );
@@ -473,7 +491,9 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('No items added'),
-        content: const Text('You must add at least one item for this date to be saved.'),
+        content: const Text(
+          'You must add at least one item for this date to be saved.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -517,9 +537,13 @@ class _HomePageState extends State<HomePage> {
 
       // Update positions for the entire section to persist the order
       for (int i = 0; i < sectionList.length; i++) {
-        final originalIndex = _currentSession.items.indexWhere((it) => it.id == sectionList[i].id);
+        final originalIndex = _currentSession.items.indexWhere(
+          (it) => it.id == sectionList[i].id,
+        );
         if (originalIndex != -1) {
-          _currentSession.items[originalIndex] = _currentSession.items[originalIndex].copyWith(position: i);
+          _currentSession.items[originalIndex] = _currentSession
+              .items[originalIndex]
+              .copyWith(position: i);
         }
       }
     });
@@ -528,22 +552,25 @@ class _HomePageState extends State<HomePage> {
 
   void _toggleItem(ShoppingItem item) async {
     final bool becomingPurchased = !item.isPurchased;
-    
+
     // Rule 9: Move future item to today if marked as purchased
     if (becomingPurchased && _currentSession.isFuture) {
       final today = DateTime.now();
       final todaySession = await _repository.getSessionByDate(today);
-      
-      final movedItem = item.copyWith(isPurchased: true, position: todaySession.items.length);
-      
+
+      final movedItem = item.copyWith(
+        isPurchased: true,
+        position: todaySession.items.length,
+      );
+
       setState(() {
         _currentSession.items.removeWhere((it) => it.id == item.id);
       });
       await _persistSession();
-      
+
       todaySession.items.add(movedItem);
       await _repository.saveSession(todaySession);
-      
+
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       messenger.showSnackBar(
@@ -558,46 +585,12 @@ class _HomePageState extends State<HomePage> {
     final index = _currentSession.items.indexWhere((it) => it.id == item.id);
     if (index != -1) {
       setState(() {
-        _currentSession.items[index] = item.copyWith(isPurchased: !item.isPurchased);
+        _currentSession.items[index] = item.copyWith(
+          isPurchased: !item.isPurchased,
+        );
       });
     }
     _persistSession();
-  }
-
-  Widget _buildFrequentSuggestionsRow() {
-    final palette = ShopTrackThemeTokens.of(context).palette;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Often Bought',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: palette.onBackground,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _frequentSuggestions.map((suggestion) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ActionChip(
-                    avatar: const Icon(Icons.add, size: 16),
-                    label: Text(suggestion.name),
-                    onPressed: () => _quickAddSuggestion(suggestion),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildEmptyState() {
@@ -613,11 +606,19 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.shopping_bag_outlined, size: 64, color: palette.secondary),
+            Icon(
+              Icons.shopping_bag_outlined,
+              size: 64,
+              color: palette.secondary,
+            ),
             const SizedBox(height: 16),
             Text(
               "No items yet",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: palette.onBackground),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: palette.onBackground,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -647,7 +648,11 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 16),
           Text(
             "Shopping Completed",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: palette.purchased),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: palette.purchased,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -661,96 +666,111 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildTotalAmountRow() {
     final palette = ShopTrackThemeTokens.of(context).palette;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: palette.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.border),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Total Amount',
-            style: TextStyle(
-              fontSize: 16,
-              color: palette.onBackground,
-              fontWeight: FontWeight.w600,
+    return Column(
+      children: [
+        Divider(color: palette.border, thickness: 1),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Total Amount',
+              style: TextStyle(
+                fontSize: 16,
+                color: palette.onBackground,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          RollingDigitText(
-            text: NumberFormatter.formatPrice(_totalAmount),
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: palette.onBackground,
+            RollingDigitText(
+              text: NumberFormatter.formatPrice(_totalAmount),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: palette.onBackground,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
   Widget _buildPurchasedAmountCard() {
     final palette = ShopTrackThemeTokens.of(context).palette;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+    return ClipPath(
+      clipper: _ReceiptEdgeClipper(),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
         color: palette.surfacePurchased,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: palette.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: palette.purchased.withValues(alpha: 0.12),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Icon(Icons.account_balance_wallet_outlined, color: palette.purchased, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Purchased Amount",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: palette.onBackground,
-                  ),
-                ),
-                Text(
-                  "Total of all purchased items",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: palette.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          RollingDigitText(
-            text: NumberFormatter.formatPrice(_purchasedAmount),
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+        child: Row(
+          children: [
+            Icon(
+              Icons.account_balance_wallet_outlined,
               color: palette.purchased,
+              size: 26,
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Purchased Amount',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: palette.onBackground,
+                    ),
+                  ),
+                  Text(
+                    'Total of all purchased items',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            RollingDigitText(
+              text: NumberFormatter.formatPrice(_purchasedAmount),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: palette.purchased,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _ReceiptEdgeClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    const radius = 4.0;
+    const diameter = radius * 2;
+    final path = Path()..moveTo(0, radius);
+
+    for (double x = 0; x < size.width; x += diameter) {
+      path.quadraticBezierTo(x + radius, 0, x + diameter, radius);
+    }
+    path.lineTo(size.width, size.height - radius);
+    for (double x = size.width; x > 0; x -= diameter) {
+      path.quadraticBezierTo(
+        x - radius,
+        size.height,
+        x - diameter,
+        size.height - radius,
+      );
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
