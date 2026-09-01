@@ -48,15 +48,18 @@ class _MainPageState extends State<MainPage> {
             type: BottomNavigationBarType.fixed,
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.description),
+                icon: Icon(Icons.description_outlined),
+                activeIcon: Icon(Icons.description),
                 label: 'Lists',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.history),
+                icon: Icon(Icons.history_outlined),
+                activeIcon: Icon(Icons.history),
                 label: 'History',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
+                icon: Icon(Icons.manage_accounts_outlined),
+                activeIcon: Icon(Icons.manage_accounts),
                 label: 'Account',
               ),
             ],

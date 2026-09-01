@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
@@ -32,10 +33,14 @@ class _HomePageState extends State<HomePage> {
   late final FrequentItemsService _frequentItemsService;
   List<FrequentItemSuggestion> _frequentSuggestions = [];
   bool _isLoading = true;
+  late final ScrollController _scrollController;
+  bool _isFabExpanded = true;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_scrollListener);
     _frequentItemsService = FrequentItemsService(_repository);
     _loadSession().then((_) {
       if (widget.initialNewItemSuggestion != null && mounted) {
@@ -44,6 +49,25 @@ class _HomePageState extends State<HomePage> {
         });
       }
     });
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
+      if (_isFabExpanded) {
+        setState(() => _isFabExpanded = false);
+      }
+    } else if (_scrollController.position.userScrollDirection == ScrollDirection.forward) {
+      if (!_isFabExpanded) {
+        setState(() => _isFabExpanded = true);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSession() async {
@@ -219,33 +243,7 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Custom Header (only if not using AppBar)
-              if (widget.onBackToHistory == null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 20, 12, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        formattedDate,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _currentSession.isToday ? "Today's Shopping" : "Shopping Record",
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 20),
+              _buildHeader(formattedDate),
               if (_frequentSuggestions.isNotEmpty)
                 _buildFrequentSuggestionsRow(),
 
@@ -254,15 +252,20 @@ class _HomePageState extends State<HomePage> {
                 child: !hasItems
                     ? _buildEmptyState()
                     : ListView(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         children: [
                           if (allPurchased)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: _buildCompletedState(),
-                            ),
+                            _buildCompletedState(),
 
-                          // Active Items Section
+                          // To Buy Section
                           if (activeItems.isNotEmpty) ...[
+                            _buildSectionLabel(
+                              'To Buy',
+                              Icons.shopping_cart_outlined,
+                              activeItems.length,
+                            ),
+                            const SizedBox(height: 12),
                             ReorderableListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -272,90 +275,162 @@ class _HomePageState extends State<HomePage> {
                                   _onReorder(activeItems, oldIndex, newIndex),
                               itemBuilder: (context, index) {
                                 final item = activeItems[index];
-                                return Padding(
+                                return ShoppingItemTile(
                                   key: ValueKey(item.id),
-                                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                  child: ShoppingItemTile(
-                                    item: item,
-                                    index: index,
-                                    onToggle: () => _toggleItem(item),
-                                    onTap: () => _openEditSheet(item),
-                                    onDelete: () => _deleteItem(item),
-                                  ),
+                                  item: item,
+                                  index: index,
+                                  onToggle: () => _toggleItem(item),
+                                  onTap: () => _openEditSheet(item),
+                                  onDelete: () => _deleteItem(item),
                                 );
                               },
                             ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                              child: Column(
-                                children: [
-                                  const Divider(height: 32),
-                                  _buildTotalAmountRow(),
-                                ],
-                              ),
-                            ),
+                            const SizedBox(height: 16),
+                            _buildTotalAmountRow(),
+                            const SizedBox(height: 32),
                           ],
 
                           // Purchased Section
-                          if (purchasedItems.isNotEmpty)
-                            Container(
-                              color: Colors.grey[50], // Edge-to-edge background
-                              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 12.0),
-                                    child: Text(
-                                      'Purchased',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ReorderableListView.builder(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    itemCount: purchasedItems.length,
-                                    // ignore: deprecated_member_use
-                                    onReorder: (oldIndex, newIndex) =>
-                                        _onReorder(purchasedItems, oldIndex, newIndex),
-                                    itemBuilder: (context, index) {
-                                      final item = purchasedItems[index];
-                                      return Padding(
-                                        key: ValueKey(item.id),
-                                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                        child: ShoppingItemTile(
-                                          item: item,
-                                          index: index,
-                                          onToggle: () => _toggleItem(item),
-                                          onTap: () => _openEditSheet(item),
-                                          onDelete: () => _deleteItem(item),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                                    child: _buildPurchasedAmountCard(),
-                                  ),
-                                ],
-                              ),
+                          if (purchasedItems.isNotEmpty) ...[
+                            _buildSectionLabel(
+                              'Purchased',
+                              Icons.check_circle_outline,
+                              purchasedItems.length,
                             ),
-                          const SizedBox(height: 80), // FAB Clearance
+                            const SizedBox(height: 12),
+                            ReorderableListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: purchasedItems.length,
+                              // ignore: deprecated_member_use
+                              onReorder: (oldIndex, newIndex) =>
+                                  _onReorder(purchasedItems, oldIndex, newIndex),
+                              itemBuilder: (context, index) {
+                                final item = purchasedItems[index];
+                                return ShoppingItemTile(
+                                  key: ValueKey(item.id),
+                                  item: item,
+                                  index: index,
+                                  onToggle: () => _toggleItem(item),
+                                  onTap: () => _openEditSheet(item),
+                                  onDelete: () => _deleteItem(item),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            _buildPurchasedAmountCard(),
+                          ],
+                          const SizedBox(height: 100), // FAB Clearance
                         ],
                       ),
               ),
             ],
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => _openAddSheet(),
-          child: const Icon(Icons.add),
+        floatingActionButton: _buildFAB(),
+      ),
+    );
+  }
+
+  Widget _buildHeader(String date) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      decoration: BoxDecoration(
+        color: Colors.teal[50]?.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 16, color: Colors.teal[700]),
+                    const SizedBox(width: 8),
+                    Text(
+                      date,
+                      style: TextStyle(
+                        color: Colors.teal[700],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _currentSession.isToday ? "Today's Shopping" : "Shopping Record",
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Stay organized. Shop smarter.",
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.shopping_basket_outlined, size: 56, color: Colors.teal[200]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String label, IconData icon, int count) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.blue),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$count items',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.blue[700],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFAB() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      width: _isFabExpanded ? 140 : 56,
+      height: 56,
+      child: FloatingActionButton.extended(
+        onPressed: () => _openAddSheet(),
+        isExtended: _isFabExpanded,
+        icon: const Icon(Icons.add),
+        label: _isFabExpanded ? const Text('Add Item') : const SizedBox.shrink(),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
     );
   }
@@ -547,8 +622,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTotalAmountRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey[100]?.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -557,13 +636,13 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[700],
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
           RollingDigitText(
             text: NumberFormatter.formatPrice(_totalAmount),
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -576,27 +655,55 @@ class _HomePageState extends State<HomePage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.1)),
+        color: Colors.teal[50]?.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.teal.withValues(alpha: 0.1)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            "Purchased Amount",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.blue,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.teal.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.account_balance_wallet_outlined, color: Colors.teal, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Purchased Amount",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "Total of all purchased items",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
           ),
           RollingDigitText(
             text: NumberFormatter.formatPrice(_purchasedAmount),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.blue,
+              color: Colors.teal[700],
             ),
           ),
         ],

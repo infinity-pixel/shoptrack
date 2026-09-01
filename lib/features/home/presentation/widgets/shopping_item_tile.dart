@@ -33,23 +33,27 @@ class ShoppingItemTile extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20.0),
+        padding: const EdgeInsets.only(right: 24.0),
         decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.red[400],
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
       child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4.0),
         decoration: BoxDecoration(
-          color: isPurchased ? Colors.grey[50] : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: isPurchased ? Colors.blue.withValues(alpha: 0.03) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isPurchased ? Colors.blue.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.1),
+          ),
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
+            padding: const EdgeInsets.fromLTRB(8, 12, 16, 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -57,10 +61,10 @@ class ShoppingItemTile extends StatelessWidget {
                 ReorderableDragStartListener(
                   index: index,
                   child: Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
+                    padding: const EdgeInsets.all(8.0),
                     child: Icon(
                       Icons.drag_indicator,
-                      color: isPurchased ? Colors.grey[300] : Colors.grey[400],
+                      color: Colors.grey[300],
                       size: 20,
                     ),
                   ),
@@ -69,85 +73,89 @@ class ShoppingItemTile extends StatelessWidget {
                 // Checkbox
                 GestureDetector(
                   onTap: onToggle,
-                  child: Container(
-                    width: 24,
-                    height: 24,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 26,
+                    height: 26,
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: isPurchased ? Colors.blue : Colors.grey[400]!,
+                        color: isPurchased ? Colors.blue : Colors.grey[300]!,
                         width: 2,
                       ),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                       color: isPurchased ? Colors.blue : Colors.transparent,
                     ),
                     child: isPurchased
                         ? const Icon(
                             Icons.check,
-                            size: 16,
+                            size: 18,
                             color: Colors.white,
                           )
                         : null,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
 
-                // LEFT: Item Name (Flexible)
+                // Item Info: Name + Qty
                 Expanded(
-                  child: Text(
-                    item.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: isPurchased ? Colors.grey[500] : Colors.black87,
-                    ),
-                  ),
-                ),
-
-                // MIDDLE: Quantity + Unit
-                if (displayQty != null || displayUnit != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(
-                      '${NumberFormatter.format(displayQty ?? 0)} ${displayUnit ?? ''}'
-                          .trim(),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: isPurchased ? Colors.grey[400] : Colors.grey[700],
-                      ),
-                    ),
-                  ),
-
-                // RIGHT: Price Area (Protected)
-                ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 60),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (pricing.totalPrice > 0)
-                        Text(
-                          NumberFormatter.formatPrice(pricing.totalPrice),
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: isPurchased
-                                ? Colors.blue.withValues(alpha: 0.5)
-                                : Colors.blue,
-                          ),
+                      Text(
+                        item.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isPurchased ? Colors.grey[400] : Colors.black87,
+                          decoration: isPurchased ? TextDecoration.lineThrough : null,
                         ),
-                      if (pricing.unitPrice > 0)
-                        Text(
-                          '${NumberFormatter.formatPrice(pricing.unitPrice)}/${pricing.priceBasisSymbol}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isPurchased ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                      if (displayQty != null || displayUnit != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            '${NumberFormatter.format(displayQty ?? 0)} ${displayUnit ?? ''}'.trim(),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[500],
+                            ),
                           ),
                         ),
                     ],
                   ),
+                ),
+
+                const SizedBox(width: 12), // Breathing room between qty and price
+
+                // RIGHT: Price Column
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (pricing.totalPrice > 0)
+                      Text(
+                        NumberFormatter.formatPrice(pricing.totalPrice),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isPurchased
+                              ? Colors.blue.withValues(alpha: 0.4)
+                              : Colors.blue[700],
+                        ),
+                      ),
+                    if (pricing.unitPrice > 0)
+                      Text(
+                        '${NumberFormatter.formatPrice(pricing.unitPrice)}/${pricing.priceBasisSymbol}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: isPurchased ? Colors.grey[300] : Colors.grey[500],
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
