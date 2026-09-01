@@ -5,12 +5,14 @@ import 'design_system.dart';
 /// Configuration for the atmospheric background of a theme.
 class AtmosphericConfig {
   final List<Color> gradientColors;
+  final Color? baseColor;
   final Alignment begin;
   final Alignment end;
   final double opacity;
 
   const AtmosphericConfig({
     required this.gradientColors,
+    this.baseColor,
     this.begin = Alignment.topLeft,
     this.end = Alignment.bottomRight,
     this.opacity = 0.05,
@@ -33,8 +35,10 @@ class ThemeDefinition {
     required this.atmosphericConfig,
     this.headerArtworkPath,
   }) : typography = ShopTrackTypography.standard(
-          brightness == Brightness.light ? palette.onBackground : palette.onBackground,
-        );
+         brightness == Brightness.light
+             ? palette.onBackground
+             : palette.onBackground,
+       );
 
   ThemeData toThemeData() {
     return ThemeData(
@@ -74,7 +78,9 @@ class ThemeDefinition {
         color: palette.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(ShopTrackDesignSystem.radius.medium),
+          borderRadius: BorderRadius.circular(
+            ShopTrackDesignSystem.radius.medium,
+          ),
           side: BorderSide(color: palette.onSurface.withValues(alpha: 0.05)),
         ),
       ),
@@ -83,7 +89,9 @@ class ThemeDefinition {
         foregroundColor: palette.onPrimary,
         elevation: 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(ShopTrackDesignSystem.radius.large),
+          borderRadius: BorderRadius.circular(
+            ShopTrackDesignSystem.radius.large,
+          ),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -93,7 +101,9 @@ class ThemeDefinition {
           textStyle: typography.button,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(ShopTrackDesignSystem.radius.medium),
+            borderRadius: BorderRadius.circular(
+              ShopTrackDesignSystem.radius.medium,
+            ),
           ),
         ),
       ),
@@ -134,8 +144,15 @@ class ThemePresets {
         textSecondary: const Color(0xFF6B6B6B),
       ),
       atmosphericConfig: const AtmosphericConfig(
-        gradientColors: [Color(0xFFFFF9C4), Color(0xFFFFECB3)],
-        opacity: 0.1,
+        baseColor: Color(0xFFFFF3E1),
+        gradientColors: [
+          Color(0xFFF8D99D),
+          Color(0xFFFFF7EA),
+          Color(0xFFF8D99D),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        opacity: 0.38,
       ),
       headerArtworkPath: 'assets/images/theme_light_summer.webp',
     ),
@@ -231,14 +248,21 @@ class ThemePresets {
     ),
   };
 
-  static ThemeDefinition getDefinition(AppSettings settings, Brightness platformBrightness) {
-    final bool isDark = settings.theme == AppTheme.dark ||
-        (settings.theme == AppTheme.system && platformBrightness == Brightness.dark);
+  static ThemeDefinition getDefinition(
+    AppSettings settings,
+    Brightness platformBrightness,
+  ) {
+    final bool isDark =
+        settings.theme == AppTheme.dark ||
+        (settings.theme == AppTheme.system &&
+            platformBrightness == Brightness.dark);
 
     if (isDark) {
-      return darkPresets[settings.darkPreset] ?? darkPresets[DarkPreset.midnight]!;
+      return darkPresets[settings.darkPreset] ??
+          darkPresets[DarkPreset.midnight]!;
     } else {
-      return lightPresets[settings.lightPreset] ?? lightPresets[LightPreset.summer]!;
+      return lightPresets[settings.lightPreset] ??
+          lightPresets[LightPreset.summer]!;
     }
   }
 }
@@ -248,10 +272,7 @@ class ShopTrackThemeTokens extends ThemeExtension<ShopTrackThemeTokens> {
   final ShopTrackPalette palette;
   final String? headerArtworkPath;
 
-  const ShopTrackThemeTokens({
-    required this.palette,
-    this.headerArtworkPath,
-  });
+  const ShopTrackThemeTokens({required this.palette, this.headerArtworkPath});
 
   static ShopTrackThemeTokens of(BuildContext context) {
     final tokens = Theme.of(context).extension<ShopTrackThemeTokens>();
@@ -264,9 +285,9 @@ class ShopTrackThemeTokens extends ThemeExtension<ShopTrackThemeTokens> {
     ShopTrackPalette? palette,
     String? headerArtworkPath,
   }) => ShopTrackThemeTokens(
-        palette: palette ?? this.palette,
-        headerArtworkPath: headerArtworkPath ?? this.headerArtworkPath,
-      );
+    palette: palette ?? this.palette,
+    headerArtworkPath: headerArtworkPath ?? this.headerArtworkPath,
+  );
 
   @override
   ShopTrackThemeTokens lerp(ShopTrackThemeTokens? other, double t) =>

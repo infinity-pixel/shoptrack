@@ -18,19 +18,16 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     final settingsService = ShopTrackApp.of(context);
-    
+
     return ListenableBuilder(
       listenable: settingsService,
       builder: (context, _) {
         return Scaffold(
           key: ValueKey('main_scaffold_${settingsService.dataToken}'),
+          backgroundColor: Colors.transparent,
           body: IndexedStack(
             index: _currentIndex,
-            children: [
-              _buildHomeTab(),
-              _buildHistoryTab(),
-              _buildAccountTab(),
-            ],
+            children: [_buildHomeTab(), _buildHistoryTab(), _buildAccountTab()],
           ),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
@@ -86,8 +83,13 @@ class _MainPageState extends State<MainPage> {
   Widget _buildHistoryTab() {
     return HistoryPage(
       onSessionSelected: (date) {
+        final now = DateTime.now();
+        final isToday =
+            date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day;
         setState(() {
-          _selectedHistoricalDate = date;
+          _selectedHistoricalDate = isToday ? null : date;
           _currentIndex = 0;
         });
       },

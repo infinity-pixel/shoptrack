@@ -9,6 +9,7 @@ class ShoppingItemTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final int index;
+  final bool isPendingPurchase;
 
   const ShoppingItemTile({
     super.key,
@@ -17,11 +18,12 @@ class ShoppingItemTile extends StatelessWidget {
     required this.onTap,
     required this.onDelete,
     required this.index,
+    this.isPendingPurchase = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isPurchased = item.isPurchased;
+    final isPurchased = item.isPurchased || isPendingPurchase;
     final pricing = item.pricing;
     final palette = ShopTrackThemeTokens.of(context).palette;
 

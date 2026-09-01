@@ -15,12 +15,14 @@ import '../widgets/shopping_item_tile.dart';
 class HomePage extends StatefulWidget {
   final DateTime? sessionDate;
   final VoidCallback? onBackToHistory;
+  final VoidCallback? onMoveToToday;
   final FrequentItemSuggestion? initialNewItemSuggestion;
 
   const HomePage({
     super.key,
     this.sessionDate,
     this.onBackToHistory,
+    this.onMoveToToday,
     this.initialNewItemSuggestion,
   });
 
@@ -36,6 +38,7 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true;
   late final ScrollController _scrollController;
   bool _isFabExpanded = true;
+  final Set<String> _pendingPurchaseIds = <String>{};
 
   @override
   void initState() {
@@ -119,13 +122,13 @@ class _HomePageState extends State<HomePage> {
 
   double get _totalAmount {
     return _currentSession.items
-        .where((i) => !i.isPurchased)
+        .where((i) => !i.isPurchased && !_pendingPurchaseIds.contains(i.id))
         .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
   }
 
   double get _purchasedAmount {
     return _currentSession.items
-        .where((i) => i.isPurchased)
+        .where((i) => i.isPurchased || _pendingPurchaseIds.contains(i.id))
         .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
   }
 
@@ -248,91 +251,103 @@ class _HomePageState extends State<HomePage> {
                 centerTitle: true,
               )
             : null,
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(formattedDate),
-              // Content Area
-              Expanded(
-                child: !hasItems
-                    ? _buildEmptyState()
-                    : ListView(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          if (allPurchased) _buildCompletedState(),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFFFEAC7), Color(0xFFFFF6E8), Color(0xFFFFEAC7)],
+              stops: [0, 0.5, 1],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(formattedDate),
+                // Content Area
+                Expanded(
+                  child: !hasItems
+                      ? _buildEmptyState()
+                      : ListView(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          children: [
+                            if (allPurchased) _buildCompletedState(),
 
-                          // To Buy Section
-                          if (activeItems.isNotEmpty) ...[
-                            _buildSectionLabel(
-                              'To Buy',
-                              Icons.shopping_cart_outlined,
-                              activeItems.length,
-                            ),
-                            const SizedBox(height: 8),
-                            ReorderableListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: activeItems.length,
-                              // ignore: deprecated_member_use
-                              onReorder: (oldIndex, newIndex) =>
-                                  _onReorder(activeItems, oldIndex, newIndex),
-                              itemBuilder: (context, index) {
-                                final item = activeItems[index];
-                                return ShoppingItemTile(
-                                  key: ValueKey(item.id),
-                                  item: item,
-                                  index: index,
-                                  onToggle: () => _toggleItem(item),
-                                  onTap: () => _openEditSheet(item),
-                                  onDelete: () => _deleteItem(item),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTotalAmountRow(),
-                            const SizedBox(height: 24),
-                          ],
-
-                          // Purchased Section
-                          if (purchasedItems.isNotEmpty) ...[
-                            _buildSectionLabel(
-                              'Purchased',
-                              Icons.check_circle_outline,
-                              purchasedItems.length,
-                            ),
-                            const SizedBox(height: 8),
-                            ReorderableListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: purchasedItems.length,
-                              // ignore: deprecated_member_use
-                              onReorder: (oldIndex, newIndex) => _onReorder(
-                                purchasedItems,
-                                oldIndex,
-                                newIndex,
+                            // To Buy Section
+                            if (activeItems.isNotEmpty) ...[
+                              _buildSectionLabel(
+                                'To Buy',
+                                Icons.shopping_cart_outlined,
+                                activeItems.length,
                               ),
-                              itemBuilder: (context, index) {
-                                final item = purchasedItems[index];
-                                return ShoppingItemTile(
-                                  key: ValueKey(item.id),
-                                  item: item,
-                                  index: index,
-                                  onToggle: () => _toggleItem(item),
-                                  onTap: () => _openEditSheet(item),
-                                  onDelete: () => _deleteItem(item),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            _buildPurchasedAmountCard(),
+                              const SizedBox(height: 8),
+                              ReorderableListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: activeItems.length,
+                                // ignore: deprecated_member_use
+                                onReorder: (oldIndex, newIndex) =>
+                                    _onReorder(activeItems, oldIndex, newIndex),
+                                itemBuilder: (context, index) {
+                                  final item = activeItems[index];
+                                  return ShoppingItemTile(
+                                    key: ValueKey(item.id),
+                                    item: item,
+                                    isPendingPurchase: _pendingPurchaseIds
+                                        .contains(item.id),
+                                    index: index,
+                                    onToggle: () => _toggleItem(item),
+                                    onTap: () => _openEditSheet(item),
+                                    onDelete: () => _deleteItem(item),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              _buildTotalAmountRow(),
+                              const SizedBox(height: 28),
+                            ],
+
+                            // Purchased Section
+                            if (purchasedItems.isNotEmpty) ...[
+                              _buildSectionLabel(
+                                'Purchased',
+                                Icons.check_circle_outline,
+                                purchasedItems.length,
+                              ),
+                              const SizedBox(height: 8),
+                              ReorderableListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: purchasedItems.length,
+                                // ignore: deprecated_member_use
+                                onReorder: (oldIndex, newIndex) => _onReorder(
+                                  purchasedItems,
+                                  oldIndex,
+                                  newIndex,
+                                ),
+                                itemBuilder: (context, index) {
+                                  final item = purchasedItems[index];
+                                  return ShoppingItemTile(
+                                    key: ValueKey(item.id),
+                                    item: item,
+                                    index: index,
+                                    onToggle: () => _toggleItem(item),
+                                    onTap: () => _openEditSheet(item),
+                                    onDelete: () => _deleteItem(item),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              _buildPurchasedAmountCard(),
+                            ],
+                            const SizedBox(height: 100), // FAB Clearance
                           ],
-                          const SizedBox(height: 100), // FAB Clearance
-                        ],
-                      ),
-              ),
-            ],
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
         floatingActionButton: _buildFAB(),
@@ -346,9 +361,9 @@ class _HomePageState extends State<HomePage> {
     final isCompactWidth = MediaQuery.sizeOf(context).width < 360;
 
     return Container(
-      height: isCompactWidth ? 138 : 150,
+      height: isCompactWidth ? 116 : 126,
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(24),
@@ -379,55 +394,95 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 14),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 18,
-                        color: palette.secondary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        date,
-                        style: TextStyle(
+                  if (_currentSession.isToday)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 17,
                           color: palette.secondary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 7),
+                        Text(
+                          date,
+                          style: TextStyle(
+                            color: palette.secondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   const Spacer(),
-                  Text(
-                    _currentSession.isToday
-                        ? "Today's Shopping"
-                        : "Shopping Record",
-                    style: TextStyle(
-                      fontSize: isCompactWidth ? 23 : 25,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.8,
-                      color: palette.onBackground,
+                  if (_currentSession.isToday) ...[
+                    _SummerGradientText(
+                      text: "Today's Shopping",
+                      style: TextStyle(
+                        fontSize: isCompactWidth ? 22 : 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Stay organized. Shop smarter.',
-                    style: TextStyle(
-                      color: palette.textSecondary,
-                      fontSize: 16,
+                    const SizedBox(height: 1),
+                    Text(
+                      'Stay organized. Shop smarter.',
+                      style: TextStyle(
+                        color: palette.textSecondary,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
+                  ] else
+                    _buildRecordDateLockup(),
                 ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRecordDateLockup() {
+    final palette = ShopTrackThemeTokens.of(context).palette;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Icon(Icons.event_note_outlined, size: 29, color: palette.secondary),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              DateFormat('EEEE').format(_currentSession.date).toUpperCase(),
+              style: TextStyle(
+                color: palette.secondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.1,
+              ),
+            ),
+            Text(
+              DateFormat('d MMM').format(_currentSession.date),
+              style: TextStyle(
+                color: palette.onBackground,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                height: 1,
+              ),
+            ),
+            Text(
+              DateFormat('yyyy').format(_currentSession.date),
+              style: TextStyle(color: palette.textSecondary, fontSize: 12),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -550,7 +605,8 @@ class _HomePageState extends State<HomePage> {
     _persistSession();
   }
 
-  void _toggleItem(ShoppingItem item) async {
+  Future<void> _toggleItem(ShoppingItem item) async {
+    if (_pendingPurchaseIds.contains(item.id)) return;
     final bool becomingPurchased = !item.isPurchased;
 
     // Rule 9: Move future item to today if marked as purchased
@@ -579,18 +635,29 @@ class _HomePageState extends State<HomePage> {
           duration: const Duration(seconds: 3),
         ),
       );
+      widget.onMoveToToday?.call();
       return;
     }
 
     final index = _currentSession.items.indexWhere((it) => it.id == item.id);
-    if (index != -1) {
+    if (index == -1) return;
+
+    if (becomingPurchased) {
       setState(() {
-        _currentSession.items[index] = item.copyWith(
-          isPurchased: !item.isPurchased,
-        );
+        _pendingPurchaseIds.add(item.id);
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 360));
+      if (!mounted) return;
+      setState(() {
+        _currentSession.items[index] = item.copyWith(isPurchased: true);
+        _pendingPurchaseIds.remove(item.id);
+      });
+    } else {
+      setState(() {
+        _currentSession.items[index] = item.copyWith(isPurchased: false);
       });
     }
-    _persistSession();
+    await _persistSession();
   }
 
   Widget _buildEmptyState() {
@@ -697,51 +764,65 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildPurchasedAmountCard() {
     final palette = ShopTrackThemeTokens.of(context).palette;
-    return ClipPath(
+    return PhysicalShape(
       clipper: _ReceiptEdgeClipper(),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-        color: palette.surfacePurchased,
-        child: Row(
-          children: [
-            Icon(
-              Icons.account_balance_wallet_outlined,
-              color: palette.purchased,
-              size: 26,
+      color: const Color(0xFFFFF8E9),
+      elevation: 5,
+      shadowColor: const Color(0xFF725127).withValues(alpha: 0.26),
+      child: CustomPaint(
+        foregroundPainter: const _ReceiptTexturePainter(),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFFEF8), Color(0xFFFFF1CF)],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Purchased Amount',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: palette.onBackground,
-                    ),
-                  ),
-                  Text(
-                    'Total of all purchased items',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: palette.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            RollingDigitText(
-              text: NumberFormatter.formatPrice(_purchasedAmount),
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.account_balance_wallet_outlined,
                 color: palette.purchased,
+                size: 26,
               ),
-            ),
-          ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Purchased Amount',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: palette.onBackground,
+                      ),
+                    ),
+                    Text(
+                      'Total of all purchased items',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              RollingDigitText(
+                text: NumberFormatter.formatPrice(_purchasedAmount),
+                style: TextStyle(
+                  fontFamily: 'LibreBaskerville',
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.35,
+                  color: palette.purchased,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -751,7 +832,7 @@ class _HomePageState extends State<HomePage> {
 class _ReceiptEdgeClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    const radius = 4.0;
+    const radius = 7.0;
     const diameter = radius * 2;
     final path = Path()..moveTo(0, radius);
 
@@ -773,4 +854,56 @@ class _ReceiptEdgeClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class _ReceiptTexturePainter extends CustomPainter {
+  const _ReceiptTexturePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFB9894B).withValues(alpha: 0.055)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1;
+
+    final upperFold = Path()
+      ..moveTo(size.width * 0.08, size.height * 0.25)
+      ..quadraticBezierTo(
+        size.width * 0.38,
+        size.height * 0.18,
+        size.width * 0.66,
+        size.height * 0.28,
+      );
+    final lowerFold = Path()
+      ..moveTo(size.width * 0.42, size.height * 0.78)
+      ..quadraticBezierTo(
+        size.width * 0.70,
+        size.height * 0.86,
+        size.width * 0.94,
+        size.height * 0.72,
+      );
+    canvas.drawPath(upperFold, paint);
+    canvas.drawPath(lowerFold, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ReceiptTexturePainter oldDelegate) => false;
+}
+
+class _SummerGradientText extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+
+  const _SummerGradientText({required this.text, required this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => const LinearGradient(
+        colors: [Color(0xFF64370E), Color(0xFFF28A19), Color(0xFFAD5B10)],
+      ).createShader(bounds),
+      child: Text(text, style: style),
+    );
+  }
 }

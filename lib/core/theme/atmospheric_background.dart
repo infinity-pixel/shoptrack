@@ -17,6 +17,11 @@ class AtmosphericBackground extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
+          child: ColoredBox(
+            color: config.baseColor ?? Theme.of(context).colorScheme.surface,
+          ),
+        ),
+        Positioned.fill(
           child: Opacity(
             opacity: config.opacity,
             child: Container(

@@ -58,22 +58,24 @@ class _HistoryPageState extends State<HistoryPage> {
 
     final upcoming = _sessions.where((s) => s.isFuture).toList()
       ..sort((a, b) => a.date.compareTo(b.date)); // Nearest first
-    
+
     final todaySessions = _sessions.where((s) => s.isToday).toList();
-    
-    final pastCurrentMonth = _sessions.where((s) => 
-      s.isPast && 
-      s.date.year == now.year && 
-      s.date.month == now.month
-    ).toList()..sort((a, b) => b.date.compareTo(a.date));
+
+    final pastCurrentMonth =
+        _sessions
+            .where(
+              (s) =>
+                  s.isPast &&
+                  s.date.year == now.year &&
+                  s.date.month == now.month,
+            )
+            .toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
 
     final monthlyHistory = SessionGrouper.groupIntoMonths(_sessions, now);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('History'),
-        centerTitle: false,
-      ),
+      appBar: AppBar(title: const Text('History'), centerTitle: false),
       body: Column(
         children: [
           Padding(
@@ -81,11 +83,16 @@ class _HistoryPageState extends State<HistoryPage> {
             child: InkWell(
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const HistorySearchPage()),
+                MaterialPageRoute(
+                  builder: (context) => const HistorySearchPage(),
+                ),
               ),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(12),
@@ -112,37 +119,45 @@ class _HistoryPageState extends State<HistoryPage> {
                     children: [
                       if (upcoming.isNotEmpty) ...[
                         _buildSectionHeader('UPCOMING', Colors.purple),
-                        ...upcoming.map((s) => SessionCard(
-                          session: s,
-                          onTap: () => _openSession(s.date),
-                          onEdit: () => _editSessionDate(s),
-                          onDelete: () => _deleteSession(s),
-                        )),
+                        ...upcoming.map(
+                          (s) => SessionCard(
+                            session: s,
+                            onTap: () => _openSession(s.date),
+                            onEdit: () => _editSessionDate(s),
+                            onDelete: () => _deleteSession(s),
+                          ),
+                        ),
                         const SizedBox(height: 24),
                       ],
                       if (todaySessions.isNotEmpty) ...[
                         _buildSectionHeader('TODAY', Colors.blue),
-                        ...todaySessions.map((s) => SessionCard(
-                          session: s,
-                          onTap: () => _openSession(s.date),
-                          onEdit: () => _editSessionDate(s),
-                          onDelete: () => _deleteSession(s),
-                        )),
+                        ...todaySessions.map(
+                          (s) => SessionCard(
+                            session: s,
+                            onTap: () => _openSession(s.date),
+                            onEdit: () => _editSessionDate(s),
+                            onDelete: () => _deleteSession(s),
+                          ),
+                        ),
                         const SizedBox(height: 24),
                       ],
                       if (pastCurrentMonth.isNotEmpty) ...[
                         _buildSectionHeader('PAST', Colors.grey),
-                        ...pastCurrentMonth.map((s) => SessionCard(
-                          session: s,
-                          onTap: () => _openSession(s.date),
-                          onEdit: () => _editSessionDate(s),
-                          onDelete: () => _deleteSession(s),
-                        )),
+                        ...pastCurrentMonth.map(
+                          (s) => SessionCard(
+                            session: s,
+                            onTap: () => _openSession(s.date),
+                            onEdit: () => _editSessionDate(s),
+                            onDelete: () => _deleteSession(s),
+                          ),
+                        ),
                         const SizedBox(height: 24),
                       ],
                       if (monthlyHistory.isNotEmpty) ...[
                         _buildSectionHeader('MONTHLY HISTORY', Colors.indigo),
-                        ...monthlyHistory.map((summary) => _buildMonthlySummaryCard(summary)),
+                        ...monthlyHistory.map(
+                          (summary) => _buildMonthlySummaryCard(summary),
+                        ),
                         const SizedBox(height: 24),
                       ],
                     ],
@@ -159,24 +174,28 @@ class _HistoryPageState extends State<HistoryPage> {
 
   Widget _buildSectionHeader(String title, Color color) {
     final bool isTodaySection = title == 'TODAY';
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0, top: 8.0),
       child: Row(
         children: [
           Container(
-            padding: isTodaySection ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2) : null,
-            decoration: isTodaySection ? BoxDecoration(
-              color: color.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(4),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ],
-            ) : null,
+            padding: isTodaySection
+                ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+                : null,
+            decoration: isTodaySection
+                ? BoxDecoration(
+                    color: color.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  )
+                : null,
             child: Text(
               title,
               style: TextStyle(
@@ -189,10 +208,7 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Divider(
-              color: color.withValues(alpha: 0.1),
-              thickness: 1,
-            ),
+            child: Divider(color: color.withValues(alpha: 0.1), thickness: 1),
           ),
         ],
       ),
@@ -239,7 +255,11 @@ class _HistoryPageState extends State<HistoryPage> {
                       ),
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -259,13 +279,12 @@ class _HistoryPageState extends State<HistoryPage> {
                 children: [
                   Text(
                     'Total Purchased',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                   RollingDigitText(
-                    text: NumberFormatter.formatPrice(summary.totalPurchasedAmount),
+                    text: NumberFormatter.formatPrice(
+                      summary.totalPurchasedAmount,
+                    ),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -301,10 +320,7 @@ class _HistoryPageState extends State<HistoryPage> {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
@@ -321,12 +337,24 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> _openSession(DateTime date) async {
+    final now = DateTime.now();
+    final isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
+    if (isToday) {
+      widget.onSessionSelected(date);
+      return;
+    }
+
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => HomePage(
           sessionDate: date,
           onBackToHistory: () => Navigator.pop(context, true),
+          onMoveToToday: () {
+            Navigator.pop(context, true);
+            widget.onSessionSelected(DateTime.now());
+          },
         ),
       ),
     );
@@ -436,8 +464,9 @@ class _HistoryPageState extends State<HistoryPage> {
       initialDate: result == 'past'
           ? today.subtract(const Duration(days: 1))
           : today.add(const Duration(days: 1)),
-      firstDate:
-          result == 'past' ? DateTime(2000) : today.add(const Duration(days: 1)),
+      firstDate: result == 'past'
+          ? DateTime(2000)
+          : today.add(const Duration(days: 1)),
       lastDate: result == 'past'
           ? today.subtract(const Duration(days: 1))
           : DateTime(2100),
