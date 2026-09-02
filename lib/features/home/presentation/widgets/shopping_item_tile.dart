@@ -121,7 +121,7 @@ class ShoppingItemTile extends StatelessWidget {
                       ),
                       if (displayQty != null || displayUnit != null)
                         Padding(
-                          padding: const EdgeInsets.only(top: 2),
+                          padding: const EdgeInsets.only(top: 0),
                           child: Text(
                             '${NumberFormatter.format(displayQty ?? 0)} ${displayUnit ?? ''}'
                                 .trim(),
@@ -129,6 +129,7 @@ class ShoppingItemTile extends StatelessWidget {
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: palette.textSecondary,
+                              height: 1.1,
                             ),
                           ),
                         ),

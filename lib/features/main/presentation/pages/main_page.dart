@@ -14,6 +14,7 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
   DateTime? _selectedHistoricalDate;
+  int _homeRefreshRevision = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -69,11 +70,13 @@ class _MainPageState extends State<MainPage> {
     return HomePage(
       key: ValueKey(_selectedHistoricalDate?.toIso8601String() ?? 'today'),
       sessionDate: _selectedHistoricalDate,
+      refreshRevision: _homeRefreshRevision,
       onBackToHistory: _selectedHistoricalDate != null
           ? () {
               setState(() {
                 _selectedHistoricalDate = null;
                 _currentIndex = 1;
+                _homeRefreshRevision++;
               });
             }
           : null,
@@ -91,6 +94,7 @@ class _MainPageState extends State<MainPage> {
         setState(() {
           _selectedHistoricalDate = isToday ? null : date;
           _currentIndex = 0;
+          _homeRefreshRevision++;
         });
       },
     );

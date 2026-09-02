@@ -74,6 +74,12 @@ class ShopTrackPalette {
   final Color border;
   final Color textSecondary;
 
+  /// Receipt colors are separate from purchased item surfaces so every theme
+  /// can give the final total a distinct treatment.
+  final Color surfaceReceipt;
+  final Color receiptEdge;
+  final Color receiptShadow;
+
   const ShopTrackPalette({
     required this.primary,
     required this.secondary,
@@ -94,6 +100,9 @@ class ShopTrackPalette {
     required this.surfacePurchased,
     required this.border,
     required this.textSecondary,
+    required this.surfaceReceipt,
+    required this.receiptEdge,
+    required this.receiptShadow,
   });
 
   /// Standard Light Palette Foundation
@@ -111,6 +120,9 @@ class ShopTrackPalette {
     Color? border,
     Color? onBackground,
     Color? textSecondary,
+    Color? surfaceReceipt,
+    Color? receiptEdge,
+    Color? receiptShadow,
   }) {
     return ShopTrackPalette(
       primary: primary,
@@ -132,6 +144,9 @@ class ShopTrackPalette {
       surfacePurchased: surfacePurchased ?? const Color(0xFFF2F8F3),
       border: border ?? const Color(0xFFE5E7EB),
       textSecondary: textSecondary ?? const Color(0xFF6B7280),
+      surfaceReceipt: surfaceReceipt ?? const Color(0xFFFFFCF4),
+      receiptEdge: receiptEdge ?? const Color(0xFFF5E4BD),
+      receiptShadow: receiptShadow ?? const Color(0x33251A0D),
     );
   }
 
@@ -164,6 +179,9 @@ class ShopTrackPalette {
       surfacePurchased: const Color(0xFF1B2A20),
       border: const Color(0xFF333333),
       textSecondary: const Color(0xFFB0B0B0),
+      surfaceReceipt: const Color(0xFF28251F),
+      receiptEdge: const Color(0xFF3A352B),
+      receiptShadow: const Color(0x66000000),
     );
   }
 }
@@ -243,11 +261,7 @@ class ShopTrackTypography {
         color: color,
         letterSpacing: 1.0,
       ),
-      body: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w400,
-        color: color,
-      ),
+      body: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: color),
       button: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,

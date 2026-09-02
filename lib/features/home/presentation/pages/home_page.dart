@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
+import '../../../../core/theme/design_system.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../models/frequent_item_suggestion.dart';
@@ -14,6 +15,7 @@ import '../widgets/shopping_item_tile.dart';
 
 class HomePage extends StatefulWidget {
   final DateTime? sessionDate;
+  final int refreshRevision;
   final VoidCallback? onBackToHistory;
   final VoidCallback? onMoveToToday;
   final FrequentItemSuggestion? initialNewItemSuggestion;
@@ -21,6 +23,7 @@ class HomePage extends StatefulWidget {
   const HomePage({
     super.key,
     this.sessionDate,
+    this.refreshRevision = 0,
     this.onBackToHistory,
     this.onMoveToToday,
     this.initialNewItemSuggestion,
@@ -30,7 +33,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late ShoppingSession _currentSession;
   final ShoppingRepository _repository = LocalShoppingRepository();
   late final FrequentItemsService _frequentItemsService;
@@ -38,7 +41,8 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true;
   late final ScrollController _scrollController;
   bool _isFabExpanded = true;
-  final Set<String> _pendingPurchaseIds = <String>{};
+  final Set<String> _transitioningItemIds = <String>{};
+  final Map<String, GlobalKey> _itemKeys = <String, GlobalKey>{};
 
   @override
   void initState() {
@@ -53,6 +57,23 @@ class _HomePageState extends State<HomePage> {
         });
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldDate = oldWidget.sessionDate;
+    final newDate = widget.sessionDate;
+    final didChangeDate =
+        oldDate?.year != newDate?.year ||
+        oldDate?.month != newDate?.month ||
+        oldDate?.day != newDate?.day;
+
+    if (didChangeDate ||
+        (oldDate != null && newDate == null) ||
+        oldWidget.refreshRevision != widget.refreshRevision) {
+      _loadSession();
+    }
   }
 
   void _scrollListener() {
@@ -122,13 +143,13 @@ class _HomePageState extends State<HomePage> {
 
   double get _totalAmount {
     return _currentSession.items
-        .where((i) => !i.isPurchased && !_pendingPurchaseIds.contains(i.id))
+        .where((i) => !i.isPurchased)
         .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
   }
 
   double get _purchasedAmount {
     return _currentSession.items
-        .where((i) => i.isPurchased || _pendingPurchaseIds.contains(i.id))
+        .where((i) => i.isPurchased)
         .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
   }
 
@@ -252,11 +273,23 @@ class _HomePageState extends State<HomePage> {
               )
             : null,
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFFFFEAC7), Color(0xFFFFF6E8), Color(0xFFFFEAC7)],
+              colors: [
+                Color.lerp(
+                  ShopTrackThemeTokens.of(context).palette.background,
+                  ShopTrackThemeTokens.of(context).palette.primary,
+                  0.16,
+                )!,
+                ShopTrackThemeTokens.of(context).palette.background,
+                Color.lerp(
+                  ShopTrackThemeTokens.of(context).palette.background,
+                  ShopTrackThemeTokens.of(context).palette.primary,
+                  0.16,
+                )!,
+              ],
               stops: [0, 0.5, 1],
             ),
           ),
@@ -292,15 +325,23 @@ class _HomePageState extends State<HomePage> {
                                     _onReorder(activeItems, oldIndex, newIndex),
                                 itemBuilder: (context, index) {
                                   final item = activeItems[index];
-                                  return ShoppingItemTile(
-                                    key: ValueKey(item.id),
-                                    item: item,
-                                    isPendingPurchase: _pendingPurchaseIds
-                                        .contains(item.id),
-                                    index: index,
-                                    onToggle: () => _toggleItem(item),
-                                    onTap: () => _openEditSheet(item),
-                                    onDelete: () => _deleteItem(item),
+                                  return KeyedSubtree(
+                                    key: _itemKey(item.id),
+                                    child: Opacity(
+                                      opacity:
+                                          _transitioningItemIds.contains(
+                                            item.id,
+                                          )
+                                          ? 0
+                                          : 1,
+                                      child: ShoppingItemTile(
+                                        item: item,
+                                        index: index,
+                                        onToggle: () => _toggleItem(item),
+                                        onTap: () => _openEditSheet(item),
+                                        onDelete: () => _deleteItem(item),
+                                      ),
+                                    ),
                                   );
                                 },
                               ),
@@ -329,13 +370,23 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 itemBuilder: (context, index) {
                                   final item = purchasedItems[index];
-                                  return ShoppingItemTile(
-                                    key: ValueKey(item.id),
-                                    item: item,
-                                    index: index,
-                                    onToggle: () => _toggleItem(item),
-                                    onTap: () => _openEditSheet(item),
-                                    onDelete: () => _deleteItem(item),
+                                  return KeyedSubtree(
+                                    key: _itemKey(item.id),
+                                    child: Opacity(
+                                      opacity:
+                                          _transitioningItemIds.contains(
+                                            item.id,
+                                          )
+                                          ? 0
+                                          : 1,
+                                      child: ShoppingItemTile(
+                                        item: item,
+                                        index: index,
+                                        onToggle: () => _toggleItem(item),
+                                        onTap: () => _openEditSheet(item),
+                                        onDelete: () => _deleteItem(item),
+                                      ),
+                                    ),
                                   );
                                 },
                               ),
@@ -407,7 +458,16 @@ class _HomePageState extends State<HomePage> {
                           size: 17,
                           color: palette.secondary,
                         ),
-                        const SizedBox(width: 7),
+                        const SizedBox(width: 9),
+                        Container(
+                          width: 2,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: palette.secondary,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 9),
                         Text(
                           date,
                           style: TextStyle(
@@ -605,8 +665,92 @@ class _HomePageState extends State<HomePage> {
     _persistSession();
   }
 
+  GlobalKey _itemKey(String itemId) {
+    return _itemKeys.putIfAbsent(itemId, GlobalKey.new);
+  }
+
+  Future<void> _animateItemTransfer(
+    ShoppingItem item,
+    bool becomingPurchased,
+  ) async {
+    final sourceContext = _itemKey(item.id).currentContext;
+    final sourceBox = sourceContext?.findRenderObject() as RenderBox?;
+    final itemIndex = _currentSession.items.indexWhere(
+      (current) => current.id == item.id,
+    );
+    if (sourceBox == null || itemIndex == -1) {
+      if (itemIndex != -1) {
+        setState(() {
+          _currentSession.items[itemIndex] = item.copyWith(
+            isPurchased: becomingPurchased,
+          );
+        });
+      }
+      return;
+    }
+
+    final sourcePosition = sourceBox.localToGlobal(Offset.zero);
+    final sourceRect = sourcePosition & sourceBox.size;
+    final movedItem = item.copyWith(isPurchased: becomingPurchased);
+
+    setState(() {
+      _currentSession.items[itemIndex] = movedItem;
+      _transitioningItemIds.add(item.id);
+    });
+
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+
+    final targetContext = _itemKey(item.id).currentContext;
+    final targetBox = targetContext?.findRenderObject() as RenderBox?;
+    if (targetBox == null) {
+      setState(() => _transitioningItemIds.remove(item.id));
+      return;
+    }
+
+    final targetPosition = targetBox.localToGlobal(Offset.zero);
+    final targetRect = targetPosition & targetBox.size;
+    final controller = AnimationController(
+      duration: ShopTrackDesignSystem.motion.medium,
+      vsync: this,
+    );
+    final animation = CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeInOutCubicEmphasized,
+    );
+    final overlay = Overlay.of(context, rootOverlay: true);
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            final rect = Rect.lerp(sourceRect, targetRect, animation.value)!;
+            return Positioned.fromRect(
+              rect: rect,
+              child: IgnorePointer(
+                child: Material(
+                  color: Colors.transparent,
+                  child: _ItemFlight(item: movedItem),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    overlay.insert(entry);
+    await controller.forward();
+    entry.remove();
+    controller.dispose();
+    if (mounted) {
+      setState(() => _transitioningItemIds.remove(item.id));
+    }
+  }
+
   Future<void> _toggleItem(ShoppingItem item) async {
-    if (_pendingPurchaseIds.contains(item.id)) return;
+    if (_transitioningItemIds.contains(item.id)) return;
     final bool becomingPurchased = !item.isPurchased;
 
     // Rule 9: Move future item to today if marked as purchased
@@ -642,21 +786,7 @@ class _HomePageState extends State<HomePage> {
     final index = _currentSession.items.indexWhere((it) => it.id == item.id);
     if (index == -1) return;
 
-    if (becomingPurchased) {
-      setState(() {
-        _pendingPurchaseIds.add(item.id);
-      });
-      await Future<void>.delayed(const Duration(milliseconds: 360));
-      if (!mounted) return;
-      setState(() {
-        _currentSession.items[index] = item.copyWith(isPurchased: true);
-        _pendingPurchaseIds.remove(item.id);
-      });
-    } else {
-      setState(() {
-        _currentSession.items[index] = item.copyWith(isPurchased: false);
-      });
-    }
+    await _animateItemTransfer(item, becomingPurchased);
     await _persistSession();
   }
 
@@ -764,20 +894,20 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildPurchasedAmountCard() {
     final palette = ShopTrackThemeTokens.of(context).palette;
-    return PhysicalShape(
-      clipper: _ReceiptEdgeClipper(),
-      color: const Color(0xFFFFF8E9),
-      elevation: 5,
-      shadowColor: const Color(0xFF725127).withValues(alpha: 0.26),
-      child: CustomPaint(
-        foregroundPainter: const _ReceiptTexturePainter(),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: PhysicalShape(
+        clipper: _ReceiptEdgeClipper(),
+        color: palette.surfaceReceipt,
+        elevation: 6,
+        shadowColor: palette.receiptShadow,
         child: Container(
           padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFFFFEF8), Color(0xFFFFF1CF)],
+              colors: [palette.surfaceReceipt, palette.receiptEdge],
             ),
           ),
           child: Row(
@@ -832,21 +962,36 @@ class _HomePageState extends State<HomePage> {
 class _ReceiptEdgeClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    const radius = 7.0;
-    const diameter = radius * 2;
-    final path = Path()..moveTo(0, radius);
+    const waveWidths = [19.0, 16.0, 21.0, 17.0, 20.0];
+    const waveDepths = [8.0, 10.0, 7.0, 9.0, 8.0];
+    final path = Path()..moveTo(0, 0);
 
-    for (double x = 0; x < size.width; x += diameter) {
-      path.quadraticBezierTo(x + radius, 0, x + diameter, radius);
+    var x = 0.0;
+    var waveIndex = 0;
+    while (x < size.width) {
+      final width = waveWidths[waveIndex % waveWidths.length];
+      final depth = waveDepths[waveIndex % waveDepths.length];
+      final end = (x + width).clamp(0.0, size.width).toDouble();
+      path.quadraticBezierTo((x + end) / 2, depth, end, 0);
+      x = end;
+      waveIndex++;
     }
-    path.lineTo(size.width, size.height - radius);
-    for (double x = size.width; x > 0; x -= diameter) {
+
+    path.lineTo(size.width, size.height);
+    x = size.width;
+    waveIndex = 0;
+    while (x > 0) {
+      final width = waveWidths[waveIndex % waveWidths.length];
+      final depth = waveDepths[waveIndex % waveDepths.length];
+      final end = (x - width).clamp(0.0, size.width).toDouble();
       path.quadraticBezierTo(
-        x - radius,
+        (x + end) / 2,
+        size.height - depth,
+        end,
         size.height,
-        x - diameter,
-        size.height - radius,
       );
+      x = end;
+      waveIndex++;
     }
     path.close();
     return path;
@@ -856,38 +1001,111 @@ class _ReceiptEdgeClipper extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
-class _ReceiptTexturePainter extends CustomPainter {
-  const _ReceiptTexturePainter();
+class _ItemFlight extends StatelessWidget {
+  final ShoppingItem item;
+
+  const _ItemFlight({required this.item});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFB9894B).withValues(alpha: 0.055)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1;
+  Widget build(BuildContext context) {
+    final palette = ShopTrackThemeTokens.of(context).palette;
+    final pricing = item.pricing;
+    final quantity = pricing.resolvedQuantity;
+    final unit = pricing.resolvedUnitSymbol;
 
-    final upperFold = Path()
-      ..moveTo(size.width * 0.08, size.height * 0.25)
-      ..quadraticBezierTo(
-        size.width * 0.38,
-        size.height * 0.18,
-        size.width * 0.66,
-        size.height * 0.28,
-      );
-    final lowerFold = Path()
-      ..moveTo(size.width * 0.42, size.height * 0.78)
-      ..quadraticBezierTo(
-        size.width * 0.70,
-        size.height * 0.86,
-        size.width * 0.94,
-        size.height * 0.72,
-      );
-    canvas.drawPath(upperFold, paint);
-    canvas.drawPath(lowerFold, paint);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      decoration: BoxDecoration(
+        color: item.isPurchased
+            ? palette.surfacePurchased
+            : palette.surfaceToBuy,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+        boxShadow: [
+          BoxShadow(
+            color: palette.onBackground.withValues(alpha: 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 14, 10),
+        child: Row(
+          children: [
+            Icon(
+              item.isPurchased
+                  ? Icons.check_box
+                  : Icons.check_box_outline_blank,
+              color: item.isPurchased ? palette.purchased : palette.border,
+              size: 26,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: item.isPurchased
+                          ? palette.textSecondary
+                          : palette.onBackground,
+                      decoration: item.isPurchased
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
+                  if (quantity != null || unit != null)
+                    Text(
+                      '${NumberFormatter.format(quantity ?? 0)} ${unit ?? ''}'
+                          .trim(),
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.1,
+                        fontWeight: FontWeight.w500,
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (pricing.totalPrice > 0)
+                  Text(
+                    NumberFormatter.formatPrice(pricing.totalPrice),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: item.isPurchased
+                          ? palette.purchased
+                          : palette.secondary,
+                    ),
+                  ),
+                if (pricing.unitPrice > 0)
+                  Text(
+                    '${NumberFormatter.formatPrice(pricing.unitPrice)}/${pricing.priceBasisSymbol}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: palette.textSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant _ReceiptTexturePainter oldDelegate) => false;
 }
 
 class _SummerGradientText extends StatelessWidget {
@@ -898,10 +1116,11 @@ class _SummerGradientText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     return ShaderMask(
       blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => const LinearGradient(
-        colors: [Color(0xFF64370E), Color(0xFFF28A19), Color(0xFFAD5B10)],
+      shaderCallback: (bounds) => LinearGradient(
+        colors: [palette.onBackground, palette.secondary, palette.primary],
       ).createShader(bounds),
       child: Text(text, style: style),
     );

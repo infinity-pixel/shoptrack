@@ -142,6 +142,9 @@ class ThemePresets {
         border: const Color(0xFFF1E2C6),
         onBackground: const Color(0xFF3E2E1F),
         textSecondary: const Color(0xFF6B6B6B),
+        surfaceReceipt: const Color(0xFFFFFBED),
+        receiptEdge: const Color(0xFFF0D797),
+        receiptShadow: const Color(0x402F1E0B),
       ),
       atmosphericConfig: const AtmosphericConfig(
         baseColor: Color(0xFFFFF3E1),
