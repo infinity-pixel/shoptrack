@@ -151,5 +151,24 @@ void main() {
       expect(fields[0].textInputAction, TextInputAction.next);
       expect(fields[1].textInputAction, TextInputAction.next);
     });
+
+    testWidgets('Unit picker closes after choosing a unit', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: AddItemSheet(nextPosition: 0))),
+      );
+
+      await tester.tap(find.byType(TextField).at(1));
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kilogram (kg)'), findsOneWidget);
+      await tester.tap(find.text('Kilogram (kg)'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PopupMenuItem), findsNothing);
+      expect(find.text('Kilogram (kg)'), findsOneWidget);
+    });
   });
 }

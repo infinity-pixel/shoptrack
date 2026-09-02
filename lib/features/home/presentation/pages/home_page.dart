@@ -3,7 +3,6 @@ import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
-import '../../../../core/theme/design_system.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../models/frequent_item_suggestion.dart';
@@ -42,6 +41,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late final ScrollController _scrollController;
   bool _isFabExpanded = true;
   final Set<String> _transitioningItemIds = <String>{};
+  final Map<String, bool> _checkmarkTransitionStates = <String, bool>{};
   final Map<String, GlobalKey> _itemKeys = <String, GlobalKey>{};
 
   @override
@@ -320,6 +320,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: activeItems.length,
+                                proxyDecorator: _buildReorderProxy,
                                 // ignore: deprecated_member_use
                                 onReorder: (oldIndex, newIndex) =>
                                     _onReorder(activeItems, oldIndex, newIndex),
@@ -336,6 +337,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                           : 1,
                                       child: ShoppingItemTile(
                                         item: item,
+                                        visualPurchased:
+                                            _checkmarkTransitionStates[item.id],
                                         index: index,
                                         onToggle: () => _toggleItem(item),
                                         onTap: () => _openEditSheet(item),
@@ -362,6 +365,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: purchasedItems.length,
+                                proxyDecorator: _buildReorderProxy,
                                 // ignore: deprecated_member_use
                                 onReorder: (oldIndex, newIndex) => _onReorder(
                                   purchasedItems,
@@ -381,6 +385,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                           : 1,
                                       child: ShoppingItemTile(
                                         item: item,
+                                        visualPurchased:
+                                            _checkmarkTransitionStates[item.id],
                                         index: index,
                                         onToggle: () => _toggleItem(item),
                                         onTap: () => _openEditSheet(item),
@@ -454,11 +460,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.calendar_today,
+                          Icons.today_outlined,
                           size: 17,
                           color: palette.secondary,
                         ),
-                        const SizedBox(width: 9),
+                        const SizedBox(width: 5),
                         Container(
                           width: 2,
                           height: 24,
@@ -467,7 +473,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        const SizedBox(width: 9),
+                        const SizedBox(width: 5),
                         Text(
                           date,
                           style: TextStyle(
@@ -513,6 +519,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Icon(Icons.event_note_outlined, size: 29, color: palette.secondary),
+        const SizedBox(width: 8),
+        Container(
+          width: 2,
+          height: 58,
+          decoration: BoxDecoration(
+            color: palette.secondary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
         const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,6 +680,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _persistSession();
   }
 
+  Widget _buildReorderProxy(
+    Widget child,
+    int index,
+    Animation<double> animation,
+  ) {
+    final palette = ShopTrackThemeTokens.of(context).palette;
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        return Material(
+          color: Colors.transparent,
+          elevation: 6 * animation.value,
+          shadowColor: palette.onBackground.withValues(alpha: 0.20),
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: child,
+        );
+      },
+      child: child,
+    );
+  }
+
   GlobalKey _itemKey(String itemId) {
     return _itemKeys.putIfAbsent(itemId, GlobalKey.new);
   }
@@ -684,6 +721,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           _currentSession.items[itemIndex] = item.copyWith(
             isPurchased: becomingPurchased,
           );
+          _checkmarkTransitionStates.remove(item.id);
         });
       }
       return;
@@ -695,6 +733,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     setState(() {
       _currentSession.items[itemIndex] = movedItem;
+      _checkmarkTransitionStates.remove(item.id);
       _transitioningItemIds.add(item.id);
     });
 
@@ -711,7 +750,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final targetPosition = targetBox.localToGlobal(Offset.zero);
     final targetRect = targetPosition & targetBox.size;
     final controller = AnimationController(
-      duration: ShopTrackDesignSystem.motion.medium,
+      duration: const Duration(milliseconds: 720),
       vsync: this,
     );
     final animation = CurvedAnimation(
@@ -750,7 +789,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _toggleItem(ShoppingItem item) async {
-    if (_transitioningItemIds.contains(item.id)) return;
+    if (_transitioningItemIds.contains(item.id) ||
+        _checkmarkTransitionStates.containsKey(item.id)) {
+      return;
+    }
     final bool becomingPurchased = !item.isPurchased;
 
     // Rule 9: Move future item to today if marked as purchased
@@ -786,6 +828,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final index = _currentSession.items.indexWhere((it) => it.id == item.id);
     if (index == -1) return;
 
+    setState(() {
+      _checkmarkTransitionStates[item.id] = becomingPurchased;
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 280));
+    if (!mounted) return;
     await _animateItemTransfer(item, becomingPurchased);
     await _persistSession();
   }
@@ -895,63 +942,63 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _buildPurchasedAmountCard() {
     final palette = ShopTrackThemeTokens.of(context).palette;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: PhysicalShape(
-        clipper: _ReceiptEdgeClipper(),
-        color: palette.surfaceReceipt,
-        elevation: 6,
-        shadowColor: palette.receiptShadow,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [palette.surfaceReceipt, palette.receiptEdge],
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: CustomPaint(
+        painter: _ReceiptShadowPainter(palette.receiptShadow),
+        child: ClipPath(
+          clipper: _ReceiptEdgeClipper(),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [palette.surfaceReceipt, palette.receiptEdge],
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.account_balance_wallet_outlined,
-                color: palette.purchased,
-                size: 26,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Purchased Amount',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: palette.onBackground,
-                      ),
-                    ),
-                    Text(
-                      'Total of all purchased items',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: palette.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              RollingDigitText(
-                text: NumberFormatter.formatPrice(_purchasedAmount),
-                style: TextStyle(
-                  fontFamily: 'LibreBaskerville',
-                  fontSize: 21,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.35,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.account_balance_wallet_outlined,
                   color: palette.purchased,
+                  size: 26,
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Purchased Amount',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: palette.onBackground,
+                        ),
+                      ),
+                      Text(
+                        'Total of all purchased items',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: palette.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                RollingDigitText(
+                  text: NumberFormatter.formatPrice(_purchasedAmount),
+                  style: TextStyle(
+                    fontFamily: 'LibreBaskerville',
+                    fontSize: 21,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.35,
+                    color: palette.purchased,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -961,44 +1008,70 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
 class _ReceiptEdgeClipper extends CustomClipper<Path> {
   @override
-  Path getClip(Size size) {
-    const waveWidths = [19.0, 16.0, 21.0, 17.0, 20.0];
-    const waveDepths = [8.0, 10.0, 7.0, 9.0, 8.0];
-    final path = Path()..moveTo(0, 0);
-
-    var x = 0.0;
-    var waveIndex = 0;
-    while (x < size.width) {
-      final width = waveWidths[waveIndex % waveWidths.length];
-      final depth = waveDepths[waveIndex % waveDepths.length];
-      final end = (x + width).clamp(0.0, size.width).toDouble();
-      path.quadraticBezierTo((x + end) / 2, depth, end, 0);
-      x = end;
-      waveIndex++;
-    }
-
-    path.lineTo(size.width, size.height);
-    x = size.width;
-    waveIndex = 0;
-    while (x > 0) {
-      final width = waveWidths[waveIndex % waveWidths.length];
-      final depth = waveDepths[waveIndex % waveDepths.length];
-      final end = (x - width).clamp(0.0, size.width).toDouble();
-      path.quadraticBezierTo(
-        (x + end) / 2,
-        size.height - depth,
-        end,
-        size.height,
-      );
-      x = end;
-      waveIndex++;
-    }
-    path.close();
-    return path;
-  }
+  Path getClip(Size size) => _receiptEdgePath(size);
 
   @override
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+Path _receiptEdgePath(Size size) {
+  const waveWidths = [22.0, 18.0, 25.0, 20.0, 24.0];
+  const waveDepths = [8.0, 11.0, 7.0, 10.0, 8.5];
+  final path = Path()..moveTo(0, 0);
+
+  var x = 0.0;
+  var waveIndex = 0;
+  while (x < size.width) {
+    final width = waveWidths[waveIndex % waveWidths.length];
+    final depth = waveDepths[waveIndex % waveDepths.length];
+    final end = (x + width).clamp(0.0, size.width).toDouble();
+    path.cubicTo(
+      x + (end - x) * 0.22,
+      depth * 0.15,
+      x + (end - x) * 0.62,
+      depth * 1.18,
+      end,
+      0,
+    );
+    x = end;
+    waveIndex++;
+  }
+
+  path.lineTo(size.width, size.height);
+  x = size.width;
+  waveIndex = 0;
+  while (x > 0) {
+    final width = waveWidths[waveIndex % waveWidths.length];
+    final depth = waveDepths[waveIndex % waveDepths.length];
+    final end = (x - width).clamp(0.0, size.width).toDouble();
+    path.cubicTo(
+      x - (x - end) * 0.24,
+      size.height - depth * 0.12,
+      x - (x - end) * 0.64,
+      size.height - depth * 1.12,
+      end,
+      size.height,
+    );
+    x = end;
+    waveIndex++;
+  }
+  return path..close();
+}
+
+class _ReceiptShadowPainter extends CustomPainter {
+  final Color shadowColor;
+
+  const _ReceiptShadowPainter(this.shadowColor);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawShadow(_receiptEdgePath(size), shadowColor, 7, false);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ReceiptShadowPainter oldDelegate) {
+    return oldDelegate.shadowColor != shadowColor;
+  }
 }
 
 class _ItemFlight extends StatelessWidget {
@@ -1030,9 +1103,17 @@ class _ItemFlight extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 14, 10),
+        padding: const EdgeInsets.fromLTRB(2, 9, 14, 9),
         child: Row(
           children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+              child: Icon(
+                Icons.drag_indicator,
+                color: palette.textSecondary.withValues(alpha: 0.55),
+                size: 20,
+              ),
+            ),
             Icon(
               item.isPurchased
                   ? Icons.check_box

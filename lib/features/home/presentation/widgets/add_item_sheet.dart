@@ -5,6 +5,12 @@ import '../../../../core/utils/pricing_calculator.dart';
 import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_item.dart';
 
+class _UnitPickerChoice {
+  final ShoppingUnit? unit;
+
+  const _UnitPickerChoice(this.unit);
+}
+
 class AddItemSheet extends StatefulWidget {
   final int nextPosition;
   final ShoppingItem? initialItem;
@@ -30,6 +36,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
   late final TextEditingController _notesController;
   late final FocusNode _quantityFocusNode;
   late final FocusNode _unitFocusNode;
+  final GlobalKey _unitPickerKey = GlobalKey();
 
   bool _showMoreOptions = false;
   String? _errorText;
@@ -39,6 +46,8 @@ class _AddItemSheetState extends State<AddItemSheet> {
   late ShoppingUnit? _selectedUnit;
   late ShoppingUnit? _selectedPriceBasis;
   PricingResult _calcResult = PricingResult.zero;
+  bool _isUnitMenuOpen = false;
+  bool _openUnitMenuOnFocus = false;
 
   bool get _isEditing => widget.initialItem != null;
 
@@ -61,6 +70,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
     _notesController = TextEditingController(text: item?.notes);
     _quantityFocusNode = FocusNode();
     _unitFocusNode = FocusNode();
+    _unitFocusNode.addListener(_handleUnitFocus);
 
     _pricingMode = item?.pricingMode ?? PricingMode.total;
     _selectedUnit = item?.shoppingUnit;
@@ -93,6 +103,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
     _priceController.dispose();
     _notesController.dispose();
     _quantityFocusNode.dispose();
+    _unitFocusNode.removeListener(_handleUnitFocus);
     _unitFocusNode.dispose();
     super.dispose();
   }
@@ -244,7 +255,61 @@ class _AddItemSheetState extends State<AddItemSheet> {
   }
 
   void _moveToUnitPicker() {
+    _openUnitMenuOnFocus = true;
     FocusScope.of(context).requestFocus(_unitFocusNode);
+  }
+
+  void _handleUnitFocus() {
+    if (mounted) setState(() {});
+    if (_unitFocusNode.hasFocus && _openUnitMenuOnFocus) {
+      _openUnitMenuOnFocus = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openUnitPicker());
+    }
+  }
+
+  Future<void> _openUnitPicker() async {
+    if (!mounted || _isUnitMenuOpen) return;
+    final pickerContext = _unitPickerKey.currentContext;
+    final box = pickerContext?.findRenderObject() as RenderBox?;
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (box == null || overlay == null) return;
+
+    setState(() => _isUnitMenuOpen = true);
+    final origin = box.localToGlobal(Offset.zero, ancestor: overlay);
+    final choice = await showMenu<_UnitPickerChoice>(
+      context: context,
+      position: RelativeRect.fromRect(
+        origin & box.size,
+        Offset.zero & overlay.size,
+      ),
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: [
+        const PopupMenuItem(
+          value: _UnitPickerChoice(null),
+          child: Text('No Unit'),
+        ),
+        ...ShoppingUnit.values.map(
+          (unit) => PopupMenuItem(
+            value: _UnitPickerChoice(unit),
+            child: Text(unit.displayName),
+          ),
+        ),
+      ],
+    );
+
+    if (!mounted) return;
+    _openUnitMenuOnFocus = false;
+    _unitFocusNode.unfocus();
+    setState(() => _isUnitMenuOpen = false);
+    if (choice != null) {
+      setState(() {
+        _selectedUnit = choice.unit;
+        _updatePriceBasisDefault(_selectedUnit);
+        _updateCalculation();
+      });
+    }
   }
 
   @override
@@ -335,34 +400,40 @@ class _AddItemSheetState extends State<AddItemSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 3,
-                  child: DropdownButtonFormField<ShoppingUnit?>(
+                  child: Focus(
                     focusNode: _unitFocusNode,
-                    initialValue: _selectedUnit,
-                    decoration: InputDecoration(
-                      labelText: 'Unit',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      key: _unitPickerKey,
+                      onTap: () {
+                        if (_unitFocusNode.hasFocus) {
+                          _openUnitPicker();
+                        } else {
+                          _openUnitMenuOnFocus = false;
+                          FocusScope.of(context).requestFocus(_unitFocusNode);
+                          _openUnitPicker();
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: InputDecorator(
+                        isFocused: _unitFocusNode.hasFocus,
+                        decoration: InputDecoration(
+                          labelText: 'Unit',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _selectedUnit?.displayName ?? 'No Unit',
+                              ),
+                            ),
+                            const Icon(Icons.arrow_drop_down),
+                          ],
+                        ),
                       ),
                     ),
-                    items: [
-                      const DropdownMenuItem<ShoppingUnit?>(
-                        value: null,
-                        child: Text('No Unit'),
-                      ),
-                      ...ShoppingUnit.values.map((unit) {
-                        return DropdownMenuItem<ShoppingUnit?>(
-                          value: unit,
-                          child: Text(unit.displayName),
-                        );
-                      }),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedUnit = value;
-                        _updatePriceBasisDefault(_selectedUnit);
-                        _updateCalculation();
-                      });
-                    },
                   ),
                 ),
               ],
