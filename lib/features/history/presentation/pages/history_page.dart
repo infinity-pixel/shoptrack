@@ -1,339 +1,249 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/animation/rolling_digit.dart';
+
 import '../../../../core/data/shopping_repository.dart';
-import '../../../../core/utils/number_formatter.dart';
-import '../../../../core/utils/session_grouper.dart';
+import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/session_date_manager.dart';
-import '../../../../models/monthly_summary.dart';
+import '../../../../core/widgets/scroll_aware_fab.dart';
 import '../../../../models/shopping_session.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../widgets/session_card.dart';
 import 'history_search_page.dart';
-import 'monthly_history_page.dart';
 
 class HistoryPage extends StatefulWidget {
-  final Function(DateTime) onSessionSelected;
-
   const HistoryPage({super.key, required this.onSessionSelected});
+
+  final ValueChanged<DateTime> onSessionSelected;
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
 }
 
-class _HistoryPageState extends State<HistoryPage> {
+class _HistoryPageState extends State<HistoryPage>
+    with SingleTickerProviderStateMixin {
   final ShoppingRepository _repository = LocalShoppingRepository();
+  late final ScrollAwareFabController _fabController;
+  late final AnimationController _headingGlowController;
+  late final Animation<double> _headingGlow;
   List<ShoppingSession> _sessions = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _fabController = ScrollAwareFabController();
+    _headingGlowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2100),
+    )..repeat(reverse: true);
+    _headingGlow = CurvedAnimation(
+      parent: _headingGlowController,
+      curve: Curves.easeInOut,
+    );
     _loadSessions();
   }
 
   @override
-  void didUpdateWidget(HistoryPage oldWidget) {
+  void didUpdateWidget(covariant HistoryPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     _loadSessions();
   }
 
+  @override
+  void dispose() {
+    _fabController.dispose();
+    _headingGlowController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadSessions() async {
     final sessions = await _repository.getAllSessions();
-    if (mounted) {
-      setState(() {
-        _sessions = sessions;
-        _isLoading = false;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _sessions = sessions;
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final now = DateTime.now();
-
-    final upcoming = _sessions.where((s) => s.isFuture).toList()
-      ..sort((a, b) => a.date.compareTo(b.date)); // Nearest first
-
-    final todaySessions = _sessions.where((s) => s.isToday).toList();
-
-    final pastCurrentMonth =
-        _sessions
-            .where(
-              (s) =>
-                  s.isPast &&
-                  s.date.year == now.year &&
-                  s.date.month == now.month,
-            )
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
-
-    final monthlyHistory = SessionGrouper.groupIntoMonths(_sessions, now);
+    final upcoming = _sessions.where((session) => session.isFuture).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final today = _sessions.where((session) => session.isToday).toList();
+    final past = _sessions.where((session) => session.isPast).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final pastGroups = _groupPastSessions(past);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('History'), centerTitle: false),
+      appBar: AppBar(
+        centerTitle: false,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.history, color: palette.secondary),
+            const SizedBox(width: 10),
+            const Text('History'),
+          ],
+        ),
+      ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const HistorySearchPage(),
-                ),
-              ),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.search, color: Colors.grey[600]),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Search items...',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          _buildSearchBar(),
           Expanded(
-            child: _sessions.isEmpty
-                ? _buildEmptyState()
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                    children: [
-                      if (upcoming.isNotEmpty) ...[
-                        _buildSectionHeader('UPCOMING', Colors.purple),
-                        ...upcoming.map(
-                          (s) => SessionCard(
-                            session: s,
-                            onTap: () => _openSession(s.date),
-                            onEdit: () => _editSessionDate(s),
-                            onDelete: () => _deleteSession(s),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _fabController.handleNotification,
+              child: _sessions.isEmpty
+                  ? _buildEmptyState()
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
+                      children: [
+                        if (today.isNotEmpty) ...[
+                          _buildSectionHeader(
+                            'TODAY',
+                            palette.today,
+                            animated: true,
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                      if (todaySessions.isNotEmpty) ...[
-                        _buildSectionHeader('TODAY', Colors.blue),
-                        ...todaySessions.map(
-                          (s) => SessionCard(
-                            session: s,
-                            onTap: () => _openSession(s.date),
-                            onEdit: () => _editSessionDate(s),
-                            onDelete: () => _deleteSession(s),
+                          ...today.map(_buildSessionCard),
+                          const SizedBox(height: 16),
+                        ],
+                        if (upcoming.isNotEmpty) ...[
+                          _buildSectionHeader(
+                            'UPCOMING',
+                            palette.planned,
+                            animated: true,
                           ),
-                        ),
-                        const SizedBox(height: 24),
+                          ...upcoming.map(_buildSessionCard),
+                          const SizedBox(height: 16),
+                        ],
+                        for (final entry in pastGroups.entries) ...[
+                          _buildSectionHeader(entry.key, palette.textSecondary),
+                          ...entry.value.map(_buildSessionCard),
+                          const SizedBox(height: 16),
+                        ],
                       ],
-                      if (pastCurrentMonth.isNotEmpty) ...[
-                        _buildSectionHeader('PAST', Colors.grey),
-                        ...pastCurrentMonth.map(
-                          (s) => SessionCard(
-                            session: s,
-                            onTap: () => _openSession(s.date),
-                            onEdit: () => _editSessionDate(s),
-                            onDelete: () => _deleteSession(s),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                      if (monthlyHistory.isNotEmpty) ...[
-                        _buildSectionHeader('MONTHLY HISTORY', Colors.indigo),
-                        ...monthlyHistory.map(
-                          (summary) => _buildMonthlySummaryCard(summary),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    ],
-                  ),
+                    ),
+            ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddCustomDateDialog,
-        child: const Icon(Icons.add),
+      floatingActionButton: ListenableBuilder(
+        listenable: _fabController,
+        builder: (context, _) => DelayedExtendedFab(
+          expanded: _fabController.isExpanded,
+          onPressed: _showAddCustomDateDialog,
+          icon: const _CalendarAddIcon(),
+          label: 'New Date',
+          tooltip: 'Create a past or future date',
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title, Color color) {
-    final bool isTodaySection = title == 'TODAY';
-
+  Widget _buildSearchBar() {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0, top: 8.0),
-      child: Row(
-        children: [
-          Container(
-            padding: isTodaySection
-                ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
-                : null,
-            decoration: isTodaySection
-                ? BoxDecoration(
-                    color: color.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  )
-                : null,
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color.withValues(alpha: 0.7),
-                letterSpacing: 1.2,
-              ),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      child: Material(
+        color: palette.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: palette.border),
+        ),
+        child: InkWell(
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const HistorySearchPage()),
+            );
+            _loadSessions();
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Row(
+              children: [
+                Icon(Icons.search, color: palette.textSecondary),
+                const SizedBox(width: 10),
+                Text(
+                  'Search history',
+                  style: TextStyle(color: palette.textSecondary, fontSize: 15),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Divider(color: color.withValues(alpha: 0.1), thickness: 1),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMonthlySummaryCard(MonthlySummary summary) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
-      ),
-      child: InkWell(
-        onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MonthlyHistoryPage(
-                summary: summary,
-                onSessionSelected: widget.onSessionSelected,
-              ),
-            ),
-          );
-          _loadSessions();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      summary.displayTitle,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Colors.grey,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (summary.purchasedCount > 0)
-                    _buildStatusPill(summary.purchasedStatusText, Colors.green),
-                  if (summary.pendingCount > 0)
-                    _buildStatusPill(summary.pendingStatusText, Colors.red),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Total Purchased',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                  ),
-                  RollingDigitText(
-                    text: NumberFormatter.formatPrice(
-                      summary.totalPurchasedAmount,
-                    ),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildStatusPill(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.2),
-            blurRadius: 4,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: color.withValues(alpha: 0.9),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+  Widget _buildSectionHeader(
+    String title,
+    Color color, {
+    bool animated = false,
+  }) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final animation = animated && !reduceMotion
+        ? _headingGlow
+        : const AlwaysStoppedAnimation(0.35);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 10),
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, _) {
+          final strength = animated ? 0.10 + animation.value * 0.18 : 0.0;
+          return Row(
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  letterSpacing: 1.25,
+                  shadows: animated
+                      ? [
+                          Shadow(
+                            color: color.withValues(alpha: strength),
+                            blurRadius: 4 + animation.value * 4,
+                          ),
+                        ]
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Divider(color: color.withValues(alpha: 0.22))),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildSessionCard(ShoppingSession session) {
+    return SessionCard(
+      key: ValueKey(session.id),
+      session: session,
+      glowAnimation: _headingGlow,
+      onTap: () => _openSession(session.date),
+      onEdit: () => _editSessionDate(session),
+      onDelete: () => _deleteSession(session),
+    );
+  }
+
+  Map<String, List<ShoppingSession>> _groupPastSessions(
+    List<ShoppingSession> sessions,
+  ) {
+    final groups = <String, List<ShoppingSession>>{};
+    for (final session in sessions) {
+      final key = DateFormat('MMMM yyyy').format(session.date).toUpperCase();
+      groups.putIfAbsent(key, () => []).add(session);
+    }
+    return groups;
   }
 
   Future<void> _openSession(DateTime date) async {
@@ -348,7 +258,7 @@ class _HistoryPageState extends State<HistoryPage> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => HomePage(
+        builder: (_) => HomePage(
           sessionDate: date,
           onBackToHistory: () => Navigator.pop(context, true),
           onMoveToToday: () {
@@ -362,33 +272,30 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> _deleteSession(ShoppingSession session) async {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete this date?'),
         content: const Text(
-          'This will permanently delete this shopping record and all of its items. This action cannot be undone.',
+          'This permanently deletes this shopping record and every list inside it.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: palette.pending),
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
             child: const Text('Delete Permanently'),
           ),
         ],
       ),
     );
-
     if (confirmed == true) {
       await _repository.deleteSession(session.id);
-      _loadSessions();
+      await _loadSessions();
     }
   }
 
@@ -402,15 +309,16 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Widget _buildEmptyState() {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     return Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.history, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
+          Icon(Icons.history, size: 56, color: palette.border),
+          const SizedBox(height: 14),
           Text(
             'No shopping history yet',
-            style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            style: TextStyle(color: palette.textSecondary, fontSize: 16),
           ),
         ],
       ),
@@ -418,47 +326,43 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> _showAddCustomDateDialog() async {
+    final palette = ShopTrackThemeTokens.of(context).palette;
     final result = await showModalBottomSheet<String>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Add Custom Date',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.history, color: Colors.blue),
-              title: const Text('Past Date'),
-              onTap: () => Navigator.pop(context, 'past'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_month, color: Colors.purple),
-              title: const Text('Future Date'),
-              onTap: () => Navigator.pop(context, 'future'),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(8, 4, 8, 12),
+                child: Text(
+                  'New Date',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.history, color: palette.secondary),
+                title: const Text('Past Date'),
+                onTap: () => Navigator.pop(context, 'past'),
+              ),
+              ListTile(
+                leading: Icon(Icons.calendar_month, color: palette.planned),
+                title: const Text('Future Date'),
+                onTap: () => Navigator.pop(context, 'future'),
+              ),
+            ],
+          ),
         ),
       ),
     );
-
     if (result == null || !mounted) return;
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-
     final selectedDate = await showDatePicker(
       context: context,
       initialDate: result == 'past'
@@ -471,30 +375,54 @@ class _HistoryPageState extends State<HistoryPage> {
           ? today.subtract(const Duration(days: 1))
           : DateTime(2100),
     );
-
-    if (selectedDate == null) return;
-    if (!mounted) return;
+    if (selectedDate == null || !mounted) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Custom Date'),
+        title: const Text('Create shopping date?'),
         content: Text(DateFormat('d MMMM yyyy').format(selectedDate)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Create'),
           ),
         ],
       ),
     );
+    if (confirmed == true) _openSession(selectedDate);
+  }
+}
 
-    if (confirmed == true) {
-      _openSession(selectedDate);
-    }
+class _CalendarAddIcon extends StatelessWidget {
+  const _CalendarAddIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = ShopTrackThemeTokens.of(context).palette;
+    return SizedBox(
+      width: 26,
+      height: 26,
+      child: Stack(
+        children: [
+          const Icon(Icons.calendar_month_outlined, size: 24),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: palette.onPrimary,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.add, size: 12, color: palette.primary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

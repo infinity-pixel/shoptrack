@@ -1,9 +1,6 @@
 import '../core/utils/pricing_calculator.dart';
 
-enum PricingMode {
-  total,
-  unit,
-}
+enum PricingMode { total, unit }
 
 enum ShoppingUnit {
   kg,
@@ -87,6 +84,7 @@ class ShoppingItem {
 
   // Reordering
   final int position;
+  final String? listId;
 
   const ShoppingItem({
     required this.id,
@@ -102,6 +100,7 @@ class ShoppingItem {
     this.shoppingUnit,
     this.priceBasis,
     this.position = 0,
+    this.listId,
   });
 
   PricingResult get pricing {
@@ -131,6 +130,7 @@ class ShoppingItem {
       'shoppingUnit': shoppingUnit?.name,
       'priceBasis': priceBasis?.name,
       'position': position,
+      'listId': listId,
     };
   }
 
@@ -155,11 +155,10 @@ class ShoppingItem {
             )
           : null,
       priceBasis: json['priceBasis'] != null
-          ? ShoppingUnit.values.firstWhere(
-              (e) => e.name == json['priceBasis'],
-            )
+          ? ShoppingUnit.values.firstWhere((e) => e.name == json['priceBasis'])
           : null,
       position: json['position'] as int? ?? 0,
+      listId: json['listId'] as String?,
     );
   }
 
@@ -177,6 +176,7 @@ class ShoppingItem {
     ShoppingUnit? shoppingUnit,
     ShoppingUnit? priceBasis,
     int? position,
+    String? listId,
   }) {
     return ShoppingItem(
       id: id ?? this.id,
@@ -192,6 +192,7 @@ class ShoppingItem {
       shoppingUnit: shoppingUnit ?? this.shoppingUnit,
       priceBasis: priceBasis ?? this.priceBasis,
       position: position ?? this.position,
+      listId: listId ?? this.listId,
     );
   }
 }

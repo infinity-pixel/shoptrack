@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
+import '../../../../core/widgets/scroll_aware_fab.dart';
 import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_item.dart';
+import '../../../../models/shopping_list_group.dart';
 import '../../../../models/shopping_session.dart';
 import '../../../../services/frequent_items_service.dart';
 import '../widgets/add_item_sheet.dart';
 import '../widgets/shopping_item_tile.dart';
+import '../widgets/shopping_list_switcher.dart';
 
 class HomePage extends StatefulWidget {
   final DateTime? sessionDate;
@@ -39,7 +42,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   List<FrequentItemSuggestion> _frequentSuggestions = [];
   bool _isLoading = true;
   late final ScrollController _scrollController;
-  bool _isFabExpanded = true;
+  late final ScrollAwareFabController _fabController;
+  String _activeListId = ShoppingListGroup.defaultId;
   final Set<String> _transitioningItemIds = <String>{};
   final Map<String, bool> _checkmarkTransitionStates = <String, bool>{};
   final Map<String, GlobalKey> _itemKeys = <String, GlobalKey>{};
@@ -48,7 +52,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _scrollController.addListener(_scrollListener);
+    _fabController = ScrollAwareFabController();
     _frequentItemsService = FrequentItemsService(_repository);
     _loadSession().then((_) {
       if (widget.initialNewItemSuggestion != null && mounted) {
@@ -76,24 +80,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
-  void _scrollListener() {
-    if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.reverse) {
-      if (_isFabExpanded) {
-        setState(() => _isFabExpanded = false);
-      }
-    } else if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.forward) {
-      if (!_isFabExpanded) {
-        setState(() => _isFabExpanded = true);
-      }
-    }
-  }
-
   @override
   void dispose() {
-    _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
+    _fabController.dispose();
     super.dispose();
   }
 
@@ -103,6 +93,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     if (mounted) {
       setState(() {
         _currentSession = session;
+        final listIds = session.orderedLists.map((list) => list.id).toSet();
+        if (!listIds.contains(_activeListId)) {
+          _activeListId = session.orderedLists.first.id;
+        }
         _isLoading = false;
       });
       await _refreshFrequentSuggestions();
@@ -115,9 +109,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddItemSheet(
-        nextPosition: _currentSession.items.length,
+        nextPosition: _activeItems.length,
         frequentSuggestions: _frequentSuggestions,
         initialSuggestion: suggestion,
+        onRemoveFrequentSuggestion: _dismissFrequentSuggestion,
       ),
     );
 
@@ -128,7 +123,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> _refreshFrequentSuggestions() async {
     final suggestions = await _frequentItemsService.getSuggestions(
-      excludeNames: _currentSession.items.map((item) => item.name),
+      excludeNames: _activeItems.map((item) => item.name),
     );
     if (mounted) {
       setState(() {
@@ -142,22 +137,32 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   double get _totalAmount {
-    return _currentSession.items
+    return _activeItems
         .where((i) => !i.isPurchased)
         .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
   }
 
   double get _purchasedAmount {
-    return _currentSession.items
+    return _activeItems
         .where((i) => i.isPurchased)
         .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
   }
 
   Future<void> _addItem(ShoppingItem item) async {
     setState(() {
-      _currentSession.items.add(item);
+      _currentSession.items.add(item.copyWith(listId: _activeListId));
     });
     await _persistSession();
+    await _refreshFrequentSuggestions();
+  }
+
+  List<ShoppingItem> get _activeItems =>
+      _currentSession.itemsForList(_activeListId);
+
+  Future<void> _dismissFrequentSuggestion(
+    FrequentItemSuggestion suggestion,
+  ) async {
+    await _frequentItemsService.dismissSuggestion(suggestion.name);
     await _refreshFrequentSuggestions();
   }
 
@@ -220,15 +225,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ? DateFormat('EEEE, d MMMM yyyy').format(_currentSession.date)
         : DateFormat('EEEE, d MMMM').format(_currentSession.date);
 
+    final activeListItems = _activeItems;
     final activeItems =
-        _currentSession.items.where((i) => !i.isPurchased).toList()
+        activeListItems.where((i) => !i.isPurchased).toList()
           ..sort((a, b) => a.position.compareTo(b.position));
     final purchasedItems =
-        _currentSession.items.where((i) => i.isPurchased).toList()
+        activeListItems.where((i) => i.isPurchased).toList()
           ..sort((a, b) => a.position.compareTo(b.position));
 
     final bool hasItems = _currentSession.items.isNotEmpty;
-    final bool allPurchased = hasItems && activeItems.isEmpty;
+    final bool hasActiveListItems = activeListItems.isNotEmpty;
+    final bool allPurchased =
+        hasActiveListItems && activeItems.isEmpty;
 
     return PopScope(
       canPop: false,
@@ -298,11 +306,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(formattedDate),
+                _buildListSwitcher(),
                 // Content Area
                 Expanded(
-                  child: !hasItems
-                      ? _buildEmptyState()
-                      : ListView(
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: _fabController.handleNotification,
+                    child: !hasActiveListItems
+                        ? _buildEmptyState()
+                        : ListView(
                           controller: _scrollController,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           children: [
@@ -401,7 +412,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             ],
                             const SizedBox(height: 100), // FAB Clearance
                           ],
-                        ),
+                          ),
+                  ),
                 ),
               ],
             ),
@@ -598,20 +610,214 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildListSwitcher() {
+    return ShoppingListSwitcher(
+      lists: _currentSession.orderedLists,
+      activeListId: _activeListId,
+      itemCountForList: (listId) =>
+          _currentSession.itemsForList(listId).length,
+      onSelected: (listId) {
+        if (listId == _activeListId) return;
+        setState(() => _activeListId = listId);
+        _refreshFrequentSuggestions();
+      },
+      onCreate: _createShoppingList,
+      onManage: _showListActions,
+    );
+  }
+
+  Future<void> _createShoppingList() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New shopping list'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            labelText: 'List name',
+            hintText: 'e.g. Grandmother',
+          ),
+          onSubmitted: (value) => Navigator.pop(context, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || name == null || name.isEmpty) return;
+    if (_currentSession.orderedLists.any(
+      (list) => list.name.toLowerCase() == name.toLowerCase(),
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('A list with that name already exists.')),
+      );
+      return;
+    }
+
+    final list = ShoppingListGroup(
+      id: const Uuid().v4(),
+      name: name,
+      position: _currentSession.orderedLists.length,
+    );
+    setState(() {
+      _currentSession = _currentSession.copyWith(
+        lists: [..._currentSession.orderedLists, list],
+      );
+      _activeListId = list.id;
+    });
+    await _persistSession();
+    await _refreshFrequentSuggestions();
+  }
+
+  Future<void> _showListActions(ShoppingListGroup list) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Rename list'),
+              onTap: () => Navigator.pop(context, 'rename'),
+            ),
+            if (_currentSession.orderedLists.length > 1)
+              ListTile(
+                leading: Icon(
+                  Icons.delete_outline,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                title: Text(
+                  'Delete list',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                onTap: () => Navigator.pop(context, 'delete'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (action == 'rename') {
+      await _renameShoppingList(list);
+    } else if (action == 'delete') {
+      await _deleteShoppingList(list);
+    }
+  }
+
+  Future<void> _renameShoppingList(ShoppingListGroup list) async {
+    final controller = TextEditingController(text: list.name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename shopping list'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (value) => Navigator.pop(context, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || name == null || name.isEmpty || name == list.name) return;
+    if (_currentSession.orderedLists.any(
+      (candidate) =>
+          candidate.id != list.id &&
+          candidate.name.toLowerCase() == name.toLowerCase(),
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('A list with that name already exists.')),
+      );
+      return;
+    }
+    setState(() {
+      _currentSession = _currentSession.copyWith(
+        lists: _currentSession.orderedLists
+            .map(
+              (candidate) => candidate.id == list.id
+                  ? candidate.copyWith(name: name)
+                  : candidate,
+            )
+            .toList(),
+      );
+    });
+    await _persistSession();
+  }
+
+  Future<void> _deleteShoppingList(ShoppingListGroup list) async {
+    final itemCount = _currentSession.itemsForList(list.id).length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete ${list.name}?'),
+        content: Text(
+          itemCount == 0
+              ? 'This empty list will be deleted.'
+              : 'This will permanently delete $itemCount ${itemCount == 1 ? 'item' : 'items'} in this list.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final remainingLists = _currentSession.orderedLists
+        .where((candidate) => candidate.id != list.id)
+        .toList();
+    setState(() {
+      _currentSession.items.removeWhere(
+        (item) =>
+            (item.listId ?? ShoppingListGroup.defaultId) == list.id,
+      );
+      _currentSession = _currentSession.copyWith(lists: remainingLists);
+      if (_activeListId == list.id) {
+        _activeListId = remainingLists.first.id;
+      }
+    });
+    await _persistSession();
+    await _refreshFrequentSuggestions();
+  }
+
   Widget _buildFAB() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      width: _isFabExpanded ? 140 : 56,
-      height: 56,
-      child: FloatingActionButton.extended(
+    return ListenableBuilder(
+      listenable: _fabController,
+      builder: (context, _) => DelayedExtendedFab(
+        expanded: _fabController.isExpanded,
         onPressed: () => _openAddSheet(),
-        isExtended: _isFabExpanded,
         icon: const Icon(Icons.add),
-        label: _isFabExpanded
-            ? const Text('Add Item')
-            : const SizedBox.shrink(),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        label: 'Add Item',
+        tooltip: 'Add item',
       ),
     );
   }
@@ -800,9 +1006,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       final today = DateTime.now();
       final todaySession = await _repository.getSessionByDate(today);
 
+      final sourceListId = item.listId ?? ShoppingListGroup.defaultId;
+      final sourceList = _currentSession.orderedLists.firstWhere(
+        (list) => list.id == sourceListId,
+        orElse: () => ShoppingListGroup.defaultList,
+      );
+      final todayLists = List<ShoppingListGroup>.from(
+        todaySession.orderedLists,
+      );
+      if (!todayLists.any((list) => list.id == sourceListId)) {
+        todayLists.add(sourceList.copyWith(position: todayLists.length));
+      }
+
       final movedItem = item.copyWith(
         isPurchased: true,
         position: todaySession.items.length,
+        listId: sourceListId,
       );
 
       setState(() {
@@ -811,7 +1030,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       await _persistSession();
 
       todaySession.items.add(movedItem);
-      await _repository.saveSession(todaySession);
+      await _repository.saveSession(todaySession.copyWith(lists: todayLists));
 
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
@@ -1143,7 +1362,7 @@ class _ItemFlight extends StatelessWidget {
                   ),
                   if (quantity != null || unit != null)
                     Text(
-                      '${NumberFormatter.format(quantity ?? 0)} ${unit ?? ''}'
+                      '${NumberFormatter.formatQuantity(quantity ?? 0, enteredText: item.quantity)} ${unit ?? ''}'
                           .trim(),
                       style: TextStyle(
                         fontSize: 13,

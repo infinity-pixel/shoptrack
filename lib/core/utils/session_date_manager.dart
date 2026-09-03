@@ -33,7 +33,8 @@ class SessionDateManager {
     final todayDate = DateTime(now.year, now.month, now.day);
     final targetDate = DateTime(newDate.year, newDate.month, newDate.day);
     final isMovingToFuture = targetDate.isAfter(todayDate);
-    final isSourceToday = session.date.year == todayDate.year &&
+    final isSourceToday =
+        session.date.year == todayDate.year &&
         session.date.month == todayDate.month &&
         session.date.day == todayDate.day;
 
@@ -98,16 +99,21 @@ class SessionDateManager {
             id: const Uuid().v4(),
             date: targetDate,
             items: pendingItems,
+            lists: session.lists,
           );
           await repository.saveSession(futureSession);
-          
+
           // Update current Today session to keep ONLY purchased items
           await repository.saveSession(session.copyWith(items: purchasedItems));
         } else {
           // All items are purchased. Moving to future results in everything staying in Today.
           // In this case, we don't create a future session, and the user is informed.
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Purchased items stay in Today. No future session created.')),
+            const SnackBar(
+              content: Text(
+                'Purchased items stay in Today. No future session created.',
+              ),
+            ),
           );
           return;
         }
@@ -116,12 +122,20 @@ class SessionDateManager {
         // Move purchased to Today (Merge)
         final todaySession = await repository.getSessionByDate(todayDate);
         final mergedItems = List<ShoppingItem>.from(todaySession.items);
+        final mergedLists = [...todaySession.orderedLists];
+        for (final list in session.orderedLists) {
+          if (!mergedLists.any((candidate) => candidate.id == list.id)) {
+            mergedLists.add(list.copyWith(position: mergedLists.length));
+          }
+        }
         for (var item in purchasedItems) {
           if (!mergedItems.any((it) => it.id == item.id)) {
             mergedItems.add(item.copyWith(position: mergedItems.length));
           }
         }
-        await repository.saveSession(todaySession.copyWith(items: mergedItems));
+        await repository.saveSession(
+          todaySession.copyWith(items: mergedItems, lists: mergedLists),
+        );
 
         // Handle Future part
         if (pendingItems.isNotEmpty) {
@@ -129,6 +143,7 @@ class SessionDateManager {
             id: const Uuid().v4(),
             date: targetDate,
             items: pendingItems,
+            lists: session.lists,
           );
           await repository.saveSession(futureSession);
         }
@@ -136,14 +151,16 @@ class SessionDateManager {
         // Delete old Past session
         await repository.deleteSession(session.id);
       }
-      
+
       onUpdated();
-      
+
       if (context.mounted) {
-        final msg = pendingItems.isNotEmpty 
+        final msg = pendingItems.isNotEmpty
             ? 'Items moved to Today and ${DateFormat('d MMMM').format(targetDate)}'
             : 'All items moved to Today';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     } else {
       // STANDARD MOVE (Past/Today target, or Future target with NO purchased items)
@@ -172,16 +189,20 @@ class SessionDateManager {
 
       if (confirm == true && context.mounted) {
         final updatedSession = session.copyWith(date: targetDate);
-        
+
         // We delete first to avoid any ID vs Date confusion in repository.saveSession
         await repository.deleteSession(session.id);
         await repository.saveSession(updatedSession);
-        
+
         onUpdated();
-        
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Moved to ${DateFormat('d MMMM').format(targetDate)}')),
+            SnackBar(
+              content: Text(
+                'Moved to ${DateFormat('d MMMM').format(targetDate)}',
+              ),
+            ),
           );
         }
       }

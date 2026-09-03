@@ -1,8 +1,11 @@
 import '../core/data/shopping_repository.dart';
 import '../models/frequent_item_suggestion.dart';
 import '../models/shopping_item.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FrequentItemsService {
+  static const String _dismissedSuggestionsKey =
+      'dismissed_frequent_item_suggestions';
   final ShoppingRepository _repository;
 
   FrequentItemsService(this._repository);
@@ -15,6 +18,7 @@ class FrequentItemsService {
     int limit = 8,
   }) async {
     final sessions = await _repository.getAllSessions(includeEmpty: true);
+    final dismissed = await _loadDismissedNames();
     final excluded = excludeNames
         .map((name) => name.trim().toLowerCase())
         .where((name) => name.isNotEmpty)
@@ -25,7 +29,9 @@ class FrequentItemsService {
     for (final session in sessions) {
       for (final item in session.items) {
         final key = item.name.trim().toLowerCase();
-        if (key.isEmpty || excluded.contains(key)) continue;
+        if (key.isEmpty || excluded.contains(key) || dismissed.contains(key)) {
+          continue;
+        }
 
         final existing = grouped[key];
         if (existing == null) {
@@ -61,6 +67,29 @@ class FrequentItemsService {
 
     if (suggestions.length <= limit) return suggestions;
     return suggestions.sublist(0, limit);
+  }
+
+  Future<void> dismissSuggestion(String name) async {
+    final normalized = name.trim().toLowerCase();
+    if (normalized.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final dismissed = await _loadDismissedNames();
+    dismissed.add(normalized);
+    await prefs.setStringList(_dismissedSuggestionsKey, dismissed.toList());
+  }
+
+  Future<Set<String>> _loadDismissedNames() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return (prefs.getStringList(_dismissedSuggestionsKey) ?? const <String>[])
+          .map((name) => name.trim().toLowerCase())
+          .where((name) => name.isNotEmpty)
+          .toSet();
+    } catch (_) {
+      // Pure unit-test or non-platform contexts may not initialize plugins.
+      // Suggestions still work there; persistence is available in the app.
+      return <String>{};
+    }
   }
 }
 

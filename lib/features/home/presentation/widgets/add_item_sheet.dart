@@ -16,6 +16,7 @@ class AddItemSheet extends StatefulWidget {
   final ShoppingItem? initialItem;
   final List<FrequentItemSuggestion> frequentSuggestions;
   final FrequentItemSuggestion? initialSuggestion;
+  final ValueChanged<FrequentItemSuggestion>? onRemoveFrequentSuggestion;
 
   const AddItemSheet({
     super.key,
@@ -23,6 +24,7 @@ class AddItemSheet extends StatefulWidget {
     this.initialItem,
     this.frequentSuggestions = const [],
     this.initialSuggestion,
+    this.onRemoveFrequentSuggestion,
   });
 
   @override
@@ -48,6 +50,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
   PricingResult _calcResult = PricingResult.zero;
   bool _isUnitMenuOpen = false;
   bool _openUnitMenuOnFocus = false;
+  late List<FrequentItemSuggestion> _visibleSuggestions;
 
   bool get _isEditing => widget.initialItem != null;
 
@@ -56,9 +59,17 @@ class _AddItemSheetState extends State<AddItemSheet> {
     super.initState();
 
     final item = widget.initialItem;
+    _visibleSuggestions = List<FrequentItemSuggestion>.from(
+      widget.frequentSuggestions,
+    );
     _nameController = TextEditingController(text: item?.name);
     _quantityController = TextEditingController(
-      text: item?.quantityValue != null ? _formatQty(item!.quantityValue) : '',
+      text: item?.quantityValue != null
+          ? NumberFormatter.formatQuantity(
+              item!.quantityValue!,
+              enteredText: item.quantity,
+            )
+          : '',
     );
     _priceController = TextEditingController(
       text: item?.priceValue != null
@@ -108,10 +119,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
     super.dispose();
   }
 
-  String _formatQty(double? val) {
+  String _formatQty(double? val, {String? enteredText}) {
     if (val == null) return '';
-    if (val == val.toInt()) return val.toInt().toString();
-    return val.toString();
+    return NumberFormatter.formatQuantity(val, enteredText: enteredText);
   }
 
   void _updateCalculation() {
@@ -169,6 +179,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
     final item = ShoppingItem(
       id: widget.initialItem?.id ?? const Uuid().v4(),
       name: name,
+      quantity: _quantityController.text.trim().isEmpty
+          ? null
+          : _quantityController.text.trim(),
       quantityValue: double.tryParse(_quantityController.text),
       priceValue: price,
       pricingMode: _pricingMode,
@@ -177,6 +190,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
       notes: _notesController.text.isEmpty ? null : _notesController.text,
       isPurchased: widget.initialItem?.isPurchased ?? false,
       position: widget.initialItem?.position ?? widget.nextPosition,
+      listId: widget.initialItem?.listId,
     );
 
     Navigator.pop(context, item);
@@ -186,7 +200,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
     final item = suggestion.latestItem;
     _nameController.text = item.name;
     _quantityController.text = item.quantityValue != null
-        ? _formatQty(item.quantityValue)
+        ? _formatQty(item.quantityValue, enteredText: item.quantity)
         : '';
     _priceController.text = item.priceValue != null
         ? item.priceValue!.toStringAsFixed(
@@ -213,6 +227,39 @@ class _AddItemSheetState extends State<AddItemSheet> {
       }
     });
     _updateCalculation();
+  }
+
+  Future<void> _showSuggestionMenu(
+    FrequentItemSuggestion suggestion,
+    LongPressStartDetails details,
+  ) async {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final position = RelativeRect.fromLTRB(
+      details.globalPosition.dx,
+      details.globalPosition.dy,
+      overlay.size.width - details.globalPosition.dx,
+      overlay.size.height - details.globalPosition.dy,
+    );
+    final action = await showMenu<String>(
+      context: context,
+      position: position,
+      items: const [
+        PopupMenuItem<String>(
+          value: 'remove',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.delete_outline),
+              SizedBox(width: 8),
+              Text('Remove'),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (action != 'remove' || !mounted) return;
+    setState(() => _visibleSuggestions.remove(suggestion));
+    widget.onRemoveFrequentSuggestion?.call(suggestion);
   }
 
   Future<void> _onDelete() async {
@@ -438,7 +485,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                 ),
               ],
             ),
-            if (!_isEditing && widget.frequentSuggestions.isNotEmpty) ...[
+            if (!_isEditing && _visibleSuggestions.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
                 'Often Bought',
@@ -452,10 +499,19 @@ class _AddItemSheetState extends State<AddItemSheet> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: widget.frequentSuggestions.map((suggestion) {
-                  return ActionChip(
-                    label: Text(suggestion.name),
-                    onPressed: () => _applySuggestion(suggestion),
+                children: _visibleSuggestions.map((suggestion) {
+                  return GestureDetector(
+                    onLongPressStart: (details) =>
+                        _showSuggestionMenu(suggestion, details),
+                    child: Semantics(
+                      button: true,
+                      label: suggestion.name,
+                      hint: 'Long press to remove this suggestion',
+                      child: ActionChip(
+                        label: Text(suggestion.name),
+                        onPressed: () => _applySuggestion(suggestion),
+                      ),
+                    ),
                   );
                 }).toList(),
               ),

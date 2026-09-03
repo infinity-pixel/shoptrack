@@ -156,7 +156,7 @@ class ShoppingItemTile extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 0),
                           child: Text(
-                            '${NumberFormatter.format(displayQty ?? 0)} ${displayUnit ?? ''}'
+                            '${NumberFormatter.formatQuantity(displayQty ?? 0, enteredText: item.quantity)} ${displayUnit ?? ''}'
                                 .trim(),
                             style: TextStyle(
                               fontSize: 13,
