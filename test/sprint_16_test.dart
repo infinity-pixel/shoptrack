@@ -211,6 +211,48 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('New-list dialog closes safely when cancelled', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemePresets.lightPresets.values.first.toThemeData(),
+        home: HomePage(sessionDate: DateTime(2026, 9, 13)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.playlist_add));
+    await tester.pumpAndSettle();
+    expect(find.text('New shopping list'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('New shopping list'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('New-list dialog creates and closes safely', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemePresets.lightPresets.values.first.toThemeData(),
+        home: HomePage(sessionDate: DateTime(2026, 9, 13)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.playlist_add));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Grandmother');
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('New shopping list'), findsNothing);
+    expect(find.widgetWithText(ChoiceChip, 'Grandmother  0'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('FAB ignores programmatic scrolling and waits for user travel', (
     tester,
   ) async {

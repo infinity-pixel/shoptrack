@@ -31,7 +31,7 @@ class ShoppingListSwitcher extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(left: 16, right: 6),
+              padding: const EdgeInsets.only(left: 16, right: 6, bottom: 9),
               itemCount: lists.length,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {

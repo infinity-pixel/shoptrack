@@ -13,6 +13,7 @@ import '../../../../models/shopping_session.dart';
 import '../../../../services/frequent_items_service.dart';
 import '../widgets/add_item_sheet.dart';
 import '../widgets/shopping_item_tile.dart';
+import '../widgets/shopping_list_name_dialog.dart';
 import '../widgets/shopping_list_switcher.dart';
 
 class HomePage extends StatefulWidget {
@@ -627,35 +628,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _createShoppingList() async {
-    final controller = TextEditingController();
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New shopping list'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          textInputAction: TextInputAction.done,
-          decoration: const InputDecoration(
-            labelText: 'List name',
-            hintText: 'e.g. Grandmother',
-          ),
-          onSubmitted: (value) => Navigator.pop(context, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Create'),
-          ),
-        ],
+      builder: (_) => const ShoppingListNameDialog(
+        title: 'New shopping list',
+        actionLabel: 'Create',
+        hintText: 'e.g. Grandmother',
       ),
     );
-    controller.dispose();
     if (!mounted || name == null || name.isEmpty) return;
     if (_currentSession.orderedLists.any(
       (list) => list.name.toLowerCase() == name.toLowerCase(),
@@ -718,31 +698,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _renameShoppingList(ShoppingListGroup list) async {
-    final controller = TextEditingController(text: list.name);
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rename shopping list'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (value) => Navigator.pop(context, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (_) => ShoppingListNameDialog(
+        title: 'Rename shopping list',
+        actionLabel: 'Save',
+        initialName: list.name,
       ),
     );
-    controller.dispose();
     if (!mounted || name == null || name.isEmpty || name == list.name) return;
     if (_currentSession.orderedLists.any(
       (candidate) =>
