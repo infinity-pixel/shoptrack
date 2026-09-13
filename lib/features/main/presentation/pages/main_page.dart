@@ -89,6 +89,11 @@ class _MainPageState extends State<MainPage> {
 
   Widget _buildHistoryTab() {
     return HistoryPage(
+      onTabSelected: (index) => setState(() {
+        _currentIndex = index;
+        _selectedHistoricalDate = null;
+        _homeRefreshRevision++;
+      }),
       onSessionSelected: (date) {
         final now = DateTime.now();
         final isToday =

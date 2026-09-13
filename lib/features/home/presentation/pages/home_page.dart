@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/record_hero.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/animation/rolling_digit.dart';
@@ -258,7 +259,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         }
       },
       child: Scaffold(
-        appBar: widget.onBackToHistory != null
+        appBar: widget.onBackToHistory != null && _currentSession.isToday
             ? AppBar(
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back),
@@ -306,7 +307,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(formattedDate),
+                if (!_currentSession.isToday && widget.onBackToHistory != null)
+                  RecordHero(date: _currentSession.date, onBack: () async {
+                    if (!hasItems) {
+                      final discard = await _showDiscardWarning();
+                      if (!discard || !mounted) return;
+                    }
+                    widget.onBackToHistory!();
+                  })
+                else
+                  _buildHeader(formattedDate),
                 _buildListSwitcher(),
                 // Content Area
                 Expanded(

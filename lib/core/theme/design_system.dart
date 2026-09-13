@@ -63,6 +63,11 @@ class ShopTrackPalette {
 
   // Semantic Status Colors
   final Color purchased;
+  /// Lighter status ink, independent of the stronger monetary total.
+  Color get purchasedStatus {
+    final hsl = HSLColor.fromColor(purchased);
+    return hsl.withLightness((hsl.lightness + 0.08).clamp(0.0, 0.75)).toColor();
+  }
   final Color pending;
   final Color planned;
   final Color today;

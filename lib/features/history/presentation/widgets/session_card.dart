@@ -179,7 +179,7 @@ class SessionCard extends StatelessWidget {
       if (session.purchasedCount > 0)
         _GlowingStatus(
           animation: animation,
-          color: palette.purchased,
+          color: palette.purchasedStatus,
           text: '${session.purchasedCount} Purchased',
         ),
       if (session.pendingCount > 0)

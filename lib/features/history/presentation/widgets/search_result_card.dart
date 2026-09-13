@@ -1,0 +1,122 @@
+import 'package:flutter/material.dart';
+import '../../../../core/theme/theme_presets.dart';
+import '../../../../core/utils/number_formatter.dart';
+import '../../../../models/shopping_search_result.dart';
+
+class SearchResultCard extends StatelessWidget {
+  const SearchResultCard({
+    super.key,
+    required this.result,
+    required this.onTap,
+  });
+  final ShoppingSearchResult result;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final p = ShopTrackThemeTokens.of(context).palette;
+    final color = switch (result.status) {
+      SearchItemStatus.purchased => p.purchasedStatus,
+      SearchItemStatus.pending => p.pending,
+      SearchItemStatus.planned => p.planned,
+    };
+    final item = result.item;
+    final quantity =
+        item.quantity ??
+        (item.quantityValue == null
+            ? ''
+            : NumberFormatter.format(item.quantityValue!));
+    final unit = item.shoppingUnit?.symbol ?? item.unit ?? '';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      color: p.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: p.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                decoration: BoxDecoration(
+                  border: Border.all(color: p.textSecondary),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(height: 3, color: p.textSecondary),
+                    Text(
+                      '${result.session.date.day}',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: p.onBackground,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 56,
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                color: p.border,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: p.onBackground,
+                      ),
+                    ),
+                    if ('$quantity $unit'.trim().isNotEmpty)
+                      Text(
+                        '$quantity $unit'.trim(),
+                        style: TextStyle(color: p.textSecondary),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '● ${result.statusLabel}',
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  result.status == SearchItemStatus.purchased &&
+                          item.priceValue != null
+                      ? NumberFormatter.formatPrice(item.pricing.totalPrice)
+                      : '—',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: result.status == SearchItemStatus.purchased
+                        ? p.purchased
+                        : p.textSecondary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -66,10 +66,16 @@ class ShoppingListSwitcher extends StatelessWidget {
               },
             ),
           ),
-          IconButton(
+          OutlinedButton.icon(
             onPressed: onCreate,
-            tooltip: 'New shopping list',
             icon: Icon(Icons.playlist_add, color: palette.secondary),
+            label: const Text('New List'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: palette.secondary,
+              backgroundColor: palette.surface,
+              side: BorderSide(color: palette.secondary),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
           ),
           const SizedBox(width: 8),
         ],

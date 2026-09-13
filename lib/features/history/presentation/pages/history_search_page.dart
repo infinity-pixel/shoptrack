@@ -1,496 +1,342 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
-import '../../../../core/utils/number_formatter.dart';
+import '../../../../core/theme/theme_presets.dart';
 import '../../../../models/frequent_item_suggestion.dart';
-import '../../../../models/shopping_item.dart';
 import '../../../../models/shopping_search_result.dart';
 import '../../../../services/frequent_items_service.dart';
 import '../../../../services/search_service.dart';
 import '../../../home/presentation/pages/home_page.dart';
+import '../widgets/search_result_card.dart';
 import '../widgets/smart_date_range_picker.dart';
 
 class HistorySearchPage extends StatefulWidget {
-  const HistorySearchPage({super.key});
-
+  const HistorySearchPage({super.key, this.onTabSelected});
+  final ValueChanged<int>? onTabSelected;
   @override
   State<HistorySearchPage> createState() => _HistorySearchPageState();
 }
 
 class _HistorySearchPageState extends State<HistorySearchPage> {
-  final TextEditingController _searchController = TextEditingController();
-  final SearchService _searchService = SearchService(LocalShoppingRepository());
-  final FrequentItemsService _frequentItemsService = FrequentItemsService(
-    LocalShoppingRepository(),
-  );
-
+  final _searchController = TextEditingController();
+  final _searchService = SearchService(LocalShoppingRepository());
+  final _frequent = FrequentItemsService(LocalShoppingRepository());
   List<ShoppingSearchResult> _results = [];
-  List<FrequentItemSuggestion> _oftenBought = [];
-  bool _isSearching = false;
-
-  // Filters
-  SearchItemStatus? _statusFilter;
-  DateTimeRange? _dateRange;
-
+  List<FrequentItemSuggestion> _suggestions = [];
+  SearchItemStatus? _status;
+  DateTimeRange? _range;
   Timer? _debounce;
-
+  int _request = 0;
+  bool _loading = false;
+  String? _error;
   @override
   void initState() {
     super.initState();
-    _loadOftenBought();
+    _loadSuggestions();
+  }
+
+  Future<void> _loadSuggestions() async {
+    try {
+      final values = await _frequent.getSuggestions(limit: 5);
+      if (mounted) setState(() => _suggestions = values);
+    } catch (_) {
+      /* Search remains available. */
+    }
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
     _debounce?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadOftenBought() async {
-    final items = await _frequentItemsService.getSuggestions(limit: 5);
-    if (mounted) {
-      setState(() {
-        _oftenBought = items;
-      });
-    }
-  }
-
-  void _onSearchChanged(String query) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      _performSearch();
-    });
-  }
-
-  Future<void> _performSearch() async {
-    final query = _searchController.text;
-
-    if (query.trim().isEmpty && _statusFilter == null && _dateRange == null) {
+  bool get _active =>
+      _searchController.text.trim().isNotEmpty ||
+      _status != null ||
+      _range != null;
+  Future<void> _search() async {
+    _debounce?.cancel();
+    final request = ++_request;
+    if (!mounted) return;
+    if (!_active) {
       setState(() {
         _results = [];
-        _isSearching = false;
+        _loading = false;
+        _error = null;
       });
       return;
     }
-
-    setState(() => _isSearching = true);
-    final results = await _searchService.searchItems(
-      query: query,
-      statusFilter: _statusFilter,
-      dateRange: _dateRange,
-    );
-
-    if (mounted) {
-      setState(() {
-        _results = results;
-        _isSearching = false;
-      });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final results = await _searchService.searchItems(
+        query: _searchController.text,
+        statusFilter: _status,
+        dateRange: _range,
+      );
+      if (mounted && request == _request) {
+        setState(() {
+          _results = results;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted && request == _request) {
+        setState(() {
+          _loading = false;
+          _error = 'Could not load history. Please try again.';
+        });
+      }
     }
   }
 
-  void _resetFilters() {
-    setState(() {
-      _statusFilter = null;
-      _dateRange = null;
-    });
-    _performSearch();
-  }
-
-  Future<void> _selectDateRange() async {
-    final DateTimeRange? picked = await showModalBottomSheet<DateTimeRange>(
+  Future<void> _pickRange() async {
+    FocusScope.of(context).unfocus();
+    final selection = await showModalBottomSheet<DateRangeSelection>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => SmartDateRangePicker(initialRange: _dateRange),
+      builder: (_) => SmartDateRangePicker(initialRange: _range),
     );
+    if (!mounted || selection == null) return;
+    setState(() => _range = selection.range);
+    _search();
+  }
 
-    if (picked != null && picked != _dateRange) {
-      setState(() {
-        _dateRange = picked;
-      });
-      _performSearch();
-    }
+  Future<void> _open(ShoppingSearchResult result) async {
+    FocusScope.of(context).unfocus();
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (routeContext) => HomePage(
+          sessionDate: result.session.date,
+          onBackToHistory: () => Navigator.pop(routeContext),
+        ),
+      ),
+    );
+    if (mounted) _search();
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool hasActiveFilters = _statusFilter != null || _dateRange != null;
-
+    final p = ShopTrackThemeTokens.of(context).palette;
     return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 0,
-        title: Padding(
-          padding: const EdgeInsets.only(right: 16.0),
-          child: TextField(
-            controller: _searchController,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: 'Search items...',
-              border: InputBorder.none,
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        _performSearch();
-                      },
-                    )
-                  : null,
-            ),
-            onChanged: _onSearchChanged,
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          _buildFilterBar(),
-          if (hasActiveFilters) _buildActiveFilterBadges(),
-          const Divider(height: 1),
-          if (_results.isNotEmpty && !_isSearching)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Row(
-                children: [
-                  Text(
-                    '${_results.length} ${_results.length == 1 ? 'result' : 'results'}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(child: _buildBody()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterBar() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          _buildFilterChip('All', null),
-          const SizedBox(width: 8),
-          _buildFilterChip('Pending', SearchItemStatus.pending),
-          const SizedBox(width: 8),
-          _buildFilterChip('Purchased', SearchItemStatus.purchased),
-          const SizedBox(width: 8),
-          _buildFilterChip('Planned', SearchItemStatus.planned),
-          const VerticalDivider(width: 24),
-          ActionChip(
-            avatar: Icon(
-              Icons.calendar_today,
-              size: 16,
-              color: _dateRange != null ? Colors.blue : Colors.grey[600],
-            ),
-            label: Text(
-              _dateRange == null ? 'Date Range' : _formatRangeLabel(),
-              style: TextStyle(
-                color: _dateRange != null ? Colors.blue : null,
-                fontWeight: _dateRange != null ? FontWeight.bold : null,
-              ),
-            ),
-            onPressed: _selectDateRange,
-          ),
-          if (_statusFilter != null || _dateRange != null) ...[
-            const SizedBox(width: 8),
-            TextButton(onPressed: _resetFilters, child: const Text('Reset')),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, SearchItemStatus? status) {
-    final bool isSelected = _statusFilter == status;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (bool selected) {
-        setState(() {
-          _statusFilter = selected ? status : null;
-        });
-        _performSearch();
-      },
-    );
-  }
-
-  Widget _buildActiveFilterBadges() {
-    if (_dateRange == null) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Row(
-        children: [
-          Chip(
-            label: Text(
-              _formatRangeLabel(),
-              style: const TextStyle(fontSize: 12),
-            ),
-            onDeleted: () {
-              setState(() => _dateRange = null);
-              _performSearch();
-            },
-            deleteIconColor: Colors.blue,
-            backgroundColor: Colors.blue[50],
-            side: BorderSide.none,
-            visualDensity: VisualDensity.compact,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatRangeLabel() {
-    if (_dateRange == null) return '';
-    final df = DateFormat('d MMM');
-    return '${df.format(_dateRange!.start)} - ${df.format(_dateRange!.end)}';
-  }
-
-  Widget _buildBody() {
-    if (_isSearching) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final query = _searchController.text.trim();
-    if (query.isEmpty && _statusFilter == null && _dateRange == null) {
-      return _buildInitialState();
-    }
-
-    if (_results.isEmpty) {
-      return _buildEmptyState(
-        'No matching items found',
-        'You may refine the search or filters.',
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _results.length,
-      itemBuilder: (context, index) {
-        final result = _results[index];
-        return _buildResultCard(result);
-      },
-    );
-  }
-
-  Widget _buildInitialState() {
-    return ListView(
-      children: [
-        if (_oftenBought.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Text(
-              'Frequently Purchased',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[800],
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-          ..._oftenBought.map(
-            (suggestion) => ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Colors.green,
-                radius: 16,
-                child: Icon(Icons.history, size: 16, color: Colors.white),
-              ),
-              title: Text(
-                suggestion.name,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text(_getOftenBoughtSubtitle(suggestion)),
-              onTap: () => _searchPurchasedDates(suggestion),
-            ),
-          ),
-        ],
-        _buildEmptyState(
-          'Search your shopping history',
-          'Type to search for items or use filters.',
-        ),
-      ],
-    );
-  }
-
-  String _getOftenBoughtSubtitle(FrequentItemSuggestion suggestion) {
-    final item = suggestion.latestItem;
-    String details = '';
-    if (item.quantityValue != null && item.shoppingUnit != null) {
-      details +=
-          '${NumberFormatter.format(item.quantityValue!)} ${item.shoppingUnit!.symbol} • ';
-    }
-    if (item.priceValue != null) {
-      details += 'Last price ${NumberFormatter.formatPrice(item.priceValue!)}';
-    } else {
-      details += 'No previous price';
-    }
-    return details;
-  }
-
-  void _searchPurchasedDates(FrequentItemSuggestion suggestion) {
-    _debounce?.cancel();
-    _searchController.text = suggestion.name;
-    setState(() {
-      _statusFilter = SearchItemStatus.purchased;
-      _dateRange = null;
-    });
-    FocusScope.of(context).unfocus();
-    _performSearch();
-  }
-
-  Widget _buildResultCard(ShoppingSearchResult result) {
-    final item = result.item;
-    final session = result.session;
-
-    return InkWell(
-      onTap: () => _navigateToSession(session.date),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('d MMMM yyyy').format(session.date),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                    ],
-                  ),
+      bottomNavigationBar: widget.onTabSelected == null
+          ? null
+          : BottomNavigationBar(
+              currentIndex: 1,
+              onTap: (index) {
+                Navigator.pop(context);
+                widget.onTabSelected!(index);
+              },
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.description),
+                  label: 'Lists',
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    RollingDigitText(
-                      text: NumberFormatter.formatPrice(
-                        item.pricing.totalPrice,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _getPriceSubtitle(result),
-                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                    ),
-                  ],
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.history),
+                  label: 'History',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.manage_accounts_outlined),
+                  label: 'Account',
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            _buildStatusIndicator(result),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getPriceSubtitle(ShoppingSearchResult result) {
-    final pricing = result.item.pricing;
-    if (result.item.pricingMode == PricingMode.total) {
-      return 'Total Amount';
-    } else {
-      return '${NumberFormatter.formatPrice(pricing.unitPrice)}/${pricing.priceBasisSymbol}';
-    }
-  }
-
-  Widget _buildStatusIndicator(ShoppingSearchResult result) {
-    Color color;
-    switch (result.status) {
-      case SearchItemStatus.purchased:
-        color = Colors.green;
-        break;
-      case SearchItemStatus.pending:
-        color = Colors.red;
-        break;
-      case SearchItemStatus.planned:
-        color = Colors.purple;
-        break;
-    }
-
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          result.statusLabel,
-          style: TextStyle(
-            color: color.withValues(alpha: 0.8),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+      backgroundColor: p.background,
+      appBar: AppBar(title: const Text('Search History')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search items',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: p.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          _searchController.clear();
+                          _search();
+                        },
+                      ),
+              ),
+              onChanged: (_) {
+                ++_request;
+                setState(() {});
+                _debounce?.cancel();
+                _debounce = Timer(const Duration(milliseconds: 300), _search);
+              },
+              onSubmitted: (_) => _search(),
+            ),
           ),
-        ),
-      ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                for (final status in [null, ...SearchItemStatus.values])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      selected: _status == status,
+                      showCheckmark: false,
+                      avatar: status == null
+                          ? null
+                          : Icon(
+                              Icons.circle,
+                              size: 10,
+                              color: switch (status) {
+                                SearchItemStatus.purchased => p.purchasedStatus,
+                                SearchItemStatus.pending => p.pending,
+                                _ => p.planned,
+                              },
+                            ),
+                      label: Text(switch (status) {
+                        null => 'All',
+                        SearchItemStatus.purchased => 'Purchased',
+                        SearchItemStatus.pending => 'Pending',
+                        _ => 'Planned',
+                      }),
+                      onSelected: (_) {
+                        setState(
+                          () => _status = _status == status ? null : status,
+                        );
+                        _search();
+                      },
+                    ),
+                  ),
+                ActionChip(
+                  avatar: const Icon(Icons.date_range, size: 18),
+                  label: const Text('Date Range'),
+                  onPressed: _pickRange,
+                ),
+              ],
+            ),
+          ),
+          if (_range != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: InputChip(
+                  label: Text(
+                    '${DateFormat.yMMMd().format(_range!.start)} — ${DateFormat.yMMMd().format(_range!.end)}',
+                    maxLines: 2,
+                  ),
+                  onDeleted: () {
+                    setState(() => _range = null);
+                    _search();
+                  },
+                ),
+              ),
+            ),
+          Expanded(child: _body()),
+        ],
+      ),
     );
   }
 
-  Widget _buildEmptyState(String title, String subtitle) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 16),
+  Widget _body() {
+    final p = ShopTrackThemeTokens.of(context).palette;
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(
+        child: TextButton(onPressed: _search, child: Text(_error!)),
+      );
+    }
+    if (!_active) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Find items across your shopping dates',
+            style: TextStyle(color: p.textSecondary),
+          ),
+          if (_suggestions.isNotEmpty) ...[
+            const SizedBox(height: 20),
             Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              'Frequently Purchased',
+              style: TextStyle(
+                color: p.onBackground,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+            for (final suggestion in _suggestions)
+              ListTile(
+                leading: Icon(Icons.history, color: p.purchasedStatus),
+                title: Text(suggestion.name),
+                trailing: const Icon(Icons.search),
+                onTap: () {
+                  _searchController.text = suggestion.name;
+                  setState(() => _status = SearchItemStatus.purchased);
+                  _search();
+                },
+              ),
           ],
-        ),
-      ),
+        ],
+      );
+    }
+    return ListView.builder(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.all(16),
+      itemCount: _results.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              _results.isEmpty
+                  ? 'No matching items. Try another search or filter.'
+                  : '${_results.length} ${_results.length == 1 ? 'result' : 'results'}',
+              style: TextStyle(color: p.textSecondary),
+            ),
+          );
+        }
+        final result = _results[index - 1];
+        final date = result.session.date;
+        final previous = index > 1 ? _results[index - 2].session.date : null;
+        return Column(
+          children: [
+            if (previous == null ||
+                previous.month != date.month ||
+                previous.year != date.year)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        DateFormat.yMMMM().format(date).toUpperCase(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: p.onBackground,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Divider(color: p.border)),
+                  ],
+                ),
+              ),
+            SearchResultCard(result: result, onTap: () => _open(result)),
+          ],
+        );
+      },
     );
-  }
-
-  void _navigateToSession(DateTime date) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomePage(
-          sessionDate: date,
-          onBackToHistory: () => Navigator.pop(context),
-        ),
-      ),
-    );
-    // Refresh search results when returning in case item was edited/deleted
-    _performSearch();
   }
 }

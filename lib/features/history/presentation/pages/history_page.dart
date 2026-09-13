@@ -11,9 +11,10 @@ import '../widgets/session_card.dart';
 import 'history_search_page.dart';
 
 class HistoryPage extends StatefulWidget {
-  const HistoryPage({super.key, required this.onSessionSelected});
+  const HistoryPage({super.key, required this.onSessionSelected, this.onTabSelected});
 
   final ValueChanged<DateTime> onSessionSelected;
+  final ValueChanged<int>? onTabSelected;
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
@@ -158,7 +159,7 @@ class _HistoryPageState extends State<HistoryPage>
           onTap: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const HistorySearchPage()),
+              MaterialPageRoute(builder: (_) => HistorySearchPage(onTabSelected: widget.onTabSelected)),
             );
             _loadSessions();
           },

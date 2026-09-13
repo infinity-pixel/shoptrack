@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../utils/date_parser.dart';
-import '../utils/date_input_formatter.dart';
+import 'date_parts_field.dart';
 
 class ShopTrackDatePicker extends StatefulWidget {
   final DateTime initialDate;
@@ -49,7 +48,6 @@ class ShopTrackDatePicker extends StatefulWidget {
 class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
   late DateTime _selectedDate;
   late DateTime _displayedMonth;
-  late TextEditingController _inputController;
   String? _errorText;
 
   @override
@@ -57,28 +55,23 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
     super.initState();
     _selectedDate = widget.initialDate;
     _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month);
-    _inputController = TextEditingController(text: DateParser.format(_selectedDate));
-  }
-
-  @override
-  void dispose() {
-    _inputController.dispose();
-    super.dispose();
   }
 
   void _onDateSelected(DateTime date) {
-    if (date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate)) return;
+    if (date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate)) {
+      return;
+    }
     setState(() {
       _selectedDate = date;
-      _inputController.text = DateParser.format(date);
+      _displayedMonth = DateTime(date.year, date.month);
       _errorText = null;
     });
   }
 
-  void _onManualInput(String value) {
-    final parsed = DateParser.parse(value);
+  void _onManualInput(DateTime? parsed) {
     if (parsed != null) {
-      if (parsed.isBefore(widget.firstDate) || parsed.isAfter(widget.lastDate)) {
+      if (parsed.isBefore(widget.firstDate) ||
+          parsed.isAfter(widget.lastDate)) {
         setState(() => _errorText = 'Date out of range');
         return;
       }
@@ -88,13 +81,16 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
         _errorText = null;
       });
     } else {
-      setState(() => _errorText = 'Invalid format (d/m/yyyy)');
+      setState(() => _errorText = 'Enter a valid day, month and year.');
     }
   }
 
   void _changeMonth(int offset) {
     setState(() {
-      _displayedMonth = DateTime(_displayedMonth.year, _displayedMonth.month + offset);
+      _displayedMonth = DateTime(
+        _displayedMonth.year,
+        _displayedMonth.month + offset,
+      );
     });
   }
 
@@ -109,9 +105,14 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                widget.helpText,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              Expanded(
+                child: Text(
+                  widget.helpText,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
@@ -120,12 +121,31 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildManualInput(),
-          const SizedBox(height: 16),
-          _buildCalendarHeader(),
-          const SizedBox(height: 8),
-          _buildCalendarGrid(),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 16),
+                  DatePartsField(
+                    date: _selectedDate,
+                    onChanged: _onManualInput,
+                  ),
+                  if (_errorText != null)
+                    Text(
+                      _errorText!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  _buildCalendarHeader(),
+                  const SizedBox(height: 8),
+                  _buildCalendarGrid(),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -136,10 +156,12 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
               ),
               const SizedBox(width: 8),
               ElevatedButton(
-                onPressed: _errorText == null ? () => Navigator.pop(context, _selectedDate) : null,
+                onPressed: _errorText == null
+                    ? () => Navigator.pop(context, _selectedDate)
+                    : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   elevation: 0,
                 ),
                 child: Text(widget.confirmText),
@@ -151,23 +173,6 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
     );
   }
 
-  Widget _buildManualInput() {
-    return TextField(
-      controller: _inputController,
-      keyboardType: TextInputType.datetime,
-      inputFormatters: [DateInputFormatter()],
-      decoration: InputDecoration(
-        labelText: 'Manual Entry',
-        hintText: 'd/m/yyyy',
-        errorText: _errorText,
-        prefixIcon: const Icon(Icons.edit_calendar, size: 20),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-      onChanged: _onManualInput,
-    );
-  }
-
   Widget _buildCalendarHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -176,9 +181,12 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
           onPressed: () => _changeMonth(-1),
           icon: const Icon(Icons.chevron_left),
         ),
-        Text(
-          DateFormat('MMMM yyyy').format(_displayedMonth),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        Expanded(
+          child: Text(
+            DateFormat('MMMM yyyy').format(_displayedMonth),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
         ),
         IconButton(
           onPressed: () => _changeMonth(1),
@@ -190,9 +198,14 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
 
   Widget _buildCalendarGrid() {
     final firstDay = DateTime(_displayedMonth.year, _displayedMonth.month, 1);
-    final lastDay = DateTime(_displayedMonth.year, _displayedMonth.month + 1, 0);
+    final lastDay = DateTime(
+      _displayedMonth.year,
+      _displayedMonth.month + 1,
+      0,
+    );
     final daysInMonth = lastDay.day;
-    final weekdayOfFirstDay = firstDay.weekday % 7; // Sunday is 0 if we want it to be
+    final weekdayOfFirstDay =
+        firstDay.weekday % 7; // Sunday is 0 if we want it to be
 
     final List<Widget> dayWidgets = [];
 
@@ -203,7 +216,11 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
         Center(
           child: Text(
             day,
-            style: TextStyle(color: Colors.grey[600], fontSize: 12, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       );
@@ -217,10 +234,12 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
     // Days of the month
     for (int day = 1; day <= daysInMonth; day++) {
       final date = DateTime(_displayedMonth.year, _displayedMonth.month, day);
-      final isSelected = date.year == _selectedDate.year &&
+      final isSelected =
+          date.year == _selectedDate.year &&
           date.month == _selectedDate.month &&
           date.day == _selectedDate.day;
-      final isDisabled = date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate);
+      final isDisabled =
+          date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate);
 
       dayWidgets.add(
         InkWell(
@@ -228,7 +247,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
           borderRadius: BorderRadius.circular(20),
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected ? Colors.blue : null,
+              color: isSelected ? Theme.of(context).colorScheme.primary : null,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -236,8 +255,10 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
                 day.toString(),
                 style: TextStyle(
                   color: isSelected
-                      ? Colors.white
-                      : (isDisabled ? Colors.grey[300] : Colors.black87),
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : (isDisabled
+                            ? Theme.of(context).disabledColor
+                            : Theme.of(context).colorScheme.onSurface),
                   fontWeight: isSelected ? FontWeight.bold : null,
                 ),
               ),
