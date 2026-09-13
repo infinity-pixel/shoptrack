@@ -33,6 +33,11 @@ class AuthLoading extends AuthState {
   const AuthLoading();
 }
 
+/// Remembered display metadata; cloud access still requires Google credentials.
+class AuthRemembered extends AuthAuthenticated {
+  const AuthRemembered(super.account);
+}
+
 class AuthError extends AuthState {
   final String message;
   const AuthError(this.message);

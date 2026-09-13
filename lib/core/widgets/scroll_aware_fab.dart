@@ -22,6 +22,9 @@ class ScrollAwareFabController extends ChangeNotifier {
   bool get isExpanded => _isExpanded;
 
   bool handleNotification(ScrollNotification notification) {
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
     if (notification is ScrollStartNotification) {
       _isUserDragging = notification.dragDetails != null;
       _travel = 0;
@@ -53,7 +56,7 @@ class ScrollAwareFabController extends ChangeNotifier {
 
   void _scheduleState(bool expanded) {
     if (_isExpanded == expanded) return;
-    _settleTimer?.cancel();
+    if (_settleTimer?.isActive ?? false) return;
     _settleTimer = Timer(settleDelay, () {
       if (_isExpanded == expanded) return;
       _isExpanded = expanded;
@@ -89,49 +92,104 @@ class DelayedExtendedFab extends StatefulWidget {
   State<DelayedExtendedFab> createState() => _DelayedExtendedFabState();
 }
 
-class _DelayedExtendedFabState extends State<DelayedExtendedFab> {
-  Timer? _labelTimer;
-  late bool _showLabel;
-
-  @override
-  void initState() {
-    super.initState();
-    _showLabel = widget.expanded;
-  }
+class _DelayedExtendedFabState extends State<DelayedExtendedFab>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _motion = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 320),
+    reverseDuration: const Duration(milliseconds: 260),
+    value: widget.expanded ? 1 : 0,
+  );
 
   @override
   void didUpdateWidget(covariant DelayedExtendedFab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.expanded == widget.expanded) return;
-    _labelTimer?.cancel();
-    if (!widget.expanded) {
-      _showLabel = false;
-    } else {
-      _labelTimer = Timer(const Duration(milliseconds: 135), () {
-        if (mounted) setState(() => _showLabel = true);
-      });
+    if (oldWidget.expanded != widget.expanded) {
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _motion.value = widget.expanded ? 1 : 0;
+      } else {
+        widget.expanded ? _motion.forward() : _motion.reverse();
+      }
     }
   }
 
   @override
   void dispose() {
-    _labelTimer?.cancel();
+    _motion.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: widget.onPressed,
-      isExtended: widget.expanded,
-      tooltip: widget.tooltip,
-      clipBehavior: Clip.hardEdge,
-      icon: widget.icon,
-      label: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 120),
-        child: _showLabel
-            ? Text(widget.label, key: const ValueKey('fab-label'))
-            : const SizedBox.shrink(key: ValueKey('fab-label-hidden')),
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final background =
+        theme.floatingActionButtonTheme.backgroundColor ??
+        colors.primaryContainer;
+    final foreground =
+        theme.floatingActionButtonTheme.foregroundColor ??
+        colors.onPrimaryContainer;
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _motion,
+        builder: (context, child) {
+          final width = Curves.easeInOutCubic.transform(_motion.value);
+          final opacity = const Interval(
+            0.55,
+            1,
+            curve: Curves.easeOut,
+          ).transform(_motion.value);
+          return Semantics(
+            button: true,
+            label: widget.tooltip ?? widget.label,
+            child: Tooltip(
+              message: widget.tooltip ?? widget.label,
+              child: Material(
+                color: background,
+                elevation: 6,
+                borderRadius: BorderRadius.circular(28),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: widget.onPressed,
+                  child: ExcludeSemantics(
+                    child: IconTheme(
+                      data: IconThemeData(color: foreground),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: Center(child: widget.icon),
+                          ),
+                          ClipRect(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: width,
+                              heightFactor: 1,
+                              child: Opacity(
+                                opacity: opacity,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 20),
+                                  child: Text(
+                                    widget.label,
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: foreground,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

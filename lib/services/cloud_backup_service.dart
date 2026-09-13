@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -13,20 +14,29 @@ abstract class CloudBackupService extends ChangeNotifier {
   Future<void> refreshStatus();
 }
 
-class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupService {
+class GoogleDriveBackupService extends ChangeNotifier
+    implements CloudBackupService {
   static const String _backupFileName = 'shoptrack_backup.json';
   static const List<String> _driveScopes = [drive.DriveApi.driveAppdataScope];
 
   final GoogleSignIn _googleSignIn;
+  final Future<GoogleSignInAccount?> Function()? accountForCloudAction;
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _subscription;
   GoogleSignInAccount? _currentUser;
-  CloudBackupStatus _status = const CloudBackupStatus(state: CloudBackupState.notSignedIn);
+  bool _hasRememberedAccount = false;
+  bool _disposed = false;
+  CloudBackupStatus _status = const CloudBackupStatus(
+    state: CloudBackupState.notSignedIn,
+  );
 
   @override
   CloudBackupStatus get status => _status;
 
-  GoogleDriveBackupService({GoogleSignIn? googleSignIn})
-      : _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
-    _googleSignIn.authenticationEvents.listen((event) {
+  GoogleDriveBackupService({
+    GoogleSignIn? googleSignIn,
+    this.accountForCloudAction,
+  }) : _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
+    _subscription = _googleSignIn.authenticationEvents.listen((event) {
       if (event is GoogleSignInAuthenticationEventSignIn) {
         _currentUser = event.user;
       } else if (event is GoogleSignInAuthenticationEventSignOut) {
@@ -34,20 +44,18 @@ class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupServ
       }
       updateSignInState(_currentUser != null);
     });
-    _init();
   }
 
-  Future<void> _init() async {
-    try {
-      final account = await _googleSignIn.attemptLightweightAuthentication();
-      if (account != null) {
-        _currentUser = account;
-        updateSignInState(true);
-      }
-    } catch (e) {
-      // Ignore errors in environments where Google Sign-In is not available (e.g., tests)
-      debugPrint('CloudBackupService _init error: $e');
-    }
+  @override
+  void dispose() {
+    _disposed = true;
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
   }
 
   @override
@@ -79,10 +87,7 @@ class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupServ
         );
       } else {
         await driveApi.files.create(
-          drive.File(
-            name: _backupFileName,
-            parents: ['appDataFolder'],
-          ),
+          drive.File(name: _backupFileName, parents: ['appDataFolder']),
           uploadMedia: media,
         );
       }
@@ -102,7 +107,9 @@ class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupServ
 
   @override
   Future<AppBackup?> downloadCloudBackup() async {
-    _status = const CloudBackupStatus(state: CloudBackupState.restoreInProgress);
+    _status = const CloudBackupStatus(
+      state: CloudBackupState.restoreInProgress,
+    );
     notifyListeners();
 
     try {
@@ -118,22 +125,26 @@ class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupServ
 
       final fileId = await _findBackupFileId(driveApi);
       if (fileId == null) {
-        _status = const CloudBackupStatus(state: CloudBackupState.noBackupFound);
+        _status = const CloudBackupStatus(
+          state: CloudBackupState.noBackupFound,
+        );
         notifyListeners();
         return null;
       }
 
-      final drive.Media response = await driveApi.files.get(
-        fileId,
-        downloadOptions: drive.DownloadOptions.fullMedia,
-      ) as drive.Media;
+      final drive.Media response =
+          await driveApi.files.get(
+                fileId,
+                downloadOptions: drive.DownloadOptions.fullMedia,
+              )
+              as drive.Media;
 
       final List<int> data = await response.stream.expand((x) => x).toList();
       final String jsonStr = utf8.decode(data);
       final Map<String, dynamic> jsonMap = jsonDecode(jsonStr);
-      
+
       final backup = AppBackup.fromJson(jsonMap);
-      
+
       _status = CloudBackupStatus(
         state: CloudBackupState.available,
         lastBackupTime: backup.timestamp,
@@ -154,7 +165,11 @@ class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupServ
   Future<void> refreshStatus() async {
     final user = _currentUser;
     if (user == null) {
-      _status = const CloudBackupStatus(state: CloudBackupState.notSignedIn);
+      _status = CloudBackupStatus(
+        state: _hasRememberedAccount
+            ? CloudBackupState.available
+            : CloudBackupState.notSignedIn,
+      );
       notifyListeners();
       return;
     }
@@ -169,7 +184,9 @@ class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupServ
             lastBackupTime: file.modifiedTime,
           );
         } else {
-          _status = const CloudBackupStatus(state: CloudBackupState.noBackupFound);
+          _status = const CloudBackupStatus(
+            state: CloudBackupState.noBackupFound,
+          );
         }
       } else {
         // Needs authorization
@@ -182,6 +199,7 @@ class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupServ
   }
 
   void updateSignInState(bool isSignedIn) {
+    _hasRememberedAccount = isSignedIn;
     if (!isSignedIn) {
       _status = const CloudBackupStatus(state: CloudBackupState.notSignedIn);
     } else {
@@ -195,12 +213,15 @@ class GoogleDriveBackupService extends ChangeNotifier implements CloudBackupServ
 
   @protected
   Future<drive.DriveApi?> getDriveApi({bool promptIfNecessary = true}) async {
+    if (_currentUser == null && promptIfNecessary) {
+      _currentUser = await accountForCloudAction?.call();
+    }
     final user = _currentUser;
     if (user == null) return null;
 
     final authClient = user.authorizationClient;
     GoogleSignInClientAuthorization? authz;
-    
+
     try {
       if (promptIfNecessary) {
         authz = await authClient.authorizeScopes(_driveScopes);

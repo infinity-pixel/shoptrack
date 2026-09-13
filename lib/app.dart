@@ -45,7 +45,9 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
     authService = GoogleAuthService(
       serverClientId: '1073842238529-h0oadkbch0vlhkp0469lkbbgk2vr8na0.apps.googleusercontent.com',
     );
-    cloudBackupService = GoogleDriveBackupService();
+    cloudBackupService = GoogleDriveBackupService(
+      accountForCloudAction: (authService as GoogleAuthService).accountForCloudAction,
+    );
     
     authService.addListener(_handleAuthChange);
   }
@@ -53,11 +55,15 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
   @override
   void dispose() {
     authService.removeListener(_handleAuthChange);
+    cloudBackupService.dispose();
+    authService.dispose();
+    settingsService.dispose();
     super.dispose();
   }
 
   void _handleAuthChange() {
     final state = authService.state;
+    if (state is AuthLoading) return;
     if (cloudBackupService is GoogleDriveBackupService) {
       (cloudBackupService as GoogleDriveBackupService).updateSignInState(state is AuthAuthenticated);
     }

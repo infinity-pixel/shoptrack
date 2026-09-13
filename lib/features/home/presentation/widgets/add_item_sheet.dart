@@ -366,12 +366,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
         _selectedUnit != null &&
         (_selectedUnit == ShoppingUnit.g || _selectedUnit == ShoppingUnit.ml);
 
-    return Container(
-      padding: EdgeInsets.only(
+    return _KeyboardInset(child: Container(
+      padding: const EdgeInsets.only(
         left: 20,
         right: 20,
         top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        bottom: 20,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -718,7 +718,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   String _getPriceLabel() {
@@ -729,4 +729,16 @@ class _AddItemSheetState extends State<AddItemSheet> {
     }
     return 'Price per Unit';
   }
+}
+
+/// Keyboard metrics rebuild this small wrapper instead of the whole form.
+class _KeyboardInset extends StatelessWidget {
+  const _KeyboardInset({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+    child: child,
+  );
 }

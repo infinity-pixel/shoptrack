@@ -28,7 +28,11 @@ class _MainPageState extends State<MainPage> {
           backgroundColor: Colors.transparent,
           body: IndexedStack(
             index: _currentIndex,
-            children: [_buildHomeTab(), _buildHistoryTab(), _buildAccountTab()],
+            children: [
+              TickerMode(enabled: _currentIndex == 0, child: _buildHomeTab()),
+              TickerMode(enabled: _currentIndex == 1, child: _buildHistoryTab()),
+              TickerMode(enabled: _currentIndex == 2, child: _buildAccountTab()),
+            ],
           ),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,

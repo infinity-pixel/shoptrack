@@ -1,5 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth_state.dart';
 
 abstract class AuthService extends ChangeNotifier {
@@ -9,67 +12,130 @@ abstract class AuthService extends ChangeNotifier {
 }
 
 class GoogleAuthService extends ChangeNotifier implements AuthService {
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
-  final String? _serverClientId;
-
-  @override
-  AuthState get state => _state;
-  AuthState _state = const AuthInitial();
-
-  GoogleAuthService({String? serverClientId}) : _serverClientId = serverClientId {
-    _init();
+  GoogleAuthService({String? serverClientId, GoogleSignIn? googleSignIn})
+    : _googleSignIn = googleSignIn ?? GoogleSignIn.instance {
+    ready = _init(serverClientId);
   }
 
-  Future<void> _init() async {
+  static const rememberedAccountKey = 'remembered_google_account';
+  final GoogleSignIn _googleSignIn;
+  late final Future<void> ready;
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _subscription;
+  GoogleSignInAccount? _user;
+  bool _disposed = false;
+  AuthState _state = const AuthInitial();
+  @override
+  AuthState get state => _state;
+
+  void _publish(AuthState state) {
+    if (_disposed) return;
+    _state = state;
+    notifyListeners();
+  }
+
+  Future<void> _init(String? clientId) async {
     try {
-      // Note: initialize must be called exactly once before any other methods.
-      await _googleSignIn.initialize(
-        serverClientId: _serverClientId,
-      );
-
-      _googleSignIn.authenticationEvents.listen((event) {
+      await _googleSignIn.initialize(serverClientId: clientId);
+      if (_disposed) return;
+      _subscription = _googleSignIn.authenticationEvents.listen((event) {
         if (event is GoogleSignInAuthenticationEventSignIn) {
-          final user = event.user;
-          _state = AuthAuthenticated(AuthAccount(
-            id: user.id,
-            email: user.email,
-            displayName: user.displayName,
-            photoUrl: user.photoUrl,
-          ));
+          _accept(event.user);
         } else if (event is GoogleSignInAuthenticationEventSignOut) {
-          _state = const AuthUnauthenticated();
+          _user = null;
+          _publish(const AuthUnauthenticated());
+          _forget();
         }
-        notifyListeners();
-      });
-
-      final account = await _googleSignIn.attemptLightweightAuthentication();
-      if (account == null) {
-        _state = const AuthUnauthenticated();
-        notifyListeners();
+      }, onError: (Object error) => _publish(AuthError(error.toString())));
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(rememberedAccountKey);
+      if (_user != null || _disposed) return;
+      if (saved == null) {
+        _publish(const AuthUnauthenticated());
+      } else {
+        final data = jsonDecode(saved) as Map<String, dynamic>;
+        _publish(
+          AuthRemembered(
+            AuthAccount(
+              id: data['id'] as String,
+              email: data['email'] as String,
+              displayName: data['displayName'] as String?,
+              photoUrl: data['photoUrl'] as String?,
+            ),
+          ),
+        );
       }
+      // Android lightweight authentication may show an account chooser.
+      // Restore display metadata here; cloud actions verify with Google.
     } catch (_) {
-      // In test environments or if not configured, fallback to unauthenticated
-      _state = const AuthUnauthenticated();
-      notifyListeners();
+      _publish(const AuthUnauthenticated());
     }
+  }
+
+  Future<void> _accept(GoogleSignInAccount user) async {
+    if (_disposed) return;
+    _user = user;
+    _publish(
+      AuthAuthenticated(
+        AuthAccount(
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          photoUrl: user.photoUrl,
+        ),
+      ),
+    );
+    final prefs = await SharedPreferences.getInstance();
+    if (_user != user || _disposed) return;
+    await prefs.setString(
+      rememberedAccountKey,
+      jsonEncode({
+        'id': user.id,
+        'email': user.email,
+        'displayName': user.displayName,
+        'photoUrl': user.photoUrl,
+      }),
+    );
+  }
+
+  Future<void> _forget() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(rememberedAccountKey);
+  }
+
+  /// Only invoked following an explicit sign-in or cloud action.
+  Future<GoogleSignInAccount?> accountForCloudAction() async {
+    await ready;
+    if (_user != null) return _user;
+    await signIn();
+    return _user;
   }
 
   @override
   Future<void> signIn() async {
-    _state = const AuthLoading();
-    notifyListeners();
+    await ready;
+    if (_disposed || _state is AuthLoading) return;
+    final previous = _state;
+    _publish(const AuthLoading());
     try {
-      await _googleSignIn.authenticate();
-      // state update handled by stream
-    } catch (e) {
-      _state = AuthError(e.toString());
-      notifyListeners();
+      await _accept(await _googleSignIn.authenticate());
+    } catch (_) {
+      _publish(previous);
     }
   }
 
   @override
   Future<void> signOut() async {
+    await ready;
     await _googleSignIn.signOut();
-    // state update handled by stream
+    _user = null;
+    await _forget();
+    _publish(const AuthUnauthenticated());
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _subscription?.cancel();
+    super.dispose();
   }
 }

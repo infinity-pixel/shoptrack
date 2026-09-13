@@ -30,94 +30,133 @@ class SessionCard extends StatelessWidget {
         ? const AlwaysStoppedAnimation(0.35)
         : glowAnimation ?? const AlwaysStoppedAnimation(0.35);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      color: palette.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: palette.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 42,
-                child: Text(
-                  DateFormat('d').format(session.date),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: session.isFuture
-                        ? palette.planned
-                        : palette.onBackground,
-                    fontSize: 30,
-                    height: 1,
-                    fontWeight: FontWeight.w700,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact =
+            constraints.maxWidth < 380 ||
+            MediaQuery.textScalerOf(context).scale(15) > 18;
+        final amount = Column(
+          crossAxisAlignment: compact
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.end,
+          children: [
+            RollingDigitText(
+              text: NumberFormatter.formatPrice(session.totalPurchasedAmount),
+              style: TextStyle(
+                color: palette.purchased,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
               ),
-              Container(
-                width: 1,
-                height: 52,
-                margin: const EdgeInsets.symmetric(horizontal: 12),
-                color: palette.border,
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat('EEE, MMM').format(session.date),
-                      style: TextStyle(
-                        color: palette.onBackground,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 4,
-                      children: _buildStatuses(context, animation),
-                    ),
-                  ],
-                ),
-              ),
-              if (!session.isFuture)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Purchased',
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                      RollingDigitText(
-                        text: NumberFormatter.formatPrice(
-                          session.totalPurchasedAmount,
-                        ),
-                        style: TextStyle(
-                          color: palette.purchased,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              _buildMenu(context),
-            ],
+            ),
+            Text(
+              'Total Purchased',
+              style: TextStyle(color: palette.textSecondary, fontSize: 10),
+            ),
+          ],
+        );
+        return Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          color: palette.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: palette.border),
           ),
-        ),
-      ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 44,
+                    height: 48,
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: palette.secondary,
+                          width: 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: palette.secondary,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(5),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                DateFormat('d').format(session.date),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: session.isFuture
+                                      ? palette.planned
+                                      : palette.onBackground,
+                                  fontSize: 24,
+                                  height: 1,
+                                  fontWeight: FontWeight.w700,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 52,
+                    margin: const EdgeInsets.symmetric(horizontal: 9),
+                    color: palette.border,
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          DateFormat('EEE, MMM').format(session.date),
+                          style: TextStyle(
+                            color: palette.onBackground,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 2,
+                          children: _buildStatuses(context, animation),
+                        ),
+                        if (compact && !session.isFuture) ...[
+                          const SizedBox(height: 6),
+                          amount,
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (!session.isFuture && !compact)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: amount,
+                    ),
+                  _buildMenu(context),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -132,7 +171,7 @@ class SessionCard extends StatelessWidget {
           animation: animation,
           color: palette.planned,
           text:
-              '${session.plannedCount} planned ${session.plannedCount == 1 ? 'item' : 'items'}',
+              '${session.plannedCount} Planned ${session.plannedCount == 1 ? 'Item' : 'Items'}',
         ),
       ];
     }
@@ -141,13 +180,13 @@ class SessionCard extends StatelessWidget {
         _GlowingStatus(
           animation: animation,
           color: palette.purchased,
-          text: '${session.purchasedCount} purchased',
+          text: '${session.purchasedCount} Purchased',
         ),
       if (session.pendingCount > 0)
         _GlowingStatus(
           animation: animation,
           color: palette.pending,
-          text: '${session.pendingCount} pending',
+          text: '${session.pendingCount} Pending',
         ),
     ];
   }
@@ -205,46 +244,49 @@ class _GlowingStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, _) {
-        final strength = 0.12 + (animation.value * 0.20);
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: strength),
-                    blurRadius: 4 + (animation.value * 4),
-                    spreadRadius: animation.value,
-                  ),
-                ],
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, _) {
+          final strength = 0.12 + (animation.value * 0.20);
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: strength),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              text,
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                shadows: [
-                  Shadow(
-                    color: color.withValues(alpha: strength),
-                    blurRadius: 3 + (animation.value * 4),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    shadows: [
+                      Shadow(
+                        color: color.withValues(alpha: strength),
+                        blurRadius: 4,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }
