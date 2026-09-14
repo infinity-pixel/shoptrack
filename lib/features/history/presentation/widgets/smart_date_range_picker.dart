@@ -23,7 +23,7 @@ class SmartDateRangePicker extends StatefulWidget {
 
 class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
   late DateTime _start, _end, _month;
-  bool _editingEnd = false, _valid = true;
+  bool _editingEnd = false, _valid = true, _hasSelection = true;
   @override
   void initState() {
     super.initState();
@@ -36,11 +36,16 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
     setState(() {
       _valid = date != null;
       if (date == null) return;
+      if (!_hasSelection) {
+        _start = date;
+        _end = date;
+      }
       if (_editingEnd) {
         _end = date;
       } else {
         _start = date;
       }
+      _hasSelection = true;
       _month = DateTime(date.year, date.month);
       if (calendar && !_editingEnd) {
         if (_end.isBefore(_start)) _end = _start;
@@ -48,6 +53,19 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
       }
     });
     if (calendar) FocusScope.of(context).unfocus();
+  }
+
+  void _clear() {
+    final today = DateUtils.dateOnly(DateTime.now());
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _start = today;
+      _end = today;
+      _month = DateTime(today.year, today.month);
+      _editingEnd = false;
+      _valid = true;
+      _hasSelection = false;
+    });
   }
 
   void _preset(int index) {
@@ -82,6 +100,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
       _end = end;
       _month = DateTime(start.year, start.month);
       _valid = true;
+      _hasSelection = true;
     });
   }
 
@@ -100,7 +119,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
         top: false,
         child: SizedBox(
           height: math.min(
-            690,
+            580,
             math.max(
               0,
               media.size.height -
@@ -117,24 +136,30 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                     child: Column(
                       children: [
                         Row(
                           children: [
                             Expanded(
                               child: Text(
-                                'Select date range',
-                                style: Theme.of(context).textTheme.titleLarge,
+                                'Select Date Range',
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ),
                             IconButton(
                               tooltip: 'Close',
                               onPressed: () => Navigator.pop(context),
                               icon: const Icon(Icons.close),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints.tightFor(
+                                width: 40,
+                                height: 40,
+                              ),
                             ),
                           ],
                         ),
+                        Divider(color: colors.outlineVariant), SizedBox(height: 7),
                         Row(
                           children: [
                             for (final end in [false, true])
@@ -151,33 +176,38 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                         ? colors.onSecondary
                                         : colors.onSurface,
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 14,
+                                      horizontal: 10,
+                                      vertical: 9,
                                     ),
+                                    minimumSize: const Size(0, 40),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                     backgroundColor: _editingEnd == end
                                         ? colors.secondary
                                         : null,
                                   ),
-                                  child: Text(end ? 'End date' : 'Start date'),
+                                  child: Text(end ? 'End Date' : 'Start Date'),
                                 ),
                               ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
                         DatePartsField(
                           key: ValueKey(_editingEnd),
-                          date: _editingEnd ? _end : _start,
+                          date: _hasSelection
+                              ? (_editingEnd ? _end : _start)
+                              : null,
                           onChanged: _select,
                         ),
                         if (error != null)
                           Padding(
-                            padding: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.only(top: 5),
                             child: Text(
                               error,
                               style: TextStyle(color: colors.error),
                             ),
                           ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 3),
                         Row(
                           children: [
                             IconButton(
@@ -191,6 +221,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                     )
                                   : null,
                               icon: const Icon(Icons.chevron_left),
+                              visualDensity: VisualDensity.compact,
                             ),
                             Expanded(
                               child: Text(
@@ -210,23 +241,25 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                     )
                                   : null,
                               icon: const Icon(Icons.chevron_right),
+                              visualDensity: VisualDensity.compact,
                             ),
                           ],
                         ),
                         _calendar(colors),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 7),
                           child: Row(
                             children: [
                               for (var i = 0; i < 5; i++)
                                 Padding(
-                                  padding: const EdgeInsets.only(right: 10),
+                                  padding: const EdgeInsets.only(right: 8),
                                   child: ActionChip(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 8,
+                                      horizontal: 6,
+                                      vertical: 3,
                                     ),
+                                    visualDensity: VisualDensity.compact,
                                     label: Text(
                                       [
                                         'Previous 7 Days',
@@ -242,10 +275,13 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 5),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: colors.secondary.withValues(alpha: .12),
                             borderRadius: BorderRadius.circular(14),
@@ -255,15 +291,17 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                               Icon(Icons.date_range, color: colors.secondary),
                               Container(
                                 width: 1.5,
-                                height: 34,
+                                height: 26,
                                 margin: const EdgeInsets.symmetric(
-                                  horizontal: 12,
+                                  horizontal: 10,
                                 ),
                                 color: colors.secondary.withValues(alpha: .5),
                               ),
                               Expanded(
                                 child: Text(
-                                  '${DateFormat.yMMMd().format(_start)} — ${DateFormat.yMMMd().format(_end)}',
+                                  _hasSelection
+                                      ? '${DateFormat.yMMMd().format(_start)} — ${DateFormat.yMMMd().format(_end)}'
+                                      : 'No Date Range Selected',
                                   style: TextStyle(color: colors.onSurface),
                                   textAlign: TextAlign.center,
                                 ),
@@ -276,19 +314,16 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
                   child: Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: colors.onSurface,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
-                          onPressed: () => Navigator.pop(
-                            context,
-                            const DateRangeSelection(null),
-                          ),
+                          onPressed: _clear,
                           child: const Text('Clear'),
                         ),
                       ),
@@ -298,17 +333,22 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                           style: FilledButton.styleFrom(
                             backgroundColor: colors.secondary,
                             foregroundColor: colors.onSecondary,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
                           onPressed: error == null
                               ? () => Navigator.pop(
                                   context,
                                   DateRangeSelection(
-                                    DateTimeRange(start: _start, end: _end),
+                                    _hasSelection
+                                        ? DateTimeRange(
+                                            start: _start,
+                                            end: _end,
+                                          )
+                                        : null,
                                   ),
                                 )
                               : null,
-                          child: const Text('Apply range'),
+                          child: const Text('Apply Range'),
                         ),
                       ),
                     ],
@@ -347,7 +387,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
           itemCount: offset + days,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisExtent: 44,
+            mainAxisExtent: 38,
           ),
           itemBuilder: (context, index) {
             if (index < offset) return const SizedBox.shrink();
@@ -357,9 +397,11 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
               index - offset + 1,
             );
             final endpoint =
-                DateUtils.isSameDay(date, _start) ||
-                DateUtils.isSameDay(date, _end);
-            final inside = !date.isBefore(_start) && !date.isAfter(_end);
+                _hasSelection &&
+                (DateUtils.isSameDay(date, _start) ||
+                    DateUtils.isSameDay(date, _end));
+            final inside =
+                _hasSelection && !date.isBefore(_start) && !date.isAfter(_end);
             return Semantics(
               label: DateFormat.yMMMMd().format(date),
               selected: endpoint,
@@ -390,8 +432,8 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                   if (endpoint)
                     Center(
                       child: Container(
-                        width: 40,
-                        height: 40,
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
                           color: colors.secondary,
                           shape: BoxShape.circle,

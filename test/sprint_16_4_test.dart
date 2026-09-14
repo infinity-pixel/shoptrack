@@ -4,12 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoptrack/core/theme/theme_presets.dart';
-import 'package:shoptrack/features/home/presentation/widgets/shopping_list_switcher.dart';
-import 'package:shoptrack/models/shopping_list_group.dart';
 import 'package:shoptrack/core/widgets/date_parts_field.dart';
+import 'package:shoptrack/features/history/presentation/widgets/history_date_badge.dart';
+import 'package:shoptrack/features/history/presentation/widgets/session_card.dart';
 import 'package:shoptrack/features/history/presentation/widgets/smart_date_range_picker.dart';
 import 'package:shoptrack/features/home/presentation/widgets/record_hero.dart';
+import 'package:shoptrack/features/home/presentation/widgets/shopping_list_switcher.dart';
+import 'package:shoptrack/features/home/presentation/pages/home_page.dart';
+import 'package:shoptrack/models/shopping_list_group.dart';
+import 'package:shoptrack/models/shopping_session.dart';
 
 void main() {
   // Optional real-widget preview, written only to ignored build output.
@@ -54,20 +60,43 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    Future<void> capture(String name) => tester.runAsync(() async {
-      final boundary =
-          key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 2);
-      final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      final output = File('build/$name.png');
-      await output.parent.create(recursive: true);
-      await output.writeAsBytes(data!.buffer.asUint8List());
-      image.dispose();
-    });
-    await capture('sprint_16_4_calendar');
+    Future<void> capture(GlobalKey boundaryKey, String name) =>
+        tester.runAsync(() async {
+          final boundary =
+              boundaryKey.currentContext!.findRenderObject()!
+                  as RenderRepaintBoundary;
+          final image = await boundary.toImage(pixelRatio: 2);
+          final data = await image.toByteData(format: ui.ImageByteFormat.png);
+          final output = File('build/$name.png');
+          await output.parent.create(recursive: true);
+          await output.writeAsBytes(data!.buffer.asUint8List());
+          image.dispose();
+        });
+    await capture(key, 'sprint_16_4_1_calendar');
     await tester.ensureVisible(find.byIcon(Icons.date_range));
     await tester.pumpAndSettle();
-    await capture('sprint_16_4_calendar_summary');
+    await capture(key, 'sprint_16_4_1_calendar_summary');
+
+    SharedPreferences.setMockInitialValues({});
+    final homeKey = GlobalKey();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: RepaintBoundary(
+          key: homeKey,
+          child: const MediaQuery(
+            data: MediaQueryData(
+              size: Size(390, 780),
+              padding: EdgeInsets.only(top: 24),
+            ),
+            child: HomePage(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await capture(homeKey, 'sprint_16_4_1_today');
   }, skip: previewFont.isEmpty);
   test('Previous completed days exclude today across calendar boundaries', () {
     final week = previousCompleteDays(DateTime(2026, 9, 14), 7);
@@ -139,7 +168,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(
         tester
-            .getBottomRight(find.widgetWithText(FilledButton, 'Apply range'))
+            .getBottomRight(find.widgetWithText(FilledButton, 'Apply Range'))
             .dy,
         lessThanOrEqualTo(size.height * .6),
       );
@@ -195,6 +224,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('New List'), findsNothing);
     expect(find.byTooltip('New shopping list'), findsOneWidget);
+    expect(find.byKey(const ValueKey('new-list-divider')), findsOneWidget);
+    expect(find.byKey(const ValueKey('list-section-divider')), findsOneWidget);
     expect(find.byKey(const ValueKey('list-overflow-shadow')), findsNothing);
     await tester.pumpWidget(
       app([
@@ -216,6 +247,68 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(-900, 0));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('list-overflow-shadow')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('History badges have two bindings and month cards omit month', (
+    tester,
+  ) async {
+    final past = DateTime.now().subtract(const Duration(days: 7));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemePresets.lightPresets.values.first.toThemeData(),
+        home: Scaffold(
+          body: Column(
+            children: [
+              HistoryDateBadge(date: past),
+              SessionCard(
+                session: ShoppingSession(
+                  id: 'past',
+                  date: past,
+                  items: const [],
+                ),
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(
+      find.byKey(const ValueKey('calendar-binding-left')),
+      findsNWidgets(2),
+    );
+    expect(
+      find.byKey(const ValueKey('calendar-binding-right')),
+      findsNWidgets(2),
+    );
+    expect(find.text(DateFormat('EEEE').format(past)), findsOneWidget);
+    expect(find.text(DateFormat('EEEE, MMMM').format(past)), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Today hero fills the top and includes the system inset', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemePresets.lightPresets.values.first.toThemeData(),
+        home: const MediaQuery(
+          data: MediaQueryData(
+            size: Size(320, 640),
+            padding: EdgeInsets.only(top: 24),
+          ),
+          child: HomePage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final hero = find.byKey(const ValueKey('today-shopping-hero-surface'));
+    expect(tester.getTopLeft(hero), Offset.zero);
+    expect(tester.getSize(hero), const Size(320, 139));
     expect(tester.takeException(), isNull);
   });
 }

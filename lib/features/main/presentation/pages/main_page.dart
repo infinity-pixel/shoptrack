@@ -61,7 +61,7 @@ class _MainPageState extends State<MainPage> {
               BottomNavigationBarItem(
                 icon: Icon(Icons.manage_accounts_outlined),
                 activeIcon: Icon(Icons.manage_accounts),
-                label: 'Account',
+                label: 'Profile',
               ),
             ],
           ),

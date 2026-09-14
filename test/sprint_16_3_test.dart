@@ -43,7 +43,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('18'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Apply range'));
+      await tester.tap(find.text('Apply Range'));
       await tester.pumpAndSettle();
       expect(selected?.range?.start, DateTime(2026, 9, 15));
       expect(selected?.range?.end, DateTime(2026, 9, 18));
@@ -51,8 +51,17 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Clear'));
       await tester.pumpAndSettle();
+      expect(find.text('Select Date Range'), findsOneWidget);
+      expect(find.text('No Date Range Selected'), findsOneWidget);
+      for (final field in tester.widgetList<TextField>(
+        find.byType(TextField),
+      )) {
+        expect(field.controller?.text, isEmpty);
+      }
+      await tester.tap(find.text('Apply Range'));
+      await tester.pumpAndSettle();
       expect(selected, isNotNull);
-      expect(selected!.range, isNull);
+      expect(selected?.range, isNull);
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Close'));
@@ -120,25 +129,25 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(
         tester
-            .getBottomRight(find.widgetWithText(FilledButton, 'Apply range'))
+            .getBottomRight(find.widgetWithText(FilledButton, 'Apply Range'))
             .dy,
         lessThanOrEqualTo(360),
       );
-      await tester.tap(find.text('End date'));
+      await tester.tap(find.text('End Date'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, '12');
       await tester.pump();
       expect(
         tester
             .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Apply range'),
+              find.widgetWithText(FilledButton, 'Apply Range'),
             )
             .onPressed,
         isNull,
       );
       await tester.enterText(find.byType(TextField).first, '13');
       await tester.pump();
-      await tester.tap(find.text('Apply range'));
+      await tester.tap(find.text('Apply Range'));
       await tester.pumpAndSettle();
       expect(selection?.range?.start, DateTime(2026, 9, 13));
       expect(selection?.range?.end, DateTime(2026, 9, 13));

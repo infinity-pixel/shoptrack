@@ -7,7 +7,7 @@ class DatePartsField extends StatefulWidget {
     required this.date,
     required this.onChanged,
   });
-  final DateTime date;
+  final DateTime? date;
   final ValueChanged<DateTime?> onChanged;
   @override
   State<DatePartsField> createState() => _DatePartsFieldState();
@@ -24,7 +24,13 @@ class _DatePartsFieldState extends State<DatePartsField> {
   }
 
   void _sync() {
-    final values = [widget.date.day, widget.date.month, widget.date.year];
+    if (widget.date == null) {
+      for (final field in _fields) {
+        field.clear();
+      }
+      return;
+    }
+    final values = [widget.date!.day, widget.date!.month, widget.date!.year];
     for (var i = 0; i < 3; i++) {
       _fields[i].text = '${values[i]}';
     }
@@ -86,12 +92,13 @@ class _DatePartsFieldState extends State<DatePartsField> {
             ],
             decoration: InputDecoration(
               labelText: ['Day', 'Month', 'Year'][i],
+              isDense: true,
               floatingLabelAlignment: FloatingLabelAlignment.center,
               floatingLabelBehavior: FloatingLabelBehavior.always,
               border: const OutlineInputBorder(),
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 12,
+                horizontal: 8,
+                vertical: 6,
               ),
             ),
             onChanged: _changed,

@@ -84,7 +84,13 @@ class SessionCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          DateFormat('EEE, MMM').format(session.date),
+                          DateFormat(
+                            session.isToday || session.isFuture
+                                ? 'EEEE, MMMM'
+                                : 'EEEE',
+                          ).format(session.date),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: palette.onBackground,
                             fontWeight: FontWeight.w700,

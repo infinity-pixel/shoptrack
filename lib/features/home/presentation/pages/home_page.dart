@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/record_hero.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -228,17 +229,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         : DateFormat('EEEE, d MMMM').format(_currentSession.date);
 
     final activeListItems = _activeItems;
-    final activeItems =
-        activeListItems.where((i) => !i.isPurchased).toList()
-          ..sort((a, b) => a.position.compareTo(b.position));
-    final purchasedItems =
-        activeListItems.where((i) => i.isPurchased).toList()
-          ..sort((a, b) => a.position.compareTo(b.position));
+    final activeItems = activeListItems.where((i) => !i.isPurchased).toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
+    final purchasedItems = activeListItems.where((i) => i.isPurchased).toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     final bool hasItems = _currentSession.items.isNotEmpty;
     final bool hasActiveListItems = activeListItems.isNotEmpty;
-    final bool allPurchased =
-        hasActiveListItems && activeItems.isEmpty;
+    final bool allPurchased = hasActiveListItems && activeItems.isEmpty;
 
     return PopScope(
       canPop: false,
@@ -304,18 +302,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
           child: SafeArea(
-            top: _currentSession.isToday || widget.onBackToHistory == null,
+            top: widget.onBackToHistory != null && _currentSession.isToday,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (!_currentSession.isToday && widget.onBackToHistory != null)
-                  RecordHero(date: _currentSession.date, onBack: () async {
-                    if (!hasItems) {
-                      final discard = await _showDiscardWarning();
-                      if (!discard || !mounted) return;
-                    }
-                    widget.onBackToHistory!();
-                  })
+                  RecordHero(
+                    date: _currentSession.date,
+                    onBack: () async {
+                      if (!hasItems) {
+                        final discard = await _showDiscardWarning();
+                        if (!discard || !mounted) return;
+                      }
+                      widget.onBackToHistory!();
+                    },
+                  )
                 else
                   _buildHeader(formattedDate),
                 _buildListSwitcher(),
@@ -326,104 +327,109 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     child: !hasActiveListItems
                         ? _buildEmptyState()
                         : ListView(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          children: [
-                            if (allPurchased) _buildCompletedState(),
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            children: [
+                              if (allPurchased) _buildCompletedState(),
 
-                            // To Buy Section
-                            if (activeItems.isNotEmpty) ...[
-                              _buildSectionLabel(
-                                'To Buy',
-                                Icons.shopping_cart_outlined,
-                                activeItems.length,
-                              ),
-                              const SizedBox(height: 8),
-                              ReorderableListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: activeItems.length,
-                                proxyDecorator: _buildReorderProxy,
-                                // ignore: deprecated_member_use
-                                onReorder: (oldIndex, newIndex) =>
-                                    _onReorder(activeItems, oldIndex, newIndex),
-                                itemBuilder: (context, index) {
-                                  final item = activeItems[index];
-                                  return KeyedSubtree(
-                                    key: _itemKey(item.id),
-                                    child: Opacity(
-                                      opacity:
-                                          _transitioningItemIds.contains(
-                                            item.id,
-                                          )
-                                          ? 0
-                                          : 1,
-                                      child: ShoppingItemTile(
-                                        item: item,
-                                        visualPurchased:
-                                            _checkmarkTransitionStates[item.id],
-                                        index: index,
-                                        onToggle: () => _toggleItem(item),
-                                        onTap: () => _openEditSheet(item),
-                                        onDelete: () => _deleteItem(item),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                              _buildTotalAmountRow(),
-                              const SizedBox(height: 28),
-                            ],
-
-                            // Purchased Section
-                            if (purchasedItems.isNotEmpty) ...[
-                              _buildSectionLabel(
-                                'Purchased',
-                                Icons.check_circle_outline,
-                                purchasedItems.length,
-                              ),
-                              const SizedBox(height: 8),
-                              ReorderableListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: purchasedItems.length,
-                                proxyDecorator: _buildReorderProxy,
-                                // ignore: deprecated_member_use
-                                onReorder: (oldIndex, newIndex) => _onReorder(
-                                  purchasedItems,
-                                  oldIndex,
-                                  newIndex,
+                              // To Buy Section
+                              if (activeItems.isNotEmpty) ...[
+                                _buildSectionLabel(
+                                  'To Buy',
+                                  Icons.shopping_cart_outlined,
+                                  activeItems.length,
                                 ),
-                                itemBuilder: (context, index) {
-                                  final item = purchasedItems[index];
-                                  return KeyedSubtree(
-                                    key: _itemKey(item.id),
-                                    child: Opacity(
-                                      opacity:
-                                          _transitioningItemIds.contains(
-                                            item.id,
-                                          )
-                                          ? 0
-                                          : 1,
-                                      child: ShoppingItemTile(
-                                        item: item,
-                                        visualPurchased:
-                                            _checkmarkTransitionStates[item.id],
-                                        index: index,
-                                        onToggle: () => _toggleItem(item),
-                                        onTap: () => _openEditSheet(item),
-                                        onDelete: () => _deleteItem(item),
+                                const SizedBox(height: 8),
+                                ReorderableListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: activeItems.length,
+                                  proxyDecorator: _buildReorderProxy,
+                                  // ignore: deprecated_member_use
+                                  onReorder: (oldIndex, newIndex) => _onReorder(
+                                    activeItems,
+                                    oldIndex,
+                                    newIndex,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final item = activeItems[index];
+                                    return KeyedSubtree(
+                                      key: _itemKey(item.id),
+                                      child: Opacity(
+                                        opacity:
+                                            _transitioningItemIds.contains(
+                                              item.id,
+                                            )
+                                            ? 0
+                                            : 1,
+                                        child: ShoppingItemTile(
+                                          item: item,
+                                          visualPurchased:
+                                              _checkmarkTransitionStates[item
+                                                  .id],
+                                          index: index,
+                                          onToggle: () => _toggleItem(item),
+                                          onTap: () => _openEditSheet(item),
+                                          onDelete: () => _deleteItem(item),
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 20),
-                              _buildPurchasedAmountCard(),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                _buildTotalAmountRow(),
+                                const SizedBox(height: 28),
+                              ],
+
+                              // Purchased Section
+                              if (purchasedItems.isNotEmpty) ...[
+                                _buildSectionLabel(
+                                  'Purchased',
+                                  Icons.check_circle_outline,
+                                  purchasedItems.length,
+                                ),
+                                const SizedBox(height: 8),
+                                ReorderableListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: purchasedItems.length,
+                                  proxyDecorator: _buildReorderProxy,
+                                  // ignore: deprecated_member_use
+                                  onReorder: (oldIndex, newIndex) => _onReorder(
+                                    purchasedItems,
+                                    oldIndex,
+                                    newIndex,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final item = purchasedItems[index];
+                                    return KeyedSubtree(
+                                      key: _itemKey(item.id),
+                                      child: Opacity(
+                                        opacity:
+                                            _transitioningItemIds.contains(
+                                              item.id,
+                                            )
+                                            ? 0
+                                            : 1,
+                                        child: ShoppingItemTile(
+                                          item: item,
+                                          visualPurchased:
+                                              _checkmarkTransitionStates[item
+                                                  .id],
+                                          index: index,
+                                          onToggle: () => _toggleItem(item),
+                                          onTap: () => _openEditSheet(item),
+                                          onDelete: () => _deleteItem(item),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 20),
+                                _buildPurchasedAmountCard(),
+                              ],
+                              const SizedBox(height: 100), // FAB Clearance
                             ],
-                            const SizedBox(height: 100), // FAB Clearance
-                          ],
                           ),
                   ),
                 ),
@@ -440,98 +446,127 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final tokens = ShopTrackThemeTokens.of(context);
     final palette = tokens.palette;
     final isCompactWidth = MediaQuery.sizeOf(context).width < 360;
+    final topInset = MediaQuery.paddingOf(context).top;
+    final useDarkStatusIcons = palette.surface.computeLuminance() > 0.5;
+    final contentHeight = isCompactWidth ? 116.0 : 126.0;
 
-    return Container(
-      height: isCompactWidth ? 116 : 126,
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: palette.border),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: useDarkStatusIcons
+            ? Brightness.dark
+            : Brightness.light,
+        statusBarBrightness: useDarkStatusIcons
+            ? Brightness.light
+            : Brightness.dark,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(23),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (tokens.headerArtworkPath != null)
-              Image.asset(
-                tokens.headerArtworkPath!,
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-              ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    palette.surface.withValues(alpha: 0.90),
-                    palette.surface.withValues(alpha: 0.58),
-                    palette.surface.withValues(alpha: 0.12),
-                  ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+      child: Container(
+        key: const ValueKey('today-shopping-hero'),
+        height: topInset + contentHeight,
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: palette.surface,
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(24),
+          ),
+          border: Border(bottom: BorderSide(color: palette.border)),
+        ),
+        child: ClipRRect(
+          key: const ValueKey('today-shopping-hero-surface'),
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(23),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (tokens.headerArtworkPath != null)
+                Image.asset(
+                  tokens.headerArtworkPath!,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      palette.surface.withValues(alpha: 0.90),
+                      palette.surface.withValues(alpha: 0.58),
+                      palette.surface.withValues(alpha: 0.12),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_currentSession.isToday)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.today_outlined,
-                          size: 17,
-                          color: palette.secondary,
-                        ),
-                        const SizedBox(width: 5),
-                        Container(
-                          width: 2,
-                          height: 24,
-                          decoration: BoxDecoration(
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_currentSession.isToday)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.today_outlined,
+                            size: 17,
                             color: palette.secondary,
-                            borderRadius: BorderRadius.circular(2),
                           ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          date,
+                          const SizedBox(width: 5),
+                          Container(
+                            width: 2,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: palette.secondary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              date,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: palette.secondary,
+                                fontSize: isCompactWidth ? 13 : 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    const Spacer(),
+                    if (_currentSession.isToday) ...[
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: _SummerGradientText(
+                          text: "Today's Shopping",
                           style: TextStyle(
-                            color: palette.secondary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            fontSize: isCompactWidth ? 22 : 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.8,
                           ),
                         ),
-                      ],
-                    ),
-                  const Spacer(),
-                  if (_currentSession.isToday) ...[
-                    _SummerGradientText(
-                      text: "Today's Shopping",
-                      style: TextStyle(
-                        fontSize: isCompactWidth ? 22 : 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.8,
                       ),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      'Stay organized. Shop smarter.',
-                      style: TextStyle(
-                        color: palette.textSecondary,
-                        fontSize: 14,
+                      const SizedBox(height: 1),
+                      Text(
+                        'Stay organized. Shop smarter.',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: palette.textSecondary,
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
-                  ] else
-                    _buildRecordDateLockup(),
-                ],
+                    ] else
+                      _buildRecordDateLockup(),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -626,8 +661,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return ShoppingListSwitcher(
       lists: _currentSession.orderedLists,
       activeListId: _activeListId,
-      itemCountForList: (listId) =>
-          _currentSession.itemsForList(listId).length,
+      itemCountForList: (listId) => _currentSession.itemsForList(listId).length,
       onSelected: (listId) {
         if (listId == _activeListId) return;
         setState(() => _activeListId = listId);
@@ -771,8 +805,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         .toList();
     setState(() {
       _currentSession.items.removeWhere(
-        (item) =>
-            (item.listId ?? ShoppingListGroup.defaultId) == list.id,
+        (item) => (item.listId ?? ShoppingListGroup.defaultId) == list.id,
       );
       _currentSession = _currentSession.copyWith(lists: remainingLists);
       if (_activeListId == list.id) {

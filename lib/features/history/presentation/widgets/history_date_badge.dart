@@ -16,43 +16,74 @@ class HistoryDateBadge extends StatelessWidget {
     return SizedBox(
       width: 44,
       height: 48,
-      child: Container(
-        margin: const EdgeInsets.only(top: 4),
-        decoration: BoxDecoration(
-          border: Border.all(color: palette.secondary, width: 1.5),
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Column(
-          children: [
-            Container(
-              height: 7,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            top: 5,
+            child: Container(
               decoration: BoxDecoration(
-                color: palette.secondary,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(5),
-                ),
+                border: Border.all(color: palette.secondary, width: 1.5),
+                borderRadius: BorderRadius.circular(7),
               ),
-            ),
-            Expanded(
-              child: Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    '${date.day}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: isFuture ? palette.planned : palette.onBackground,
-                      fontSize: 24,
-                      height: 1,
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: const [FontFeature.tabularFigures()],
+              child: Column(
+                children: [
+                  Container(
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: palette.secondary,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(5),
+                      ),
                     ),
                   ),
+                  Expanded(
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '${date.day}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isFuture
+                                ? palette.planned
+                                : palette.onBackground,
+                            fontSize: 24,
+                            height: 1,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          for (final alignment in [Alignment.topLeft, Alignment.topRight])
+            Align(
+              alignment: alignment,
+              child: Container(
+                key: ValueKey(
+                  alignment == Alignment.topLeft
+                      ? 'calendar-binding-left'
+                      : 'calendar-binding-right',
+                ),
+                width: 4,
+                height: 11,
+                margin: EdgeInsets.only(
+                  left: alignment == Alignment.topLeft ? 9 : 0,
+                  right: alignment == Alignment.topRight ? 9 : 0,
+                ),
+                decoration: BoxDecoration(
+                  color: palette.secondary,
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: palette.surface, width: .7),
                 ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
