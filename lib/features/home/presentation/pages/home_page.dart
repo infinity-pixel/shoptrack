@@ -304,6 +304,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
           child: SafeArea(
+            top: _currentSession.isToday || widget.onBackToHistory == null,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

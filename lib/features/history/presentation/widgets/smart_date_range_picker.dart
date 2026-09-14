@@ -8,6 +8,12 @@ class DateRangeSelection {
   final DateTimeRange? range;
 }
 
+/// Calendar-day arithmetic also works across month/year and DST boundaries.
+DateTimeRange previousCompleteDays(DateTime today, int days) => DateTimeRange(
+  start: DateTime(today.year, today.month, today.day - days),
+  end: DateTime(today.year, today.month, today.day - 1),
+);
+
 class SmartDateRangePicker extends StatefulWidget {
   const SmartDateRangePicker({super.key, this.initialRange});
   final DateTimeRange? initialRange;
@@ -50,9 +56,13 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
     var end = today;
     switch (index) {
       case 0:
-        start = today.subtract(const Duration(days: 7));
+        final range = previousCompleteDays(today, 7);
+        start = range.start;
+        end = range.end;
       case 1:
-        start = today.subtract(const Duration(days: 30));
+        final range = previousCompleteDays(today, 30);
+        start = range.start;
+        end = range.end;
       case 2:
         final month = DateTime(today.year, today.month - 3);
         start = DateTime(
@@ -137,8 +147,15 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                     _month = DateTime(date.year, date.month);
                                   }),
                                   style: TextButton.styleFrom(
+                                    foregroundColor: _editingEnd == end
+                                        ? colors.onSecondary
+                                        : colors.onSurface,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 14,
+                                    ),
                                     backgroundColor: _editingEnd == end
-                                        ? colors.primaryContainer
+                                        ? colors.secondary
                                         : null,
                                   ),
                                   child: Text(end ? 'End date' : 'Start date'),
@@ -199,16 +216,21 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                         _calendar(colors),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           child: Row(
                             children: [
                               for (var i = 0; i < 5; i++)
                                 Padding(
-                                  padding: const EdgeInsets.only(right: 6),
+                                  padding: const EdgeInsets.only(right: 10),
                                   child: ActionChip(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 8,
+                                    ),
                                     label: Text(
                                       [
-                                        'Last 7 Days',
-                                        'Last 30 Days',
+                                        'Previous 7 Days',
+                                        'Previous 30 Days',
                                         'Last 3 Months',
                                         'This Year',
                                         'Last Year',
@@ -221,9 +243,33 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          '${DateFormat.yMMMd().format(_start)} — ${DateFormat.yMMMd().format(_end)}',
-                          textAlign: TextAlign.center,
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: colors.secondary.withValues(alpha: .12),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.date_range, color: colors.secondary),
+                              Container(
+                                width: 1.5,
+                                height: 34,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                color: colors.secondary.withValues(alpha: .5),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '${DateFormat.yMMMd().format(_start)} — ${DateFormat.yMMMd().format(_end)}',
+                                  style: TextStyle(color: colors.onSurface),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -235,6 +281,10 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colors.onSurface,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
                           onPressed: () => Navigator.pop(
                             context,
                             const DateRangeSelection(null),
@@ -245,6 +295,11 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colors.secondary,
+                            foregroundColor: colors.onSecondary,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
                           onPressed: error == null
                               ? () => Navigator.pop(
                                   context,
@@ -309,26 +364,57 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
               label: DateFormat.yMMMMd().format(date),
               selected: endpoint,
               button: true,
-              child: Material(
-                color: endpoint
-                    ? colors.primary
-                    : inside
-                    ? colors.primaryContainer
-                    : colors.surface,
-                borderRadius: endpoint
-                    ? BorderRadius.circular(24)
-                    : BorderRadius.zero,
-                child: InkWell(
-                  onTap: () => _select(date, calendar: true),
-                  child: Center(
-                    child: Text(
-                      '${date.day}',
-                      style: TextStyle(
-                        color: endpoint ? colors.onPrimary : colors.onSurface,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (inside && !DateUtils.isSameDay(_start, _end))
+                    Positioned.fill(
+                      top: 2,
+                      bottom: 2,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => Padding(
+                          padding: EdgeInsets.only(
+                            left: DateUtils.isSameDay(date, _start)
+                                ? constraints.maxWidth / 2
+                                : 0,
+                            right: DateUtils.isSameDay(date, _end)
+                                ? constraints.maxWidth / 2
+                                : 0,
+                          ),
+                          child: ColoredBox(
+                            color: colors.secondary.withValues(alpha: .20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (endpoint)
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: colors.secondary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _select(date, calendar: true),
+                      child: Center(
+                        child: Text(
+                          '${date.day}',
+                          style: TextStyle(
+                            color: endpoint
+                                ? colors.onSecondary
+                                : colors.onSurface,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             );
           },

@@ -15,6 +15,7 @@ class DatePartsField extends StatefulWidget {
 
 class _DatePartsFieldState extends State<DatePartsField> {
   late final List<TextEditingController> _fields;
+  final _focusNodes = List.generate(3, (_) => FocusNode());
   @override
   void initState() {
     super.initState();
@@ -59,6 +60,9 @@ class _DatePartsFieldState extends State<DatePartsField> {
     for (final field in _fields) {
       field.dispose();
     }
+    for (final node in _focusNodes) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -70,6 +74,8 @@ class _DatePartsFieldState extends State<DatePartsField> {
         Expanded(
           child: TextField(
             controller: _fields[i],
+            focusNode: _focusNodes[i],
+            textAlign: TextAlign.center,
             keyboardType: TextInputType.number,
             textInputAction: i == 2
                 ? TextInputAction.done
@@ -80,6 +86,8 @@ class _DatePartsFieldState extends State<DatePartsField> {
             ],
             decoration: InputDecoration(
               labelText: ['Day', 'Month', 'Year'][i],
+              floatingLabelAlignment: FloatingLabelAlignment.center,
+              floatingLabelBehavior: FloatingLabelBehavior.always,
               border: const OutlineInputBorder(),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 10,
@@ -87,9 +95,12 @@ class _DatePartsFieldState extends State<DatePartsField> {
               ),
             ),
             onChanged: _changed,
+            // Flutter's default editing completion also advances focus for
+            // Next. Own the transition here so it runs exactly once.
+            onEditingComplete: () {},
             onSubmitted: (_) {
               if (i < 2) {
-                FocusScope.of(context).nextFocus();
+                _focusNodes[i + 1].requestFocus();
               } else {
                 FocusScope.of(context).unfocus();
               }

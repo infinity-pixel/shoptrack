@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../models/shopping_search_result.dart';
+import 'history_date_badge.dart';
 
 class SearchResultCard extends StatelessWidget {
   const SearchResultCard({
@@ -40,32 +41,14 @@ class SearchResultCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              Container(
-                width: 38,
-                padding: const EdgeInsets.only(top: 8, bottom: 4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: p.textSecondary),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(height: 3, color: p.textSecondary),
-                    Text(
-                      '${result.session.date.day}',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: p.onBackground,
-                      ),
-                    ),
-                  ],
-                ),
+              HistoryDateBadge(
+                date: result.session.date,
+                isFuture: result.session.isFuture,
               ),
               Container(
                 width: 1,
                 height: 56,
-                margin: const EdgeInsets.symmetric(horizontal: 12),
+                margin: const EdgeInsets.symmetric(horizontal: 9),
                 color: p.border,
               ),
               Expanded(
@@ -98,18 +81,22 @@ class SearchResultCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
-                  result.status == SearchItemStatus.purchased &&
-                          item.priceValue != null
-                      ? NumberFormatter.formatPrice(item.pricing.totalPrice)
-                      : '—',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: result.status == SearchItemStatus.purchased
-                        ? p.purchased
-                        : p.textSecondary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  heightFactor: 1,
+                  child: Text(
+                    result.status == SearchItemStatus.purchased &&
+                            item.priceValue != null
+                        ? NumberFormatter.formatPrice(item.pricing.totalPrice)
+                        : '—',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: result.status == SearchItemStatus.purchased
+                          ? p.purchased
+                          : p.textSecondary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ),

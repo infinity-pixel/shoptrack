@@ -5,6 +5,7 @@ import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../models/shopping_session.dart';
+import 'history_date_badge.dart';
 
 class SessionCard extends StatelessWidget {
   const SessionCard({
@@ -68,51 +69,9 @@ class SessionCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
               child: Row(
                 children: [
-                  SizedBox(
-                    width: 44,
-                    height: 48,
-                    child: Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: palette.secondary,
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(7),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: palette.secondary,
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(5),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                DateFormat('d').format(session.date),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: session.isFuture
-                                      ? palette.planned
-                                      : palette.onBackground,
-                                  fontSize: 24,
-                                  height: 1,
-                                  fontWeight: FontWeight.w700,
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  HistoryDateBadge(
+                    date: session.date,
+                    isFuture: session.isFuture,
                   ),
                   Container(
                     width: 1,

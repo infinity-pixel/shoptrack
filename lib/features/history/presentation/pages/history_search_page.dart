@@ -194,17 +194,24 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                     padding: const EdgeInsets.only(right: 8),
                     child: FilterChip(
                       selected: _status == status,
+                      selectedColor: p.secondary,
+                      labelStyle: TextStyle(
+                        color: _status == status ? p.onSecondary : p.onSurface,
+                      ),
                       showCheckmark: false,
                       avatar: status == null
                           ? null
                           : Icon(
                               Icons.circle,
                               size: 10,
-                              color: switch (status) {
-                                SearchItemStatus.purchased => p.purchasedStatus,
-                                SearchItemStatus.pending => p.pending,
-                                _ => p.planned,
-                              },
+                              color: _status == status
+                                  ? p.onSecondary
+                                  : switch (status) {
+                                      SearchItemStatus.purchased =>
+                                        p.purchasedStatus,
+                                      SearchItemStatus.pending => p.pending,
+                                      _ => p.planned,
+                                    },
                             ),
                       label: Text(switch (status) {
                         null => 'All',
@@ -221,7 +228,15 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                     ),
                   ),
                 ActionChip(
-                  avatar: const Icon(Icons.date_range, size: 18),
+                  backgroundColor: _range != null ? p.secondary : p.surface,
+                  labelStyle: TextStyle(
+                    color: _range != null ? p.onSecondary : p.onSurface,
+                  ),
+                  avatar: Icon(
+                    Icons.date_range,
+                    size: 18,
+                    color: _range != null ? p.onSecondary : p.onSurface,
+                  ),
                   label: const Text('Date Range'),
                   onPressed: _pickRange,
                 ),
