@@ -40,7 +40,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late ShoppingSession _currentSession;
-  final ShoppingRepository _repository = LocalShoppingRepository();
+  final LocalShoppingRepository _repository = LocalShoppingRepository();
+  int _saving = 0;
+  int _loadRequest = 0;
+  int _openEditors = 0;
   late final FrequentItemsService _frequentItemsService;
   List<FrequentItemSuggestion> _frequentSuggestions = [];
   bool _isLoading = true;
@@ -57,6 +60,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _scrollController = ScrollController();
     _fabController = ScrollAwareFabController();
     _frequentItemsService = FrequentItemsService(_repository);
+    _repository.changes?.addListener(_onShoppingChanged);
     _loadSession().then((_) {
       if (widget.initialNewItemSuggestion != null && mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -85,15 +89,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _repository.changes?.removeListener(_onShoppingChanged);
     _scrollController.dispose();
     _fabController.dispose();
     super.dispose();
   }
 
   Future<void> _loadSession() async {
+    if (_openEditors > 0) return;
+    final request = ++_loadRequest;
     final date = widget.sessionDate ?? DateTime.now();
     final session = await _repository.getSessionByDate(date);
-    if (mounted) {
+    if (mounted && request == _loadRequest) {
       setState(() {
         _currentSession = session;
         final listIds = session.orderedLists.map((list) => list.id).toSet();
@@ -106,23 +113,36 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _openAddSheet({FrequentItemSuggestion? suggestion}) async {
-    final newItem = await showModalBottomSheet<dynamic>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddItemSheet(
-        nextPosition: _activeItems.length,
-        frequentSuggestions: _frequentSuggestions,
-        initialSuggestion: suggestion,
-        onRemoveFrequentSuggestion: _dismissFrequentSuggestion,
-      ),
-    );
-
-    if (newItem is ShoppingItem) {
-      _addItem(newItem);
+  Future<void> _withStableEditor(Future<void> Function() edit) async {
+    if (!mounted) return;
+    _openEditors++;
+    _loadRequest++;
+    try {
+      await edit();
+    } finally {
+      _openEditors--;
+      if (mounted && _openEditors == 0) await _loadSession();
     }
   }
+
+  Future<void> _openAddSheet({FrequentItemSuggestion? suggestion}) =>
+      _withStableEditor(() async {
+        final newItem = await showModalBottomSheet<dynamic>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => AddItemSheet(
+            nextPosition: _activeItems.length,
+            frequentSuggestions: _frequentSuggestions,
+            initialSuggestion: suggestion,
+            onRemoveFrequentSuggestion: _dismissFrequentSuggestion,
+          ),
+        );
+
+        if (mounted && newItem is ShoppingItem) {
+          await _addItem(newItem);
+        }
+      });
 
   Future<void> _refreshFrequentSuggestions() async {
     final suggestions = await _frequentItemsService.getSuggestions(
@@ -136,7 +156,43 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _persistSession() async {
-    await _repository.saveSession(_currentSession);
+    _saving++;
+    _loadRequest++;
+    try {
+      final conflictsBefore = _repository.conflictCount;
+      await _repository.saveSession(_currentSession);
+      if (mounted && _repository.conflictCount > conflictsBefore) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'This record changed elsewhere. Both versions are kept; review them in Profile → Cloud Sync.',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save this change. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      _saving--;
+      if (mounted && _saving == 0) await _loadSession();
+    }
+  }
+
+  void _onShoppingChanged() {
+    if (!mounted ||
+        _openEditors > 0 ||
+        _saving > 0 ||
+        _transitioningItemIds.isNotEmpty ||
+        _checkmarkTransitionStates.isNotEmpty) {
+      return;
+    }
+    _loadSession();
   }
 
   double get _totalAmount {
@@ -200,6 +256,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () {
+              if (!mounted) return;
               setState(() {
                 _currentSession.items.insert(
                   index < _currentSession.items.length
@@ -672,7 +729,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> _createShoppingList() async {
+  Future<void> _createShoppingList() => _withStableEditor(() async {
     final name = await showDialog<String>(
       context: context,
       builder: (_) => const ShoppingListNameDialog(
@@ -704,45 +761,50 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     });
     await _persistSession();
     await _refreshFrequentSuggestions();
-  }
+  });
 
-  Future<void> _showListActions(ShoppingListGroup list) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Rename list'),
-              onTap: () => Navigator.pop(context, 'rename'),
+  Future<void> _showListActions(ShoppingListGroup list) =>
+      _withStableEditor(() async {
+        final action = await showModalBottomSheet<String>(
+          context: context,
+          showDragHandle: true,
+          builder: (context) => SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Rename list'),
+                  onTap: () => Navigator.pop(context, 'rename'),
+                ),
+                if (_currentSession.orderedLists.length > 1)
+                  ListTile(
+                    leading: Icon(
+                      Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    title: Text(
+                      'Delete list',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    onTap: () => Navigator.pop(context, 'delete'),
+                  ),
+              ],
             ),
-            if (_currentSession.orderedLists.length > 1)
-              ListTile(
-                leading: Icon(
-                  Icons.delete_outline,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                title: Text(
-                  'Delete list',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-                onTap: () => Navigator.pop(context, 'delete'),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (!mounted) return;
-    if (action == 'rename') {
-      await _renameShoppingList(list);
-    } else if (action == 'delete') {
-      await _deleteShoppingList(list);
-    }
-  }
+          ),
+        );
+        if (!mounted) return;
+        if (action == 'rename') {
+          await _renameShoppingList(list);
+        } else if (action == 'delete') {
+          await _deleteShoppingList(list);
+        }
+      });
 
-  Future<void> _renameShoppingList(ShoppingListGroup list) async {
+  Future<void> _renameShoppingList(
+    ShoppingListGroup list,
+  ) => _withStableEditor(() async {
     final name = await showDialog<String>(
       context: context,
       builder: (_) => ShoppingListNameDialog(
@@ -774,9 +836,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       );
     });
     await _persistSession();
-  }
+  });
 
-  Future<void> _deleteShoppingList(ShoppingListGroup list) async {
+  Future<void> _deleteShoppingList(
+    ShoppingListGroup list,
+  ) => _withStableEditor(() async {
     final itemCount = _currentSession.itemsForList(list.id).length;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -814,7 +878,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     });
     await _persistSession();
     await _refreshFrequentSuggestions();
-  }
+  });
 
   Widget _buildFAB() {
     return ListenableBuilder(
@@ -852,7 +916,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return result ?? false;
   }
 
-  void _openEditSheet(ShoppingItem item) async {
+  Future<void> _openEditSheet(ShoppingItem item) => _withStableEditor(() async {
     final result = await showModalBottomSheet<dynamic>(
       context: context,
       isScrollControlled: true,
@@ -863,12 +927,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ),
     );
 
+    if (!mounted) return;
     if (result == 'delete') {
-      _deleteItem(item);
+      await _deleteItem(item);
     } else if (result is ShoppingItem) {
-      _updateItem(result);
+      await _updateItem(result);
     }
-  }
+  });
 
   void _onReorder(List<ShoppingItem> sectionList, int oldIndex, int newIndex) {
     setState(() {
@@ -1031,13 +1096,31 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         listId: sourceListId,
       );
 
-      setState(() {
-        _currentSession.items.removeWhere((it) => it.id == item.id);
-      });
-      await _persistSession();
-
       todaySession.items.add(movedItem);
-      await _repository.saveSession(todaySession.copyWith(lists: todayLists));
+      _saving++;
+      try {
+        // Persist both dates together and upload them in one cloud transaction.
+        await _repository.saveSessions([
+          todaySession.copyWith(lists: todayLists),
+          _currentSession.copyWith(
+            items: _currentSession.items
+                .where((it) => it.id != item.id)
+                .toList(),
+          ),
+        ]);
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not move this item. Please try again.'),
+            ),
+          );
+        }
+        return;
+      } finally {
+        _saving--;
+        if (mounted) await _loadSession();
+      }
 
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);

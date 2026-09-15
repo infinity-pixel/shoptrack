@@ -11,7 +11,11 @@ import '../widgets/session_card.dart';
 import 'history_search_page.dart';
 
 class HistoryPage extends StatefulWidget {
-  const HistoryPage({super.key, required this.onSessionSelected, this.onTabSelected});
+  const HistoryPage({
+    super.key,
+    required this.onSessionSelected,
+    this.onTabSelected,
+  });
 
   final ValueChanged<DateTime> onSessionSelected;
   final ValueChanged<int>? onTabSelected;
@@ -22,7 +26,7 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage>
     with SingleTickerProviderStateMixin {
-  final ShoppingRepository _repository = LocalShoppingRepository();
+  final LocalShoppingRepository _repository = LocalShoppingRepository();
   late final ScrollAwareFabController _fabController;
   late final AnimationController _headingGlowController;
   late final Animation<double> _headingGlow;
@@ -32,6 +36,7 @@ class _HistoryPageState extends State<HistoryPage>
   @override
   void initState() {
     super.initState();
+    _repository.changes?.addListener(_loadSessions);
     _fabController = ScrollAwareFabController();
     _headingGlowController = AnimationController(
       vsync: this,
@@ -52,6 +57,7 @@ class _HistoryPageState extends State<HistoryPage>
 
   @override
   void dispose() {
+    _repository.changes?.removeListener(_loadSessions);
     _fabController.dispose();
     _headingGlowController.dispose();
     super.dispose();
@@ -159,7 +165,10 @@ class _HistoryPageState extends State<HistoryPage>
           onTap: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => HistorySearchPage(onTabSelected: widget.onTabSelected)),
+              MaterialPageRoute(
+                builder: (_) =>
+                    HistorySearchPage(onTabSelected: widget.onTabSelected),
+              ),
             );
             _loadSessions();
           },

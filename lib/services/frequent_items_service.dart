@@ -7,6 +7,9 @@ class FrequentItemsService {
   static const String _dismissedSuggestionsKey =
       'dismissed_frequent_item_suggestions';
   final ShoppingRepository _repository;
+  String get _scopedKey => _repository is LocalShoppingRepository
+      ? '${_dismissedSuggestionsKey}_${(_repository).accountScope}'
+      : _dismissedSuggestionsKey;
 
   FrequentItemsService(this._repository);
 
@@ -75,13 +78,24 @@ class FrequentItemsService {
     final prefs = await SharedPreferences.getInstance();
     final dismissed = await _loadDismissedNames();
     dismissed.add(normalized);
-    await prefs.setStringList(_dismissedSuggestionsKey, dismissed.toList());
+    await prefs.setStringList(_scopedKey, dismissed.toList());
   }
 
   Future<Set<String>> _loadDismissedNames() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return (prefs.getStringList(_dismissedSuggestionsKey) ?? const <String>[])
+      final scope = _repository is LocalShoppingRepository
+          ? (_repository).accountScope
+          : 'legacy';
+      final ownsLegacy =
+          scope == 'legacy' ||
+          scope == 'guest' ||
+          scope == prefs.getString('shoptrack_migration_owner');
+      return (prefs.getStringList(_scopedKey) ??
+              (ownsLegacy
+                  ? prefs.getStringList(_dismissedSuggestionsKey)
+                  : null) ??
+              const <String>[])
           .map((name) => name.trim().toLowerCase())
           .where((name) => name.isNotEmpty)
           .toSet();

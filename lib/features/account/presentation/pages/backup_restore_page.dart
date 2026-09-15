@@ -119,7 +119,8 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
         title: const Text('Restore Backup?'),
         content: const Text(
           'Restoring this backup will replace your current local ShopTrack data. '
-          'This action cannot be undone unless you have another backup.',
+          'If cloud sync is enabled, these changes also sync to this account’s other devices. '
+          'Export a backup first if you want to keep the current version.',
         ),
         actions: [
           TextButton(

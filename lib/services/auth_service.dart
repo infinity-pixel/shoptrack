@@ -39,6 +39,8 @@ class GoogleAuthService extends ChangeNotifier implements AuthService {
   late final Future<void> ready;
   StreamSubscription<GoogleSignInAuthenticationEvent>? _subscription;
   GoogleSignInAccount? _user;
+  Future<void>? _accepting;
+  bool _signingOut = false;
   bool _disposed = false;
   AuthState _state = const AuthInitial();
   @override
@@ -59,6 +61,7 @@ class GoogleAuthService extends ChangeNotifier implements AuthService {
           unawaited(_acceptFromEvent(event.user));
         } else if (event is GoogleSignInAuthenticationEventSignOut) {
           _user = null;
+          if (!_signingOut) unawaited(_firebaseAuth?.signOut());
           _publish(const AuthUnauthenticated());
           _forget();
         }
@@ -96,10 +99,18 @@ class GoogleAuthService extends ChangeNotifier implements AuthService {
     }
   }
 
-  Future<void> _accept(GoogleSignInAccount user) async {
+  Future<void> _accept(GoogleSignInAccount user) {
+    if (_disposed || _signingOut) return Future.value();
+    // Google emits an event as well as returning authenticate(). Coalesce the
+    // two notifications so one user action exchanges credentials only once.
+    if (_accepting != null) return _accepting!;
+    return _accepting = _acceptOnce(user).whenComplete(() => _accepting = null);
+  }
+
+  Future<void> _acceptOnce(GoogleSignInAccount user) async {
     if (_disposed) return;
     await _authenticateWithFirebase(user);
-    if (_disposed) return;
+    if (_disposed || _signingOut) return;
     _user = user;
     _publish(
       AuthAuthenticated(
@@ -170,11 +181,22 @@ class GoogleAuthService extends ChangeNotifier implements AuthService {
   @override
   Future<void> signOut() async {
     await ready;
-    await _googleSignIn.signOut();
-    await _firebaseAuth?.signOut();
-    _user = null;
-    await _forget();
-    _publish(const AuthUnauthenticated());
+    _signingOut = true;
+    try {
+      try {
+        await _accepting;
+      } catch (_) {
+        /* Sign-out still proceeds. */
+      }
+      // Stop access to synced records before requesting Google sign-out.
+      await _firebaseAuth?.signOut();
+      await _googleSignIn.signOut();
+      _user = null;
+      await _forget();
+      _publish(const AuthUnauthenticated());
+    } finally {
+      _signingOut = false;
+    }
   }
 
   @override

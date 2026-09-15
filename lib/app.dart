@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'services/shopping_sync_service.dart';
+import 'services/firestore_sync_remote.dart';
 import 'core/data/settings_repository.dart';
 import 'features/main/presentation/pages/main_page.dart';
 import 'core/theme/theme_presets.dart';
@@ -42,6 +45,9 @@ class ShopTrackApp extends StatefulWidget {
         .findAncestorStateOfType<_ShopTrackAppState>()!
         .cloudBackupService;
   }
+
+  static ShoppingSyncService? syncOf(BuildContext context) =>
+      context.findAncestorStateOfType<_ShopTrackAppState>()?.syncService;
 }
 
 class _ShopTrackAppState extends State<ShopTrackApp> {
@@ -49,6 +55,7 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
   late final ProfileService profileService;
   late final AuthService authService;
   late final CloudBackupService cloudBackupService;
+  ShoppingSyncService? syncService;
 
   @override
   void initState() {
@@ -75,10 +82,18 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
     );
 
     authService.addListener(_handleAuthChange);
+    if (Firebase.apps.isNotEmpty) {
+      syncService = ShoppingSyncService(
+        auth: firebase_auth.FirebaseAuth.instance,
+        remote: FirestoreSyncRemote(FirebaseFirestore.instance),
+      );
+      syncService!.start();
+    }
   }
 
   @override
   void dispose() {
+    syncService?.dispose();
     authService.removeListener(_handleAuthChange);
     cloudBackupService.dispose();
     authService.dispose();
@@ -100,7 +115,10 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: settingsService,
+      listenable: Listenable.merge([
+        settingsService,
+        ?syncService,
+      ]),
       builder: (context, child) {
         final platformBrightness = MediaQuery.of(context).platformBrightness;
         final themeDefinition = ThemePresets.getDefinition(
@@ -109,6 +127,7 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
         );
 
         return MaterialApp(
+          key: ValueKey(syncService?.store?.scope ?? 'local'),
           title: 'ShopTrack',
           debugShowCheckedModeBanner: false,
           scaffoldMessengerKey: ShopTrackApp.scaffoldMessengerKey,
@@ -121,10 +140,26 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
               ThemePresets.darkPresets[settingsService.settings.darkPreset]
                   ?.toThemeData() ??
               ThemePresets.darkPresets[DarkPreset.midnight]!.toThemeData(),
-          home: AtmosphericBackground(
-            config: themeDefinition.atmosphericConfig,
-            child: const MainPage(),
-          ),
+          home:
+              syncService != null &&
+                  (!syncService!.ready || syncService!.switching)
+              ? Scaffold(
+                  body: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: syncService!.error == null
+                          ? const CircularProgressIndicator()
+                          : Text(
+                              syncService!.error!,
+                              textAlign: TextAlign.center,
+                            ),
+                    ),
+                  ),
+                )
+              : AtmosphericBackground(
+                  config: themeDefinition.atmosphericConfig,
+                  child: const MainPage(),
+                ),
         );
       },
     );

@@ -10,6 +10,7 @@ import 'edit_profile_page.dart';
 import '../widgets/profile_avatar.dart';
 import '../widgets/sign_out_dialog.dart';
 import 'backup_restore_page.dart';
+import 'cloud_sync_page.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -19,9 +20,15 @@ class AccountPage extends StatelessWidget {
     final settingsService = ShopTrackApp.of(context);
     final authService = ShopTrackApp.authOf(context);
     final profiles = ShopTrackApp.profileOf(context);
+    final sync = ShopTrackApp.syncOf(context);
 
     return ListenableBuilder(
-      listenable: Listenable.merge([settingsService, authService, profiles]),
+      listenable: Listenable.merge([
+        settingsService,
+        authService,
+        profiles,
+        ?sync,
+      ]),
       builder: (context, _) {
         final authState = authService.state;
         final settings = settingsService.settings;
@@ -104,11 +111,23 @@ class AccountPage extends StatelessWidget {
                           _buildSettingsTile(
                             context,
                             icon: Icons.cloud_upload_outlined,
-                            title: 'Cloud Backup',
-                            subtitle: authState is AuthAuthenticated
-                                ? 'Back up to your Google account'
-                                : 'Sign in to enable cloud backup',
+                            title: sync == null ? 'Cloud Backup' : 'Cloud Sync',
+                            subtitle:
+                                sync?.statusLabel ??
+                                (authState is AuthAuthenticated
+                                    ? 'Back up to your Google account'
+                                    : 'Sign in to enable cloud backup'),
                             onTap: () {
+                              if (sync != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        CloudSyncPage(service: sync),
+                                  ),
+                                );
+                                return;
+                              }
                               if (authState is AuthAuthenticated) {
                                 Navigator.push(
                                   context,
@@ -126,7 +145,7 @@ class AccountPage extends StatelessWidget {
                             context,
                             icon: Icons.settings_backup_restore_outlined,
                             title: 'Backup & Restore',
-                            subtitle: 'Export or import your local data',
+                            subtitle: 'Advanced: file and Google Drive backups',
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(

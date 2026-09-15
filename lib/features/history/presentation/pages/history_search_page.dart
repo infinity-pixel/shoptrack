@@ -20,6 +20,7 @@ class HistorySearchPage extends StatefulWidget {
 }
 
 class _HistorySearchPageState extends State<HistorySearchPage> {
+  final _repository = LocalShoppingRepository();
   final _searchController = TextEditingController();
   final _searchService = SearchService(LocalShoppingRepository());
   final _frequent = FrequentItemsService(LocalShoppingRepository());
@@ -34,6 +35,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
   @override
   void initState() {
     super.initState();
+    _repository.changes?.addListener(_onShoppingChanged);
     _loadSuggestions();
   }
 
@@ -48,9 +50,16 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
   @override
   void dispose() {
+    _repository.changes?.removeListener(_onShoppingChanged);
     _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onShoppingChanged() {
+    if (!mounted) return;
+    _loadSuggestions();
+    _search();
   }
 
   bool get _active =>

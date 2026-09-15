@@ -18,7 +18,7 @@ Future<void> confirmSignOut(BuildContext context, AuthService auth) async {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Your shopping lists and history stay on this device and remain accessible. Existing Google Drive backups are not deleted.\n\nYou will need to sign in again to use cloud backup. Your saved ShopTrack profile will return when you sign in to the same account on this device.',
+                'Your shopping lists and history stay on this device and remain accessible. Cloud sync pauses when you sign out. Any changes waiting to upload will resume when you sign in to the same account.\n\nSigning in to a different account opens its own separate history. Existing cloud data and Google Drive backups are not deleted. Your saved ShopTrack profile will return when you sign in to the same account on this device.',
               ),
               if (error != null)
                 Padding(
