@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
+import '../../../../core/widgets/lists_navigation_icon.dart';
 import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_search_result.dart';
 import '../../../../services/frequent_items_service.dart';
@@ -135,7 +136,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
               },
               items: const [
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.description),
+                  icon: ListsNavigationIcon(),
                   label: 'Lists',
                 ),
                 BottomNavigationBarItem(

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_core/firebase_core.dart';
 import 'core/data/settings_repository.dart';
 import 'features/main/presentation/pages/main_page.dart';
 import 'core/theme/theme_presets.dart';
@@ -56,8 +58,16 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
     settingsService.loadSettings();
 
     authService = GoogleAuthService(
+      // This is the Web OAuth client generated in google-services.json.
+      // It exchanges the Android Google token for a Firebase identity.
       serverClientId:
-          '1073842238529-h0oadkbch0vlhkp0469lkbbgk2vr8na0.apps.googleusercontent.com',
+          '1073842238529-g0ii3oki3rguq3p69vutgp6vhc4kjje3.apps.googleusercontent.com',
+      // Widget tests build the app without calling main(), so Firebase has not
+      // been initialized there. Production reaches this point only after main
+      // initializes Firebase.
+      firebaseAuth: Firebase.apps.isEmpty
+          ? null
+          : firebase_auth.FirebaseAuth.instance,
     );
     cloudBackupService = GoogleDriveBackupService(
       accountForCloudAction:

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app.dart';
+import '../../../../core/widgets/lists_navigation_icon.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../history/presentation/pages/history_page.dart';
 import '../../../account/presentation/pages/account_page.dart';
@@ -50,7 +51,7 @@ class _MainPageState extends State<MainPage> {
             type: BottomNavigationBarType.fixed,
             items: const [
               BottomNavigationBarItem(
-                icon: ImageIcon(AssetImage('assets/images/lists_icon.png')),
+                icon: ListsNavigationIcon(),
                 label: 'Lists',
               ),
               BottomNavigationBarItem(

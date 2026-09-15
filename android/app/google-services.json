@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1073842238529",
+    "project_id": "shoptrack-506718",
+    "storage_bucket": "shoptrack-506718.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1073842238529:android:198f0a9b6f5e64152f42c0",
+        "android_client_info": {
+          "package_name": "com.ishtiak.example.shoptrack"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1073842238529-kf5av53om9hjgbpu2ogtphj2e967ima1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ishtiak.example.shoptrack",
+            "certificate_hash": "a16791c8908eb58024e22a12477a33b86ca55ca6"
+          }
+        },
+        {
+          "client_id": "1073842238529-g0ii3oki3rguq3p69vutgp6vhc4kjje3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbEODQPkFHeMv8uc-xRFJsE5i2kdnqzNA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1073842238529-g0ii3oki3rguq3p69vutgp6vhc4kjje3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
