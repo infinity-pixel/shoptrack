@@ -6,6 +6,9 @@ import '../../../../models/auth_state.dart';
 import '../../../../services/auth_service.dart';
 import '../../../../services/settings_service.dart';
 import 'about_page.dart';
+import 'edit_profile_page.dart';
+import '../widgets/profile_avatar.dart';
+import '../widgets/sign_out_dialog.dart';
 import 'backup_restore_page.dart';
 
 class AccountPage extends StatelessWidget {
@@ -15,9 +18,10 @@ class AccountPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final settingsService = ShopTrackApp.of(context);
     final authService = ShopTrackApp.authOf(context);
+    final profiles = ShopTrackApp.profileOf(context);
 
     return ListenableBuilder(
-      listenable: Listenable.merge([settingsService, authService]),
+      listenable: Listenable.merge([settingsService, authService, profiles]),
       builder: (context, _) {
         final authState = authService.state;
         final settings = settingsService.settings;
@@ -92,7 +96,7 @@ class AccountPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    _buildSectionHeader(context, 'Data & Backup'),
+                    _buildSectionHeader(context, 'Account & Data'),
                     _surface(
                       context,
                       Column(
@@ -131,6 +135,15 @@ class AccountPage extends StatelessWidget {
                               ),
                             ),
                           ),
+                          if (authState is AuthAuthenticated)
+                            _buildSettingsTile(
+                              context,
+                              icon: Icons.logout,
+                              title: 'Sign Out',
+                              subtitle:
+                                  'Local shopping data stays on this device',
+                              onTap: () => confirmSignOut(context, authService),
+                            ),
                         ],
                       ),
                     ),
@@ -232,6 +245,9 @@ class AccountPage extends StatelessWidget {
     final p = ShopTrackThemeTokens.of(context).palette;
     final account = state is AuthAuthenticated ? state.account : null;
     final errorMessage = state is AuthError ? state.message : null;
+    final profiles = ShopTrackApp.profileOf(context);
+    final local = account == null ? null : profiles.forAccount(account.id);
+    final displayName = local?.name ?? account?.displayName ?? 'Your Profile';
     return _surface(
       context,
       Padding(
@@ -239,39 +255,57 @@ class AccountPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: CircleAvatar(
-                radius: 34,
-                backgroundColor: p.primary.withValues(alpha: .18),
-                foregroundColor: p.onSurface,
-                foregroundImage: account?.photoUrl == null
-                    ? null
-                    : NetworkImage(account!.photoUrl!),
-                onForegroundImageError: account?.photoUrl == null
-                    ? null
-                    : (_, _) {},
-                child: account != null
-                    ? Text(
-                        (account.displayName?.trim().isNotEmpty == true
-                                ? account.displayName!.trim()
-                                : account.email)
-                            .characters
-                            .first
-                            .toUpperCase(),
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: p.onSurface,
+            if (account != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: !profiles.loaded || profiles.loadError != null
+                      ? null
+                      : () async {
+                          await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditProfilePage(
+                                account: account,
+                                profiles: profiles,
+                                auth: authService,
+                              ),
                             ),
-                      )
-                    : const Icon(Icons.person_outline, size: 34),
+                          );
+                        },
+                  icon: const Icon(Icons.edit_outlined, size: 17),
+                  label: const Text('Edit'),
+                ),
               ),
+            if (profiles.loadError != null)
+              Text(
+                'Your saved profile could not be loaded. Please restart the app.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: p.error),
+              ),
+            Center(
+              child: account == null
+                  ? CircleAvatar(
+                      radius: 34,
+                      backgroundColor: p.primary.withValues(alpha: .18),
+                      child: Icon(
+                        Icons.person_outline,
+                        color: p.onSurface,
+                        size: 34,
+                      ),
+                    )
+                  : ProfileAvatar(
+                      name: displayName,
+                      photo: local?.photo,
+                      googlePhoto: local?.hideGooglePhoto == true
+                          ? null
+                          : account.photoUrl,
+                    ),
             ),
             const SizedBox(height: 12),
             Center(
               child: Text(
-                account?.displayName ??
-                    (account != null ? 'Your Profile' : 'Welcome to ShopTrack'),
+                account != null ? displayName : 'Welcome to ShopTrack',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
@@ -301,43 +335,26 @@ class AccountPage extends StatelessWidget {
                   color: errorMessage != null ? p.error : p.textSecondary,
                 ),
               ),
-            const SizedBox(height: 12),
-            Divider(color: p.border),
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.center,
-              child: state is AuthLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          semanticsLabel: 'Signing In',
+            if (account == null) ...[
+              const SizedBox(height: 12),
+              Divider(color: p.border),
+              Center(
+                child: state is AuthLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: CircularProgressIndicator(),
+                      )
+                    : TextButton.icon(
+                        onPressed: () => authService.signIn(),
+                        icon: const Icon(Icons.login, size: 18),
+                        label: Text(
+                          errorMessage != null
+                              ? 'Retry Sign In'
+                              : 'Sign In With Google',
                         ),
                       ),
-                    )
-                  : TextButton.icon(
-                      onPressed: () {
-                        account != null
-                            ? authService.signOut()
-                            : authService.signIn();
-                      },
-                      style: TextButton.styleFrom(foregroundColor: p.onSurface),
-                      icon: Icon(
-                        account != null ? Icons.logout : Icons.login,
-                        size: 18,
-                      ),
-                      label: Text(
-                        account != null
-                            ? 'Sign Out'
-                            : errorMessage != null
-                            ? 'Retry Sign In'
-                            : 'Sign In With Google',
-                      ),
-                    ),
-            ),
+              ),
+            ],
           ],
         ),
       ),

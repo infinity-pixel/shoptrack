@@ -50,7 +50,7 @@ class _MainPageState extends State<MainPage> {
             type: BottomNavigationBarType.fixed,
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.description),
+                icon: ImageIcon(AssetImage('assets/images/lists_icon.png')),
                 label: 'Lists',
               ),
               BottomNavigationBarItem(
