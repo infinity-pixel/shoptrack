@@ -176,9 +176,12 @@ class LocalShoppingRepository implements ShoppingRepository {
       final String updatedJson = jsonEncode(
         all.map((s) => s.toJson()).toList(),
       );
-      await prefs.setString(_sessionsKey, updatedJson);
+      if (!await prefs.setString(_sessionsKey, updatedJson)) {
+        throw StateError('Shopping data could not be saved on this device');
+      }
     } catch (e) {
       debugPrint('Error saving session: $e');
+      rethrow;
     }
   }
 

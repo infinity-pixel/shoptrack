@@ -8,6 +8,7 @@ import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/theme/atmospheric_background.dart';
 import '../../../../core/utils/number_formatter.dart';
+import '../../../../core/utils/shopping_session_actions.dart';
 import '../../../../core/widgets/scroll_aware_fab.dart';
 import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_item.dart';
@@ -18,6 +19,7 @@ import '../widgets/add_item_sheet.dart';
 import '../widgets/shopping_item_tile.dart';
 import '../widgets/shopping_list_name_dialog.dart';
 import '../widgets/shopping_list_switcher.dart';
+import '../widgets/item_selection_bar.dart';
 
 class HomePage extends StatefulWidget {
   final DateTime? sessionDate;
@@ -45,6 +47,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _saving = 0;
   int _loadRequest = 0;
   int _openEditors = 0;
+  bool _selectionMode = false;
+  bool _selectionBusy = false;
+  final Set<String> _selectedItemIds = {};
   late final FrequentItemsService _frequentItemsService;
   List<FrequentItemSuggestion> _frequentSuggestions = [];
   bool _isLoading = true;
@@ -84,6 +89,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     if (didChangeDate ||
         (oldDate != null && newDate == null) ||
         oldWidget.refreshRevision != widget.refreshRevision) {
+      _clearSelection();
       _loadSession();
     }
   }
@@ -126,6 +132,215 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
+  void _selectItem(ShoppingItem item) {
+    if (_selectionBusy ||
+        _saving > 0 ||
+        _transitioningItemIds.isNotEmpty ||
+        _checkmarkTransitionStates.isNotEmpty) {
+      return;
+    }
+    setState(() {
+      if (!_selectionMode) {
+        _selectionMode = true;
+        // Keep the repository baseline from when selection began, just as an
+        // open item editor does. Remote changes will be merged at save time.
+        _openEditors++;
+        _loadRequest++;
+      }
+      if (!_selectedItemIds.add(item.id)) _selectedItemIds.remove(item.id);
+    });
+  }
+
+  void _clearSelection() {
+    if (_selectionMode) _openEditors--;
+    _selectionMode = false;
+    _selectedItemIds.clear();
+  }
+
+  void _cancelSelection() {
+    if (_selectionBusy) return;
+    setState(_clearSelection);
+    _loadSession();
+  }
+
+  Future<void> _saveSelection(ShoppingSession updated, String message) async {
+    setState(() => _selectionBusy = true);
+    _saving++;
+    _loadRequest++;
+    try {
+      final conflictsBefore = _repository.conflictCount;
+      await _repository.saveSession(updated);
+      if (!mounted) return;
+      final conflicted = _repository.conflictCount > conflictsBefore;
+      setState(_clearSelection);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            conflicted
+                ? 'This record changed elsewhere. Both versions are kept; review them in Profile → Cloud Sync.'
+                : message,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not save this change. Your selection is kept; please try again.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      _saving--;
+      if (mounted) {
+        setState(() => _selectionBusy = false);
+        await _loadSession();
+      }
+    }
+  }
+
+  Future<void> _moveSelection() async {
+    final destinations = _currentSession.orderedLists
+        .where((list) => list.id != _activeListId)
+        .toList();
+    final target = await showModalBottomSheet<ShoppingListGroup>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * .6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Move To List',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Text('Items keep their details and shopping date.'),
+              ),
+              if (destinations.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Create another list for this date first, then move your items here.',
+                  ),
+                ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: destinations.length,
+                  itemBuilder: (context, index) {
+                    final list = destinations[index];
+                    return ListTile(
+                      leading: const Icon(Icons.checklist_rounded),
+                      title: Text(list.name),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.pop(context, list),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || target == null || !_selectionMode) return;
+    final count = _selectedItemIds.length;
+    final updated = ShoppingSessionActions.move(
+      _currentSession,
+      sourceListId: _activeListId,
+      destinationListId: target.id,
+      ids: _selectedItemIds,
+    );
+    await _saveSelection(
+      updated,
+      'Moved $count ${count == 1 ? 'item' : 'items'} to ${target.name}.',
+    );
+  }
+
+  Future<void> _deleteSelection() async {
+    final count = _selectedItemIds.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete $count ${count == 1 ? 'Item' : 'Items'}?'),
+        content: const Text(
+          'These items will be removed from this list and your synced devices. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true || !_selectionMode) return;
+    await _saveSelection(
+      ShoppingSessionActions.delete(
+        _currentSession,
+        sourceListId: _activeListId,
+        ids: _selectedItemIds,
+      ),
+      'Deleted $count ${count == 1 ? 'item' : 'items'}.',
+    );
+  }
+
+  Widget _selectionBar() => ItemSelectionBar(
+    count: _selectedItemIds.length,
+    allSelected: _selectedItemIds.length == _activeItems.length,
+    busy: _selectionBusy,
+    onClose: _cancelSelection,
+    onSelectAll: () => setState(() {
+      if (_selectedItemIds.length == _activeItems.length) {
+        _selectedItemIds.clear();
+      } else {
+        _selectedItemIds.addAll(_activeItems.map((item) => item.id));
+      }
+    }),
+    onMove: _moveSelection,
+    onDelete: _deleteSelection,
+  );
+
+  Widget _shoppingTile(ShoppingItem item, int index) => ShoppingItemTile(
+    item: item,
+    index: index,
+    visualPurchased: _checkmarkTransitionStates[item.id],
+    selectionMode: _selectionMode,
+    selected: _selectedItemIds.contains(item.id),
+    onLongPress: () => _selectItem(item),
+    onToggle: () => _selectionMode ? _selectItem(item) : _toggleItem(item),
+    onTap: () => _selectionMode ? _selectItem(item) : _openEditSheet(item),
+    onDelete: () => _deleteItem(item),
+  );
+
   Future<void> _openAddSheet({FrequentItemSuggestion? suggestion}) =>
       _withStableEditor(() async {
         final newItem = await showModalBottomSheet<dynamic>(
@@ -133,7 +348,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (context) => AddItemSheet(
-            nextPosition: _activeItems.length,
+            nextPosition:
+                _activeItems.fold<int>(
+                  -1,
+                  (last, item) => item.position > last ? item.position : last,
+                ) +
+                1,
             frequentSuggestions: _frequentSuggestions,
             initialSuggestion: suggestion,
             onRemoveFrequentSuggestion: _dismissFrequentSuggestion,
@@ -300,6 +520,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+        if (_selectionMode) {
+          _cancelSelection();
+          return;
+        }
 
         if (!hasItems && widget.onBackToHistory != null) {
           final shouldDiscard = await _showDiscardWarning();
@@ -320,6 +544,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () async {
+                    if (_selectionMode) {
+                      _cancelSelection();
+                      return;
+                    }
                     if (!hasItems) {
                       final shouldDiscard = await _showDiscardWarning();
                       if (shouldDiscard && mounted) {
@@ -370,6 +598,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   RecordHero(
                     date: _currentSession.date,
                     onBack: () async {
+                      if (_selectionMode) {
+                        _cancelSelection();
+                        return;
+                      }
                       if (!hasItems) {
                         final discard = await _showDiscardWarning();
                         if (!discard || !mounted) return;
@@ -380,6 +612,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 else
                   _buildHeader(formattedDate),
                 _buildListSwitcher(),
+                if (_selectionMode) _selectionBar(),
                 // Content Area
                 Expanded(
                   child: NotificationListener<ScrollNotification>(
@@ -401,6 +634,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 ),
                                 const SizedBox(height: 8),
                                 ReorderableListView.builder(
+                                  buildDefaultDragHandles: false,
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
                                   itemCount: activeItems.length,
@@ -422,16 +656,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                             )
                                             ? 0
                                             : 1,
-                                        child: ShoppingItemTile(
-                                          item: item,
-                                          visualPurchased:
-                                              _checkmarkTransitionStates[item
-                                                  .id],
-                                          index: index,
-                                          onToggle: () => _toggleItem(item),
-                                          onTap: () => _openEditSheet(item),
-                                          onDelete: () => _deleteItem(item),
-                                        ),
+                                        child: _shoppingTile(item, index),
                                       ),
                                     );
                                   },
@@ -450,6 +675,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 ),
                                 const SizedBox(height: 8),
                                 ReorderableListView.builder(
+                                  buildDefaultDragHandles: false,
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
                                   itemCount: purchasedItems.length,
@@ -471,16 +697,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                             )
                                             ? 0
                                             : 1,
-                                        child: ShoppingItemTile(
-                                          item: item,
-                                          visualPurchased:
-                                              _checkmarkTransitionStates[item
-                                                  .id],
-                                          index: index,
-                                          onToggle: () => _toggleItem(item),
-                                          onTap: () => _openEditSheet(item),
-                                          onDelete: () => _deleteItem(item),
-                                        ),
+                                        child: _shoppingTile(item, index),
                                       ),
                                     );
                                   },
@@ -497,7 +714,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
         ),
-        floatingActionButton: _buildFAB(),
+        floatingActionButton: _selectionMode ? null : _buildFAB(),
       ),
     );
   }
@@ -698,15 +915,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       children: [
         Icon(icon, size: 24, color: color),
         const SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: palette.onBackground,
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: palette.onBackground,
+            ),
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
@@ -715,7 +934,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            '$count items',
+            '$count ${count == 1 ? 'item' : 'items'}',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -728,17 +947,37 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildListSwitcher() {
-    return ShoppingListSwitcher(
-      lists: _currentSession.orderedLists,
-      activeListId: _activeListId,
-      itemCountForList: (listId) => _currentSession.itemsForList(listId).length,
-      onSelected: (listId) {
-        if (listId == _activeListId) return;
-        setState(() => _activeListId = listId);
-        _refreshFrequentSuggestions();
-      },
-      onCreate: _createShoppingList,
-      onManage: _showListActions,
+    return IgnorePointer(
+      ignoring: _selectionBusy,
+      child: ShoppingListSwitcher(
+        lists: _currentSession.orderedLists,
+        activeListId: _activeListId,
+        itemCountForList: (listId) =>
+            _currentSession.itemsForList(listId).length,
+        onSelected: (listId) {
+          if (listId == _activeListId) return;
+          setState(() {
+            _clearSelection();
+            _activeListId = listId;
+          });
+          _loadSession();
+          _refreshFrequentSuggestions();
+        },
+        onCreate: () async {
+          if (_selectionMode) {
+            setState(_clearSelection);
+            await _loadSession();
+          }
+          if (mounted) _createShoppingList();
+        },
+        onManage: (list) async {
+          if (_selectionMode) {
+            setState(_clearSelection);
+            await _loadSession();
+          }
+          if (mounted) _showListActions(list);
+        },
+      ),
     );
   }
 
@@ -949,6 +1188,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   });
 
   void _onReorder(List<ShoppingItem> sectionList, int oldIndex, int newIndex) {
+    if (_selectionMode) return;
     setState(() {
       if (newIndex > oldIndex) {
         newIndex -= 1;
@@ -1239,20 +1479,29 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Total Amount',
-              style: TextStyle(
-                fontSize: 16,
-                color: palette.onBackground,
-                fontWeight: FontWeight.w600,
+            Expanded(
+              child: Text(
+                'Total Amount',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: palette.onBackground,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            RollingDigitText(
-              text: NumberFormatter.formatPrice(_totalAmount),
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: palette.onBackground,
+            const SizedBox(width: 8),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: RollingDigitText(
+                  text: NumberFormatter.formatPrice(_totalAmount),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: palette.onBackground,
+                  ),
+                ),
               ),
             ),
           ],

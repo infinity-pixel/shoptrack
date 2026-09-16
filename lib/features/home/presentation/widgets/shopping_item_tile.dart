@@ -10,6 +10,9 @@ class ShoppingItemTile extends StatelessWidget {
   final VoidCallback onDelete;
   final int index;
   final bool? visualPurchased;
+  final VoidCallback? onLongPress;
+  final bool selectionMode;
+  final bool selected;
 
   const ShoppingItemTile({
     super.key,
@@ -19,6 +22,9 @@ class ShoppingItemTile extends StatelessWidget {
     required this.onDelete,
     required this.index,
     this.visualPurchased,
+    this.onLongPress,
+    this.selectionMode = false,
+    this.selected = false,
   });
 
   @override
@@ -26,6 +32,8 @@ class ShoppingItemTile extends StatelessWidget {
     final isPurchased = visualPurchased ?? item.isPurchased;
     final pricing = item.pricing;
     final palette = ShopTrackThemeTokens.of(context).palette;
+    final checked = selectionMode ? selected : isPurchased;
+    final checkColor = selectionMode ? palette.primary : palette.purchased;
 
     // Use resolved values from the pricing engine for display
     final displayQty = pricing.resolvedQuantity;
@@ -33,7 +41,9 @@ class ShoppingItemTile extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(item.id),
-      direction: DismissDirection.endToStart,
+      direction: selectionMode
+          ? DismissDirection.none
+          : DismissDirection.endToStart,
       onDismissed: (_) => onDelete(),
       background: Container(
         alignment: Alignment.centerRight,
@@ -52,10 +62,14 @@ class ShoppingItemTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isPurchased ? palette.surfacePurchased : palette.surfaceToBuy,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: palette.border),
+          border: Border.all(
+            color: selected ? palette.primary : palette.border,
+            width: selected ? 2 : 1,
+          ),
         ),
         child: InkWell(
           onTap: onTap,
+          onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(2, 6, 14, 6),
@@ -65,68 +79,83 @@ class ShoppingItemTile extends StatelessWidget {
                 // Drag Handle
                 ReorderableDragStartListener(
                   index: index,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 8,
-                    ),
-                    child: Icon(
-                      Icons.drag_indicator,
-                      color: palette.textSecondary.withValues(alpha: 0.55),
-                      size: 20,
+                  enabled: !selectionMode,
+                  // Hit-test the whole padded handle, not just the icon glyph.
+                  child: ColoredBox(
+                    color: Colors.transparent,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 8,
+                      ),
+                      child: Icon(
+                        selectionMode
+                            ? Icons.touch_app_outlined
+                            : Icons.drag_indicator,
+                        color: palette.textSecondary.withValues(alpha: 0.55),
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
 
                 // Checkbox
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onToggle,
-                  child: SizedBox(
-                    width: 40,
-                    height: 52,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 280),
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: isPurchased
-                                  ? palette.purchased
-                                  : Theme.of(context).brightness ==
-                                        Brightness.dark
-                                  ? palette.textSecondary
-                                  : palette.border,
-                              width: 2,
+                Semantics(
+                  label: selectionMode
+                      ? 'Select ${item.name}'
+                      : 'Mark ${item.name} Purchased',
+                  checked: checked,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onToggle,
+                    child: SizedBox(
+                      width: 40,
+                      height: 52,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 280),
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: checked
+                                    ? checkColor
+                                    : Theme.of(context).brightness ==
+                                          Brightness.dark
+                                    ? palette.textSecondary
+                                    : palette.border,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                selectionMode ? 20 : 8,
+                              ),
+                              color: checked ? checkColor : Colors.transparent,
                             ),
-                            borderRadius: BorderRadius.circular(8),
-                            color: isPurchased
-                                ? palette.purchased
-                                : Colors.transparent,
-                          ),
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 240),
-                            transitionBuilder: (child, animation) {
-                              return ScaleTransition(
-                                scale: animation,
-                                child: FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: isPurchased
-                                ? Icon(
-                                    Icons.check,
-                                    key: const ValueKey('checked'),
-                                    size: 18,
-                                    color: palette.onStatus,
-                                  )
-                                : const SizedBox(key: ValueKey('unchecked')),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 240),
+                              transitionBuilder: (child, animation) {
+                                return ScaleTransition(
+                                  scale: animation,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: checked
+                                  ? Icon(
+                                      Icons.check,
+                                      key: const ValueKey('checked'),
+                                      size: 18,
+                                      color: selectionMode
+                                          ? palette.onPrimary
+                                          : palette.onStatus,
+                                    )
+                                  : const SizedBox(key: ValueKey('unchecked')),
+                            ),
                           ),
                         ),
                       ),

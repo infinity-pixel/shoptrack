@@ -105,20 +105,39 @@ class SessionMerge {
         'shoppingUnit',
         'priceBasis',
       };
-      Json group(Json? data) => {for (final key in pricing) key: data?[key]};
+      const placement = {'listId', 'position'};
+      Json group(Json? data, Set<String> fields) => {
+        for (final key in fields) key: data?[key],
+      };
       final merged = <String, dynamic>{'id': id};
       for (final key in {...mine.keys, ...theirs.keys}) {
-        if (key == 'id' || (items && pricing.contains(key))) continue;
+        if (key == 'id' ||
+            (items && (pricing.contains(key) || placement.contains(key)))) {
+          continue;
+        }
         merged[key] = _field(old?[key], mine[key], theirs[key], '$label: $key');
       }
       if (items) {
         merged.addAll(
           Map<String, dynamic>.from(
             _field(
-                  group(old),
-                  group(mine),
-                  group(theirs),
+                  group(old, pricing),
+                  group(mine, pricing),
+                  group(theirs, pricing),
                   '$label: quantity / price',
+                )
+                as Map,
+          ),
+        );
+        // List membership and its order belong together. A source-list reorder
+        // must never silently supply the position for a concurrent move.
+        merged.addAll(
+          Map<String, dynamic>.from(
+            _field(
+                  group(old, placement),
+                  group(mine, placement),
+                  group(theirs, placement),
+                  '$label: list / position',
                 )
                 as Map,
           ),
