@@ -57,7 +57,46 @@ class ThemeDefinition {
         onSecondary: palette.onSecondary,
         onSurface: palette.onSurface,
         onError: palette.onError,
+        onSurfaceVariant: palette.textSecondary,
+        outline: palette.textSecondary,
+        outlineVariant: palette.border,
       ),
+      // Dark surfaces stay neutral; accents belong to controls, not every panel.
+      dialogTheme: brightness == Brightness.dark
+          ? DialogThemeData(
+              backgroundColor: palette.surface,
+              surfaceTintColor: Colors.transparent,
+            )
+          : null,
+      bottomSheetTheme: brightness == Brightness.dark
+          ? BottomSheetThemeData(
+              backgroundColor: palette.surface,
+              surfaceTintColor: Colors.transparent,
+            )
+          : null,
+      popupMenuTheme: brightness == Brightness.dark
+          ? PopupMenuThemeData(
+              color: palette.surface,
+              surfaceTintColor: Colors.transparent,
+            )
+          : null,
+      inputDecorationTheme: brightness == Brightness.dark
+          ? InputDecorationTheme(
+              fillColor: palette.background,
+              labelStyle: TextStyle(color: palette.textSecondary),
+              hintStyle: TextStyle(color: palette.textSecondary),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: palette.textSecondary.withValues(alpha: 0.65),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: palette.primary, width: 2),
+              ),
+            )
+          : null,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -202,14 +241,42 @@ class ThemePresets {
     DarkPreset.midnight: ThemeDefinition(
       name: 'Midnight',
       brightness: Brightness.dark,
-      palette: ShopTrackPalette.dark(
-        primary: const Color(0xFF7986CB), // Indigo light
-        today: const Color(0xFF3949AB),
+      palette: const ShopTrackPalette(
+        primary: Color(0xFFA6AEF5),
+        secondary: Color(0xFFADB6F5),
+        background: Color(0xFF111318),
+        surface: Color(0xFF1D2028),
+        error: Color(0xFFF099A1),
+        onPrimary: Color(0xFF171B35),
+        onSecondary: Color(0xFF171B35),
+        onBackground: Color(0xFFE7E8EF),
+        onSurface: Color(0xFFE7E8EF),
+        onError: Color(0xFF321419),
+        purchased: Color(0xFF89C49B),
+        pending: Color(0xFFF099A1),
+        planned: Color(0xFFC9A5E8),
+        today: Color(0xFFADB6F5),
+        onStatus: Color(0xFF111318),
+        surfaceToBuy: Color(0xFF1D2028),
+        surfacePurchased: Color(0xFF1C2925),
+        border: Color(0xFF383D49),
+        textSecondary: Color(0xFFB0B5C3),
+        surfaceReceipt: Color(0xFF252936),
+        receiptEdge: Color(0xFF343B50),
+        receiptShadow: Color(0x66000000),
       ),
       atmosphericConfig: const AtmosphericConfig(
-        gradientColors: [Color(0xFF1A237E), Color(0xFF000051)],
-        opacity: 0.2,
+        baseColor: Color(0xFF111318),
+        gradientColors: [
+          Color(0xFF252A3C),
+          Color(0xFF111318),
+          Color(0xFF202430),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        opacity: 0.22,
       ),
+      headerArtworkPath: 'assets/images/theme_dark_midnight.webp',
     ),
     DarkPreset.aurora: ThemeDefinition(
       name: 'Aurora',

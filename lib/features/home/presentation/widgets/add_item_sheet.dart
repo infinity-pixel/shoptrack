@@ -275,7 +275,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -361,327 +363,370 @@ class _AddItemSheetState extends State<AddItemSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final bool showBasisSelector =
         _pricingMode == PricingMode.unit &&
         _selectedUnit != null &&
         (_selectedUnit == ShoppingUnit.g || _selectedUnit == ShoppingUnit.ml);
 
-    return _KeyboardInset(child: Container(
-      padding: const EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: 20,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _isEditing ? 'Edit Item' : 'Add Item',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _nameController,
-              autofocus: !_isEditing,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: 'Item Name',
-                hintText: 'e.g. Eggs',
-                errorText: _errorText,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
-              onChanged: (value) {
-                if (_errorText != null && value.trim().isNotEmpty) {
-                  setState(() {
-                    _errorText = null;
-                  });
-                }
-              },
-              onSubmitted: (_) => _quantityFocusNode.requestFocus(),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: _quantityController,
-                    focusNode: _quantityFocusNode,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: 'Quantity',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onSubmitted: (_) => _moveToUnitPicker(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 3,
-                  child: Focus(
-                    focusNode: _unitFocusNode,
-                    child: InkWell(
-                      key: _unitPickerKey,
-                      onTap: () {
-                        if (_unitFocusNode.hasFocus) {
-                          _openUnitPicker();
-                        } else {
-                          _openUnitMenuOnFocus = false;
-                          FocusScope.of(context).requestFocus(_unitFocusNode);
-                          _openUnitPicker();
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: InputDecorator(
-                        isFocused: _unitFocusNode.hasFocus,
-                        decoration: InputDecoration(
-                          labelText: 'Unit',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _selectedUnit?.displayName ?? 'No Unit',
-                              ),
-                            ),
-                            const Icon(Icons.arrow_drop_down),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (!_isEditing && _visibleSuggestions.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Often Bought',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _visibleSuggestions.map((suggestion) {
-                  return GestureDetector(
-                    onLongPressStart: (details) =>
-                        _showSuggestionMenu(suggestion, details),
-                    child: Semantics(
-                      button: true,
-                      label: suggestion.name,
-                      hint: 'Long press to remove this suggestion',
-                      child: ActionChip(
-                        label: Text(suggestion.name),
-                        onPressed: () => _applySuggestion(suggestion),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: () {
-                setState(() {
-                  _showMoreOptions = !_showMoreOptions;
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  children: [
-                    Icon(
-                      _showMoreOptions ? Icons.remove : Icons.add,
-                      size: 20,
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _showMoreOptions ? 'Fewer Options' : 'More Options',
+    return _KeyboardInset(
+      child: Container(
+        padding: const EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: 20,
+        ),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _isEditing ? 'Edit Item' : 'Add Item',
                       style: const TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            if (_showMoreOptions) ...[
-              const SizedBox(height: 16),
-              SegmentedButton<PricingMode>(
-                segments: const [
-                  ButtonSegment(
-                    value: PricingMode.total,
-                    label: Text('Total Price'),
                   ),
-                  ButtonSegment(
-                    value: PricingMode.unit,
-                    label: Text('Price per Unit'),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
                   ),
                 ],
-                selected: {_pricingMode},
-                onSelectionChanged: (newSelection) {
-                  setState(() {
-                    _pricingMode = newSelection.first;
-                    _updatePriceBasisDefault(_selectedUnit);
-                    _updateCalculation();
-                  });
-                },
               ),
-              if (showBasisSelector) ...[
-                const SizedBox(height: 16),
-                DropdownButtonFormField<ShoppingUnit>(
-                  initialValue: _selectedPriceBasis,
-                  decoration: InputDecoration(
-                    labelText: 'Price basis',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  items: ShoppingUnit.values
-                      .where((u) => u.isCompatibleWith(_selectedUnit!))
-                      .map((unit) {
-                        return DropdownMenuItem(
-                          value: unit,
-                          child: Text(unit.displayName),
-                        );
-                      })
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedPriceBasis = value;
-                      _updateCalculation();
-                    });
-                  },
-                ),
-              ],
               const SizedBox(height: 16),
               TextField(
-                controller: _priceController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+                controller: _nameController,
+                autofocus: !_isEditing,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
-                  labelText: _getPriceLabel(),
-                  prefixText: '৳ ',
-                  errorText: _priceErrorText,
-                  helperText: _priceReferenceText,
-                  helperStyle: const TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  labelText: 'Item Name',
+                  hintText: 'e.g. Eggs',
+                  errorText: _errorText,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  filled: true,
+                  fillColor: colors.surfaceContainerLow,
                 ),
+                onChanged: (value) {
+                  if (_errorText != null && value.trim().isNotEmpty) {
+                    setState(() {
+                      _errorText = null;
+                    });
+                  }
+                },
+                onSubmitted: (_) => _quantityFocusNode.requestFocus(),
               ),
-              if (_calcResult != PricingResult.zero)
-                Container(
-                  margin: const EdgeInsets.only(top: 16),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Total', style: TextStyle(fontSize: 14)),
-                          Text(
-                            NumberFormatter.formatPrice(_calcResult.totalPrice),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextField(
+                      controller: _quantityController,
+                      focusNode: _quantityFocusNode,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _pricingMode == PricingMode.total
-                                ? 'Price per unit'
-                                : 'Price per ${_calcResult.priceBasisSymbol}',
-                            style: const TextStyle(fontSize: 14),
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: 'Quantity',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onSubmitted: (_) => _moveToUnitPicker(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 3,
+                    child: Focus(
+                      focusNode: _unitFocusNode,
+                      child: InkWell(
+                        key: _unitPickerKey,
+                        onTap: () {
+                          if (_unitFocusNode.hasFocus) {
+                            _openUnitPicker();
+                          } else {
+                            _openUnitMenuOnFocus = false;
+                            FocusScope.of(context).requestFocus(_unitFocusNode);
+                            _openUnitPicker();
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: InputDecorator(
+                          isFocused: _unitFocusNode.hasFocus,
+                          decoration: InputDecoration(
+                            labelText: 'Unit',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          Text(
-                            '${NumberFormatter.formatPrice(_calcResult.unitPrice)}/${_calcResult.priceBasisSymbol}',
-                            style: const TextStyle(color: Colors.grey),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _selectedUnit?.displayName ?? 'No Unit',
+                                ),
+                              ),
+                              const Icon(Icons.arrow_drop_down),
+                            ],
                           ),
-                        ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (!_isEditing && _visibleSuggestions.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Often Bought',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _visibleSuggestions.map((suggestion) {
+                    return GestureDetector(
+                      onLongPressStart: (details) =>
+                          _showSuggestionMenu(suggestion, details),
+                      child: Semantics(
+                        button: true,
+                        label: suggestion.name,
+                        hint: 'Long press to remove this suggestion',
+                        child: ActionChip(
+                          label: Text(suggestion.name),
+                          onPressed: () => _applySuggestion(suggestion),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _showMoreOptions = !_showMoreOptions;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _showMoreOptions ? Icons.remove : Icons.add,
+                        size: 20,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _showMoreOptions ? 'Fewer Options' : 'More Options',
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
                 ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: 'Notes',
-                  labelStyle: TextStyle(color: Colors.grey[600], fontSize: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              ),
+              if (_showMoreOptions) ...[
+                const SizedBox(height: 16),
+                SegmentedButton<PricingMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: PricingMode.total,
+                      label: Text('Total Price'),
+                    ),
+                    ButtonSegment(
+                      value: PricingMode.unit,
+                      label: Text('Price per Unit'),
+                    ),
+                  ],
+                  selected: {_pricingMode},
+                  onSelectionChanged: (newSelection) {
+                    setState(() {
+                      _pricingMode = newSelection.first;
+                      _updatePriceBasisDefault(_selectedUnit);
+                      _updateCalculation();
+                    });
+                  },
+                ),
+                if (showBasisSelector) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<ShoppingUnit>(
+                    initialValue: _selectedPriceBasis,
+                    decoration: InputDecoration(
+                      labelText: 'Price basis',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: ShoppingUnit.values
+                        .where((u) => u.isCompatibleWith(_selectedUnit!))
+                        .map((unit) {
+                          return DropdownMenuItem(
+                            value: unit,
+                            child: Text(unit.displayName),
+                          );
+                        })
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedPriceBasis = value;
+                        _updateCalculation();
+                      });
+                    },
+                  ),
+                ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _priceController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: _getPriceLabel(),
+                    prefixText: '৳ ',
+                    errorText: _priceErrorText,
+                    helperText: _priceReferenceText,
+                    helperStyle: TextStyle(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                if (_isEditing) ...[
+                if (_calcResult != PricingResult.zero)
+                  Container(
+                    margin: const EdgeInsets.only(top: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Total', style: TextStyle(fontSize: 14)),
+                            Text(
+                              NumberFormatter.formatPrice(
+                                _calcResult.totalPrice,
+                              ),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _pricingMode == PricingMode.total
+                                    ? 'Price per unit'
+                                    : 'Price per ${_calcResult.priceBasisSymbol}',
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                '${NumberFormatter.formatPrice(_calcResult.unitPrice)}/${_calcResult.priceBasisSymbol}',
+                                textAlign: TextAlign.end,
+                                style: TextStyle(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _notesController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Notes',
+                    labelStyle: TextStyle(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  if (_isEditing) ...[
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _onDelete,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.error,
+                          side: BorderSide(color: colors.error),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: _onDelete,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: _onSave,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        elevation: 0,
                       ),
                       child: const Text(
-                        'Delete',
+                        'Save',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -689,36 +734,13 @@ class _AddItemSheetState extends State<AddItemSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
                 ],
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: _onSave,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 
   String _getPriceLabel() {

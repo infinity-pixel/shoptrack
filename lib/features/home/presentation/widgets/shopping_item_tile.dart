@@ -97,6 +97,9 @@ class ShoppingItemTile extends StatelessWidget {
                             border: Border.all(
                               color: isPurchased
                                   ? palette.purchased
+                                  : Theme.of(context).brightness ==
+                                        Brightness.dark
+                                  ? palette.textSecondary
                                   : palette.border,
                               width: 2,
                             ),

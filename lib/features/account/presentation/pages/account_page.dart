@@ -469,7 +469,8 @@ class AccountPage extends StatelessWidget {
     _choose<LightPreset>(
       context,
       'Light Theme Preset',
-      LightPreset.values,
+      [...LightPreset.values]
+        ..sort((a, b) => a.displayName.compareTo(b.displayName)),
       service.settings.lightPreset,
       (v) => v.displayName,
       (v) {
@@ -482,7 +483,8 @@ class AccountPage extends StatelessWidget {
     _choose<DarkPreset>(
       context,
       'Dark Theme Preset',
-      DarkPreset.values,
+      [...DarkPreset.values]
+        ..sort((a, b) => a.displayName.compareTo(b.displayName)),
       service.settings.darkPreset,
       (v) => v.displayName,
       (v) {

@@ -217,7 +217,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
           child: Text(
             day,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 12,
               fontWeight: FontWeight.bold,
             ),

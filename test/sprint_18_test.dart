@@ -1,0 +1,287 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shoptrack/app.dart';
+import 'package:shoptrack/core/theme/theme_presets.dart';
+import 'package:shoptrack/features/history/presentation/pages/history_search_page.dart';
+import 'package:shoptrack/features/history/presentation/widgets/smart_date_range_picker.dart';
+import 'package:shoptrack/features/home/presentation/widgets/add_item_sheet.dart';
+import 'package:shoptrack/features/home/presentation/widgets/record_hero.dart';
+import 'package:shoptrack/models/app_settings.dart';
+import 'package:shoptrack/models/shopping_item.dart';
+import 'package:shoptrack/models/shopping_session.dart';
+
+final midnight = ThemePresets.darkPresets[DarkPreset.midnight]!;
+const milk = ShoppingItem(
+  id: 'milk',
+  name: 'Milk',
+  quantityValue: 2,
+  shoppingUnit: ShoppingUnit.l,
+  priceValue: 180,
+  position: 0,
+);
+const rice = ShoppingItem(
+  id: 'rice',
+  name: 'Rice',
+  quantityValue: 4.3,
+  shoppingUnit: ShoppingUnit.kg,
+  priceValue: 320,
+  isPurchased: true,
+  position: 1,
+);
+
+void seed() {
+  final now = DateTime.now();
+  SharedPreferences.setMockInitialValues({
+    'app_settings': jsonEncode(
+      const AppSettings(theme: AppTheme.dark).toJson(),
+    ),
+    'shopping_sessions': jsonEncode([
+      ShoppingSession(
+        id: 'today',
+        date: DateTime(now.year, now.month, now.day),
+        items: const [milk, rice],
+      ).toJson(),
+      ShoppingSession(
+        id: 'past',
+        date: DateTime(now.year, now.month, now.day - 3),
+        items: const [rice],
+      ).toJson(),
+      ShoppingSession(
+        id: 'future',
+        date: DateTime(now.year, now.month, now.day + 3),
+        items: const [milk],
+      ).toJson(),
+    ]),
+  });
+}
+
+void main() {
+  test('Midnight text and semantic colors contrast with their surfaces', () {
+    final p = midnight.palette;
+    double contrast(Color a, Color b) {
+      final x = a.computeLuminance(), y = b.computeLuminance();
+      return (math.max(x, y) + .05) / (math.min(x, y) + .05);
+    }
+
+    for (final surface in [
+      p.background,
+      p.surface,
+      p.surfacePurchased,
+      p.surfaceReceipt,
+      p.receiptEdge,
+    ]) {
+      for (final ink in [
+        p.onSurface,
+        p.textSecondary,
+        p.purchased,
+        p.purchasedStatus,
+        p.pending,
+        p.planned,
+        p.today,
+      ]) {
+        expect(contrast(ink, surface), greaterThanOrEqualTo(4.5));
+      }
+    }
+    expect(contrast(p.onPrimary, p.primary), greaterThanOrEqualTo(4.5));
+    expect(contrast(p.onSecondary, p.secondary), greaterThanOrEqualTo(4.5));
+    expect(midnight.headerArtworkPath, endsWith('.webp'));
+  });
+
+  for (final size in [
+    const Size(320, 640),
+    const Size(640, 360),
+    const Size(800, 1000),
+  ]) {
+    testWidgets('Midnight calendar and item drawer fit $size with keyboard', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      for (final child in <Widget>[
+        SmartDateRangePicker(
+          initialRange: DateTimeRange(
+            start: DateTime(2026, 9, 7),
+            end: DateTime(2026, 9, 13),
+          ),
+        ),
+        const AddItemSheet(nextPosition: 2, initialItem: milk),
+      ]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: midnight.toThemeData(),
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: size,
+                textScaler: const TextScaler.linear(1.3),
+                viewInsets: EdgeInsets.only(bottom: size.height * .4),
+              ),
+              child: Scaffold(
+                resizeToAvoidBottomInset: false,
+                body: Align(alignment: Alignment.bottomCenter, child: child),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        if (child is AddItemSheet) {
+          await tester.ensureVisible(find.text('Save'));
+          await tester.pumpAndSettle();
+          expect(
+            tester.getBottomRight(find.text('Save')).dy,
+            lessThan(size.height * .6),
+          );
+        }
+      }
+    });
+  }
+
+  testWidgets(
+    'Theme selection remains alphabetical and switching preserves settings',
+    (tester) async {
+      seed();
+      await tester.binding.setSurfaceSize(const Size(390, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(const ShopTrackApp());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Profile').last);
+      await tester.pumpAndSettle();
+      for (final entry in {
+        'Dark Theme': ['Aurora', 'Deep Forest', 'Midnight', 'Moonlit'],
+        'Light Theme': ['Autumn', 'Ocean', 'Spring', 'Summer'],
+      }.entries) {
+        await tester.ensureVisible(find.text(entry.key));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(entry.key));
+        await tester.pumpAndSettle();
+        final labels = tester
+            .widgetList<RadioListTile<dynamic>>(
+              find.byType(RadioListTile<DarkPreset>),
+            )
+            .map((t) => (t.title! as Text).data)
+            .toList();
+        if (entry.key == 'Dark Theme') expect(labels, entry.value);
+        for (var i = 1; i < entry.value.length; i++) {
+          expect(
+            tester.getTopLeft(find.text(entry.value[i]).last).dy,
+            greaterThan(
+              tester.getTopLeft(find.text(entry.value[i - 1]).last).dy,
+            ),
+          );
+        }
+        await tester.tap(
+          find.text(entry.key == 'Dark Theme' ? 'Aurora' : 'Ocean').last,
+        );
+        await tester.pumpAndSettle();
+      }
+      final saved =
+          jsonDecode(
+                (await SharedPreferences.getInstance()).getString(
+                  'app_settings',
+                )!,
+              )
+              as Map<String, dynamic>;
+      expect(saved['darkPreset'], 'aurora');
+      expect(saved['lightPreset'], 'ocean');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  const font = String.fromEnvironment('SHOPTRACK_PREVIEW_FONT');
+  testWidgets('Render Midnight actual screens', (tester) async {
+    seed();
+    await (FontLoader('Roboto')..addFont(
+          Future.value(ByteData.sublistView(File(font).readAsBytesSync())),
+        ))
+        .load();
+    // Explicit TextStyles without a family use the test font, not Roboto.
+    await (FontLoader('Ahem')..addFont(
+          Future.value(ByteData.sublistView(File(font).readAsBytesSync())),
+        ))
+        .load();
+    await (FontLoader('LibreBaskerville')
+          ..addFont(rootBundle.load('assets/fonts/LibreBaskerville[wght].ttf')))
+        .load();
+    await (FontLoader(
+      'MaterialIcons',
+    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+    debugDisableShadows = false;
+    addTearDown(() => debugDisableShadows = true);
+    await tester.binding.setSurfaceSize(const Size(390, 840));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final key = GlobalKey();
+    Future<void> capture(String name) async {
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(tester.takeException(), isNull);
+      await tester.runAsync(() async {
+        final image =
+            await (key.currentContext!.findRenderObject()!
+                    as RenderRepaintBoundary)
+                .toImage(pixelRatio: 2);
+        final data = await image.toByteData(format: ui.ImageByteFormat.png);
+        final file = File('build/sprint_18_$name.png');
+        await file.parent.create(recursive: true);
+        await file.writeAsBytes(data!.buffer.asUint8List());
+        image.dispose();
+      });
+    }
+
+    await tester.pumpWidget(
+      RepaintBoundary(key: key, child: const ShopTrackApp()),
+    );
+    await tester.pumpAndSettle();
+    await capture('lists');
+    await tester.tap(find.text('History').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await capture('history');
+    await tester.tap(find.text('Profile').last);
+    await tester.pumpAndSettle();
+    await capture('profile');
+    for (final entry in <String, Widget>{
+      'search': const HistorySearchPage(),
+      'calendar': Align(
+        alignment: Alignment.bottomCenter,
+        child: SmartDateRangePicker(
+          initialRange: DateTimeRange(
+            start: DateTime(2026, 9, 7),
+            end: DateTime(2026, 9, 13),
+          ),
+        ),
+      ),
+      'drawer': const Align(
+        alignment: Alignment.bottomCenter,
+        child: AddItemSheet(nextPosition: 2, initialItem: milk),
+      ),
+      'record': Column(
+        children: [RecordHero(date: DateTime(2026, 9, 5), onBack: () {})],
+      ),
+    }.entries) {
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: key,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: midnight.toThemeData(),
+            home: Scaffold(body: entry.value),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      if (entry.key == 'search') {
+        await tester.enterText(find.byType(TextField).first, 'Rice');
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
+      }
+      await capture(entry.key);
+    }
+    debugDisableShadows = true;
+  }, skip: font.isEmpty);
+}

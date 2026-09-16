@@ -29,13 +29,20 @@ class RecordHero extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             if (tokens.headerArtworkPath != null)
-              Image.asset(tokens.headerArtworkPath!, fit: BoxFit.cover),
+              Image.asset(
+                tokens.headerArtworkPath!,
+                fit: BoxFit.cover,
+                // Keep Midnight's moon and right-hand branches in short heroes.
+                alignment: darkIcons
+                    ? Alignment.center
+                    : const Alignment(0, -0.5),
+              ),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    p.surface.withValues(alpha: .85),
-                    p.surface.withValues(alpha: .1),
+                    p.surface.withValues(alpha: darkIcons ? .85 : .45),
+                    p.surface.withValues(alpha: darkIcons ? .1 : 0),
                   ],
                 ),
               ),

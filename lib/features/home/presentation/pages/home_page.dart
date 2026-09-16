@@ -505,7 +505,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final isCompactWidth = MediaQuery.sizeOf(context).width < 360;
     final topInset = MediaQuery.paddingOf(context).top;
     final useDarkStatusIcons = palette.surface.computeLuminance() > 0.5;
-    final contentHeight = isCompactWidth ? 116.0 : 126.0;
+    final contentHeight =
+        (isCompactWidth ? 116.0 : 126.0) +
+        (MediaQuery.textScalerOf(context).scale(24) - 24).clamp(0, 70);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -521,7 +523,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         key: const ValueKey('today-shopping-hero'),
         height: topInset + contentHeight,
         width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 4),
         decoration: BoxDecoration(
           color: palette.surface,
           borderRadius: const BorderRadius.vertical(
@@ -541,15 +543,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 Image.asset(
                   tokens.headerArtworkPath!,
                   fit: BoxFit.cover,
-                  alignment: Alignment.center,
+                  alignment: useDarkStatusIcons
+                      ? Alignment.center
+                      : const Alignment(0, -0.5),
                 ),
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      palette.surface.withValues(alpha: 0.90),
-                      palette.surface.withValues(alpha: 0.58),
-                      palette.surface.withValues(alpha: 0.12),
+                      palette.surface.withValues(
+                        alpha: useDarkStatusIcons ? 0.90 : 0.45,
+                      ),
+                      palette.surface.withValues(
+                        alpha: useDarkStatusIcons ? 0.58 : 0.20,
+                      ),
+                      palette.surface.withValues(
+                        alpha: useDarkStatusIcons ? 0.12 : 0,
+                      ),
                     ],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
@@ -598,7 +608,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: _SummerGradientText(
+                        child: _HeroGradientText(
                           text: "Today's Shopping",
                           style: TextStyle(
                             fontSize: isCompactWidth ? 22 : 24,
@@ -1498,11 +1508,11 @@ class _ItemFlight extends StatelessWidget {
   }
 }
 
-class _SummerGradientText extends StatelessWidget {
+class _HeroGradientText extends StatelessWidget {
   final String text;
   final TextStyle style;
 
-  const _SummerGradientText({required this.text, required this.style});
+  const _HeroGradientText({required this.text, required this.style});
 
   @override
   Widget build(BuildContext context) {

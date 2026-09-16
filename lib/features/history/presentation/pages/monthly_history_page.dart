@@ -41,14 +41,19 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
         ),
       ),
     );
-    
+
     // Always reload from repository to ensure consistency
     final all = await _repository.getAllSessions(includeEmpty: true);
-    final monthSessions = all.where((s) => 
-      s.date.year == widget.summary.year && 
-      s.date.month == widget.summary.month &&
-      s.items.isNotEmpty
-    ).toList()..sort((a, b) => b.date.compareTo(a.date));
+    final monthSessions =
+        all
+            .where(
+              (s) =>
+                  s.date.year == widget.summary.year &&
+                  s.date.month == widget.summary.month &&
+                  s.items.isNotEmpty,
+            )
+            .toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
 
     if (mounted) {
       setState(() {
@@ -76,8 +81,8 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             child: const Text('Delete Permanently'),
           ),
@@ -90,7 +95,7 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
       setState(() {
         _sessions.removeWhere((s) => s.id == session.id);
       });
-      
+
       if (_sessions.isEmpty && mounted) {
         Navigator.pop(context, true);
       }
@@ -104,11 +109,16 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
       repository: _repository,
       onUpdated: () async {
         final all = await _repository.getAllSessions(includeEmpty: true);
-        final monthSessions = all.where((s) => 
-          s.date.year == widget.summary.year && 
-          s.date.month == widget.summary.month &&
-          s.items.isNotEmpty
-        ).toList()..sort((a, b) => b.date.compareTo(a.date));
+        final monthSessions =
+            all
+                .where(
+                  (s) =>
+                      s.date.year == widget.summary.year &&
+                      s.date.month == widget.summary.month &&
+                      s.items.isNotEmpty,
+                )
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
 
         if (mounted) {
           setState(() {
@@ -152,7 +162,7 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
   Future<void> _showAddDateDialog() async {
     final firstDate = DateTime(widget.summary.year, widget.summary.month, 1);
     final lastDate = DateTime(widget.summary.year, widget.summary.month + 1, 0);
-    
+
     // Task 3: Use the first day of the month as a neutral default initial date
     final initialDate = firstDate;
 

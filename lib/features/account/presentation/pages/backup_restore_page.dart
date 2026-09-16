@@ -79,9 +79,9 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       await cloudService.createCloudBackup(appBackup);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cloud backup failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Cloud backup failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -103,9 +103,9 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cloud restore failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Cloud restore failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -129,7 +129,9 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Restore'),
           ),
         ],
@@ -169,12 +171,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
         ),
         body: Stack(
           children: [
-            TabBarView(
-              children: [
-                _buildLocalTab(),
-                _buildCloudTab(),
-              ],
-            ),
+            TabBarView(children: [_buildLocalTab(), _buildCloudTab()]),
             if (_isProcessing)
               Container(
                 color: Colors.black.withValues(alpha: 0.1),
@@ -211,14 +208,15 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
   }
 
   Widget _buildCloudTab() {
+    final colors = Theme.of(context).colorScheme;
     final cloudService = ShopTrackApp.cloudBackupOf(context);
-    
+
     return ListenableBuilder(
       listenable: cloudService,
       builder: (context, _) {
         final status = cloudService.status;
         final bool isNotSignedIn = status.state == CloudBackupState.notSignedIn;
-        
+
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -234,10 +232,16 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
               ),
               if (status.lastBackupTime != null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 4,
+                  ),
                   child: Text(
                     'Last backup: ${DateFormat('d MMM yyyy, HH:mm').format(status.lastBackupTime!)}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    style: TextStyle(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               const SizedBox(height: 24),
@@ -246,19 +250,32 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                 icon: Icons.cloud_download_outlined,
                 title: 'Restore from Cloud',
                 subtitle: 'Download your latest cloud backup',
-                onTap: _isProcessing || status.state == CloudBackupState.noBackupFound ? null : _restoreCloudBackup,
+                onTap:
+                    _isProcessing ||
+                        status.state == CloudBackupState.noBackupFound
+                    ? null
+                    : _restoreCloudBackup,
                 isDestructive: true,
               ),
               if (status.state == CloudBackupState.noBackupFound)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Text('No backup found in your cloud storage.', style: TextStyle(color: Colors.orange, fontSize: 12)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    'No backup found in your cloud storage.',
+                    style: TextStyle(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
             ],
             if (status.errorMessage != null)
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(status.errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                child: Text(
+                  status.errorMessage!,
+                  style: TextStyle(color: colors.error, fontSize: 13),
+                ),
               ),
           ],
         );
@@ -267,17 +284,21 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
   }
 
   Widget _buildSignInNotice() {
+    final colors = Theme.of(context).colorScheme;
     return Card(
-      color: Colors.blue[50],
+      color: colors.primary.withValues(alpha: 0.10),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const Icon(Icons.cloud_off_outlined, size: 48, color: Colors.blue),
+            Icon(Icons.cloud_off_outlined, size: 48, color: colors.primary),
             const SizedBox(height: 16),
-            const Text('Sign in Required', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'Sign in Required',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             const Text(
               'You need to sign in with your Google account to use cloud backup features.',
@@ -307,7 +328,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
-          color: Colors.blue[700],
+          color: Theme.of(context).colorScheme.primary,
           letterSpacing: 1.2,
         ),
       ),
@@ -321,15 +342,25 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
     required VoidCallback? onTap,
     bool isDestructive = false,
   }) {
+    final colors = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
+        side: BorderSide(color: colors.outlineVariant),
       ),
       child: ListTile(
-        leading: Icon(icon, color: isDestructive ? Colors.red : Colors.blue),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isDestructive ? Colors.red : null)),
+        leading: Icon(
+          icon,
+          color: isDestructive ? colors.error : colors.primary,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDestructive ? colors.error : colors.onSurface,
+          ),
+        ),
         subtitle: Text(subtitle),
         onTap: onTap,
       ),
