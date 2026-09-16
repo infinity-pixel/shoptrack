@@ -502,24 +502,28 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _visibleSuggestions.map((suggestion) {
-                    return GestureDetector(
-                      onLongPressStart: (details) =>
-                          _showSuggestionMenu(suggestion, details),
-                      child: Semantics(
-                        button: true,
-                        label: suggestion.name,
-                        hint: 'Long press to remove this suggestion',
-                        child: ActionChip(
-                          label: Text(suggestion.name),
-                          onPressed: () => _applySuggestion(suggestion),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _visibleSuggestions.map((suggestion) {
+                      return GestureDetector(
+                        onLongPressStart: (details) =>
+                            _showSuggestionMenu(suggestion, details),
+                        child: Semantics(
+                          button: true,
+                          label: suggestion.name,
+                          hint: 'Long press to remove this suggestion',
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ActionChip(
+                              label: Text(suggestion.name),
+                              onPressed: () => _applySuggestion(suggestion),
+                            ),
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ],
               const SizedBox(height: 16),

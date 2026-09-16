@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
-import '../../../../core/widgets/lists_navigation_icon.dart';
+import '../../../../core/widgets/shoptrack_navigation_bar.dart';
 import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_search_result.dart';
 import '../../../../services/frequent_items_service.dart';
@@ -137,26 +137,12 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
     return Scaffold(
       bottomNavigationBar: widget.onTabSelected == null
           ? null
-          : BottomNavigationBar(
+          : ShopTrackNavigationBar(
               currentIndex: 1,
               onTap: (index) {
                 Navigator.pop(context);
                 widget.onTabSelected!(index);
               },
-              items: const [
-                BottomNavigationBarItem(
-                  icon: ListsNavigationIcon(),
-                  label: 'Lists',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.history),
-                  label: 'History',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.manage_accounts_outlined),
-                  label: 'Account',
-                ),
-              ],
             ),
       backgroundColor: p.background,
       appBar: AppBar(title: const Text('Search History')),

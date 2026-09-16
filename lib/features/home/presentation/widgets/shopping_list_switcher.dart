@@ -149,9 +149,9 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: palette.secondary.withValues(alpha: .16),
-                          blurRadius: 12,
-                          spreadRadius: 1,
+                          color: palette.secondary.withValues(alpha: .035),
+                          blurRadius: 7,
+                          spreadRadius: 0,
                         ),
                       ],
                     ),

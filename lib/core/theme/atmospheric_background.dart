@@ -14,6 +14,9 @@ class AtmosphericBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    // Keep the child in the same tree position when switching brightness.
+    // Replacing Stack with another wrapper would reset the active tab/editor.
     return Stack(
       children: [
         Positioned.fill(
@@ -23,14 +26,16 @@ class AtmosphericBackground extends StatelessWidget {
         ),
         Positioned.fill(
           child: Opacity(
-            opacity: config.opacity,
+            opacity: dark ? 1 : config.opacity,
             child: Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: config.gradientColors,
-                  begin: config.begin,
-                  end: config.end,
-                ),
+                gradient: dark
+                    ? darkEdgeGradient(context)
+                    : LinearGradient(
+                        colors: config.gradientColors,
+                        begin: config.begin,
+                        end: config.end,
+                      ),
               ),
             ),
           ),
@@ -39,4 +44,16 @@ class AtmosphericBackground extends StatelessWidget {
       ],
     );
   }
+}
+
+/// A quiet edge tint: the central 96 percent stays a single dark surface.
+LinearGradient darkEdgeGradient(BuildContext context) {
+  final p = ShopTrackThemeTokens.of(context).palette;
+  final edge = Color.lerp(p.background, p.primary, .035)!;
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [edge, p.background, p.background, edge],
+    stops: const [0, .02, .98, 1],
+  );
 }

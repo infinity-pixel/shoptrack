@@ -159,7 +159,8 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                             ),
                           ],
                         ),
-                        Divider(color: colors.outlineVariant), SizedBox(height: 7),
+                        Divider(color: colors.outlineVariant),
+                        SizedBox(height: 7),
                         Row(
                           children: [
                             for (final end in [false, true])
@@ -191,7 +192,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                               ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 14),
                         DatePartsField(
                           key: ValueKey(_editingEnd),
                           date: _hasSelection
@@ -255,6 +256,12 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8),
                                   child: ActionChip(
+                                    backgroundColor:
+                                        colors.brightness == Brightness.dark
+                                        ? colors.onSurface.withValues(
+                                            alpha: .05,
+                                          )
+                                        : null,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 6,
                                       vertical: 3,
@@ -287,6 +294,8 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.date_range, color: colors.secondary),
                               Container(
@@ -297,7 +306,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                 ),
                                 color: colors.secondary.withValues(alpha: .5),
                               ),
-                              Expanded(
+                              Flexible(
                                 child: Text(
                                   _hasSelection
                                       ? '${DateFormat.yMMMd().format(_start)} — ${DateFormat.yMMMd().format(_end)}'
@@ -320,6 +329,10 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
+                            backgroundColor:
+                                colors.brightness == Brightness.dark
+                                ? colors.onSurface.withValues(alpha: .05)
+                                : null,
                             foregroundColor: colors.onSurface,
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
@@ -374,7 +387,11 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                 child: Center(
                   child: Text(
                     day,
-                    style: TextStyle(color: colors.onSurfaceVariant),
+                    style: TextStyle(
+                      color: colors.secondary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),

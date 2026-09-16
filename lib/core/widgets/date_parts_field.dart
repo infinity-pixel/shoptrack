@@ -91,6 +91,10 @@ class _DatePartsFieldState extends State<DatePartsField> {
               LengthLimitingTextInputFormatter(i == 2 ? 4 : 2),
             ],
             decoration: InputDecoration(
+              filled: Theme.of(context).brightness == Brightness.dark,
+              fillColor: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: .05),
               labelText: ['Day', 'Month', 'Year'][i],
               isDense: true,
               floatingLabelAlignment: FloatingLabelAlignment.center,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app.dart';
-import '../../../../core/widgets/lists_navigation_icon.dart';
+import '../../../../core/widgets/shoptrack_navigation_bar.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../history/presentation/pages/history_page.dart';
 import '../../../account/presentation/pages/account_page.dart';
@@ -31,11 +31,17 @@ class _MainPageState extends State<MainPage> {
             index: _currentIndex,
             children: [
               TickerMode(enabled: _currentIndex == 0, child: _buildHomeTab()),
-              TickerMode(enabled: _currentIndex == 1, child: _buildHistoryTab()),
-              TickerMode(enabled: _currentIndex == 2, child: _buildAccountTab()),
+              TickerMode(
+                enabled: _currentIndex == 1,
+                child: _buildHistoryTab(),
+              ),
+              TickerMode(
+                enabled: _currentIndex == 2,
+                child: _buildAccountTab(),
+              ),
             ],
           ),
-          bottomNavigationBar: BottomNavigationBar(
+          bottomNavigationBar: ShopTrackNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) {
               setState(() {
@@ -46,25 +52,6 @@ class _MainPageState extends State<MainPage> {
                 }
               });
             },
-            elevation: 0,
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            type: BottomNavigationBarType.fixed,
-            items: const [
-              BottomNavigationBarItem(
-                icon: ListsNavigationIcon(),
-                label: 'Lists',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.history_outlined),
-                activeIcon: Icon(Icons.history),
-                label: 'History',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.manage_accounts_outlined),
-                activeIcon: Icon(Icons.manage_accounts),
-                label: 'Profile',
-              ),
-            ],
           ),
         );
       },

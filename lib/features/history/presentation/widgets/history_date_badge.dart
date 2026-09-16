@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/theme_presets.dart';
 
 /// The same date marker is used in History and its search results.
@@ -29,7 +30,7 @@ class HistoryDateBadge extends StatelessWidget {
               child: Column(
                 children: [
                   Container(
-                    height: 7,
+                    height: 10,
                     decoration: BoxDecoration(
                       color: palette.secondary,
                       borderRadius: const BorderRadius.vertical(
@@ -83,6 +84,26 @@ class HistoryDateBadge extends StatelessWidget {
                 ),
               ),
             ),
+          Positioned(
+            left: 14,
+            right: 14,
+            top: 5,
+            height: 10,
+            child: ExcludeSemantics(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  DateFormat.MMM().format(date).toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 7,
+                    height: 1,
+                    fontWeight: FontWeight.w800,
+                    color: palette.onSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

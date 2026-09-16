@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 /// Scalable version of the supplied list/scroll artwork. Uses the navigation
 /// bar's IconTheme so every theme controls both selected and unselected colors.
 class ListsNavigationIcon extends StatelessWidget {
-  const ListsNavigationIcon({super.key});
+  const ListsNavigationIcon({super.key, this.fill = 0});
+  final double fill;
 
   @override
   Widget build(BuildContext context) {
@@ -11,25 +12,36 @@ class ListsNavigationIcon extends StatelessWidget {
     return SizedBox.square(
       dimension: theme.size ?? 24,
       child: CustomPaint(
-        painter: ListsNavigationPainter(theme.color ?? Colors.black),
+        painter: ListsNavigationPainter(
+          theme.color ?? Colors.black,
+          fill: fill,
+          background: Theme.of(context).colorScheme.surface,
+        ),
       ),
     );
   }
 }
 
 class ListsNavigationPainter extends CustomPainter {
-  const ListsNavigationPainter(this.color);
+  const ListsNavigationPainter(
+    this.color, {
+    this.fill = 0,
+    this.background = Colors.transparent,
+  });
 
   final Color color;
+  final double fill;
+  final Color background;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
-    canvas.scale(size.width / 512, size.height / 512);
+    canvas.translate(size.width * .03, size.height * .03);
+    canvas.scale(size.width * .94 / 512, size.height * .94 / 512);
     final stroke = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 24
+      ..strokeWidth = 30
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
@@ -50,6 +62,14 @@ class ListsNavigationPainter extends CustomPainter {
       ..quadraticBezierTo(453, 347, 431, 347)
       ..lineTo(374, 347);
     canvas.drawPath(outline, stroke);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTRB(59, 12, 374, 500),
+        const Radius.circular(24),
+      ),
+      Paint()..color = color.withValues(alpha: fill),
+    );
+    stroke.color = Color.lerp(color, background, fill)!;
 
     for (final y in [89.0, 173.0, 257.0, 341.0, 425.0]) {
       canvas.drawCircle(Offset(123, y), 18, stroke);
@@ -75,5 +95,7 @@ class ListsNavigationPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(ListsNavigationPainter oldDelegate) =>
-      oldDelegate.color != color;
+      oldDelegate.color != color ||
+      oldDelegate.fill != fill ||
+      oldDelegate.background != background;
 }

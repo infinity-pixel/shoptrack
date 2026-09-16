@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/animation/rolling_digit.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
+import '../../../../core/theme/atmospheric_background.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/widgets/scroll_aware_fab.dart';
 import '../../../../models/frequent_item_suggestion.dart';
@@ -339,24 +340,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             : null,
         body: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color.lerp(
-                  ShopTrackThemeTokens.of(context).palette.background,
-                  ShopTrackThemeTokens.of(context).palette.primary,
-                  0.16,
-                )!,
-                ShopTrackThemeTokens.of(context).palette.background,
-                Color.lerp(
-                  ShopTrackThemeTokens.of(context).palette.background,
-                  ShopTrackThemeTokens.of(context).palette.primary,
-                  0.16,
-                )!,
-              ],
-              stops: [0, 0.5, 1],
-            ),
+            gradient: Theme.of(context).brightness == Brightness.dark
+                ? darkEdgeGradient(context)
+                : LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.lerp(
+                        ShopTrackThemeTokens.of(context).palette.background,
+                        ShopTrackThemeTokens.of(context).palette.primary,
+                        0.16,
+                      )!,
+                      ShopTrackThemeTokens.of(context).palette.background,
+                      Color.lerp(
+                        ShopTrackThemeTokens.of(context).palette.background,
+                        ShopTrackThemeTokens.of(context).palette.primary,
+                        0.16,
+                      )!,
+                    ],
+                    stops: [0, 0.5, 1],
+                  ),
           ),
           child: SafeArea(
             top: widget.onBackToHistory != null && _currentSession.isToday,
