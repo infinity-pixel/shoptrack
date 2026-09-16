@@ -197,6 +197,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
   }
 
   void _applySuggestion(FrequentItemSuggestion suggestion) {
+    FocusManager.instance.primaryFocus?.unfocus();
     final item = suggestion.latestItem;
     _nameController.text = item.name;
     _quantityController.text = item.quantityValue != null

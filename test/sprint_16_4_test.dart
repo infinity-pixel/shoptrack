@@ -308,7 +308,7 @@ void main() {
     await tester.pumpAndSettle();
     final hero = find.byKey(const ValueKey('today-shopping-hero-surface'));
     expect(tester.getTopLeft(hero), Offset.zero);
-    expect(tester.getSize(hero), const Size(320, 139));
+    expect(tester.getSize(hero), const Size(320, 140));
     expect(tester.takeException(), isNull);
   });
 }

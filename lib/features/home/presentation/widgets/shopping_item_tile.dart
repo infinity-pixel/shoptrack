@@ -58,9 +58,16 @@ class ShoppingItemTile extends StatelessWidget {
         ),
       ),
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 3.0),
+        margin: const EdgeInsets.symmetric(vertical: 2.0),
         decoration: BoxDecoration(
-          color: isPurchased ? palette.surfacePurchased : palette.surfaceToBuy,
+          color: selected
+              ? Color.alphaBlend(
+                  palette.primary.withValues(alpha: .12),
+                  isPurchased ? palette.surfacePurchased : palette.surfaceToBuy,
+                )
+              : isPurchased
+              ? palette.surfacePurchased
+              : palette.surfaceToBuy,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? palette.primary : palette.border,
@@ -72,31 +79,32 @@ class ShoppingItemTile extends StatelessWidget {
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(2, 6, 14, 6),
+            padding: const EdgeInsets.fromLTRB(2, 4, 14, 4),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Drag Handle
-                ReorderableDragStartListener(
-                  index: index,
-                  enabled: !selectionMode,
-                  // Hit-test the whole padded handle, not just the icon glyph.
-                  child: ColoredBox(
-                    color: Colors.transparent,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 8,
-                      ),
-                      child: Icon(
-                        selectionMode
-                            ? Icons.touch_app_outlined
-                            : Icons.drag_indicator,
-                        color: palette.textSecondary.withValues(alpha: 0.55),
-                        size: 20,
-                      ),
-                    ),
-                  ),
+                SizedBox(
+                  width: 30,
+                  child: selectionMode
+                      ? null
+                      : ReorderableDragStartListener(
+                          index: index,
+                          // Hit-test the whole padded handle, not just the icon glyph.
+                          child: ColoredBox(
+                            color: Colors.transparent,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Icon(
+                                Icons.drag_indicator,
+                                color: palette.textSecondary.withValues(
+                                  alpha: 0.55,
+                                ),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
                 ),
 
                 // Checkbox
@@ -110,7 +118,7 @@ class ShoppingItemTile extends StatelessWidget {
                     onTap: onToggle,
                     child: SizedBox(
                       width: 40,
-                      height: 52,
+                      height: 48,
                       child: Padding(
                         padding: const EdgeInsets.only(left: 4),
                         child: Align(
@@ -175,10 +183,12 @@ class ShoppingItemTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: isPurchased
+                              ? FontWeight.w600
+                              : FontWeight.w700,
                           color: isPurchased
                               ? palette.textSecondary
-                              : palette.onBackground,
+                              : palette.onSurface,
                           decoration: isPurchased
                               ? TextDecoration.lineThrough
                               : null,

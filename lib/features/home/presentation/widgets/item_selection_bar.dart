@@ -18,48 +18,86 @@ class ItemSelectionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final width = (MediaQuery.sizeOf(context).width - 24).clamp(0.0, 480.0);
+    final compact =
+        width < 340 || MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return SizedBox(
-      width: double.infinity,
+      width: width,
       child: Material(
-        color: colors.primary.withValues(alpha: .08),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          child: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 2,
+        elevation: 6,
+        shadowColor: Colors.black.withValues(alpha: .32),
+        color: colors.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          height: 56,
+          child: Row(
             children: [
               IconButton(
                 tooltip: 'Cancel Selection',
                 onPressed: busy ? null : onClose,
                 icon: const Icon(Icons.close),
               ),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  '$count Selected',
-                  style: Theme.of(context).textTheme.labelLarge,
+              Expanded(
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    '$count Selected',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
-              ),
-              IconButton(
-                tooltip: allSelected ? 'Deselect All' : 'Select All',
-                onPressed: busy ? null : onSelectAll,
-                icon: Icon(allSelected ? Icons.deselect : Icons.select_all),
-              ),
-              TextButton.icon(
-                onPressed: busy || count == 0 ? null : onMove,
-                icon: const Icon(Icons.drive_file_move_outline, size: 20),
-                label: const Text('Move'),
-              ),
-              TextButton.icon(
-                onPressed: busy || count == 0 ? null : onDelete,
-                icon: const Icon(Icons.delete_outline, size: 20),
-                label: const Text('Delete'),
               ),
               if (busy)
-                const SizedBox.square(
-                  dimension: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                const Padding(
+                  padding: EdgeInsets.all(14),
+                  child: SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else
+                IconButton(
+                  tooltip: allSelected ? 'Deselect All' : 'Select All',
+                  onPressed: onSelectAll,
+                  icon: Icon(allSelected ? Icons.deselect : Icons.select_all),
                 ),
+              if (compact) ...[
+                IconButton(
+                  tooltip: 'Move',
+                  onPressed: busy || count == 0 ? null : onMove,
+                  icon: const Icon(Icons.drive_file_move_outline, size: 21),
+                ),
+                IconButton(
+                  tooltip: 'Delete',
+                  color: colors.error,
+                  onPressed: busy || count == 0 ? null : onDelete,
+                  icon: const Icon(Icons.delete_outline, size: 21),
+                ),
+              ] else ...[
+                TextButton.icon(
+                  onPressed: busy || count == 0 ? null : onMove,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: const Icon(Icons.drive_file_move_outline, size: 19),
+                  label: const Text('Move'),
+                ),
+                TextButton.icon(
+                  onPressed: busy || count == 0 ? null : onDelete,
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.error,
+                    padding: const EdgeInsets.fromLTRB(6, 0, 10, 0),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: const Icon(Icons.delete_outline, size: 19),
+                  label: const Text('Delete'),
+                ),
+              ],
             ],
           ),
         ),

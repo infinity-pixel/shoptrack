@@ -5,6 +5,8 @@ import 'package:shoptrack/core/theme/design_system.dart';
 import 'package:shoptrack/core/theme/theme_presets.dart';
 import 'package:shoptrack/features/home/presentation/widgets/add_item_sheet.dart';
 import 'package:shoptrack/models/app_settings.dart';
+import 'package:shoptrack/models/frequent_item_suggestion.dart';
+import 'package:shoptrack/models/shopping_item.dart';
 
 void main() {
   group('Sprint 15.1: ShopTrack Design System & Theme Foundation', () {
@@ -169,6 +171,45 @@ void main() {
 
       expect(find.byType(PopupMenuItem), findsNothing);
       expect(find.text('Kilogram (kg)'), findsOneWidget);
+    });
+
+    testWidgets('Often Bought selection fills details and dismisses keyboard', (
+      WidgetTester tester,
+    ) async {
+      final suggestion = FrequentItemSuggestion(
+        name: 'Milk',
+        occurrenceCount: 3,
+        lastSeen: DateTime(2026, 9, 16),
+        latestItem: ShoppingItem(
+          id: 'milk',
+          name: 'Milk',
+          quantity: '2',
+          quantityValue: 2,
+          shoppingUnit: ShoppingUnit.l,
+        ),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AddItemSheet(
+              nextPosition: 0,
+              frequentSuggestions: [suggestion],
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(TextField).first);
+      await tester.pump();
+      expect(tester.testTextInput.isVisible, isTrue);
+      await tester.tap(find.widgetWithText(ActionChip, 'Milk'));
+      await tester.pump();
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+        'Milk',
+      );
+      expect(tester.testTextInput.isVisible, isFalse);
     });
   });
 }

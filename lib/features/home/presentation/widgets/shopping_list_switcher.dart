@@ -118,9 +118,14 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                                         palette.onBackground.withValues(
                                           alpha: 0,
                                         ),
-                                        palette.onBackground.withValues(
-                                          alpha: .10,
-                                        ),
+                                        Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.black.withValues(
+                                                alpha: .32,
+                                              )
+                                            : palette.onBackground.withValues(
+                                                alpha: .10,
+                                              ),
                                       ],
                                     ),
                                   ),

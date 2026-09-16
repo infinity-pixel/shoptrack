@@ -163,7 +163,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _loadSession();
   }
 
-  Future<void> _saveSelection(ShoppingSession updated, String message) async {
+  Future<void> _saveSelection(
+    ShoppingSession updated,
+    String message, {
+    Future<void> Function()? onUndo,
+  }) async {
     setState(() => _selectionBusy = true);
     _saving++;
     _loadRequest++;
@@ -173,13 +177,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (!mounted) return;
       final conflicted = _repository.conflictCount > conflictsBefore;
       setState(_clearSelection);
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             conflicted
                 ? 'This record changed elsewhere. Both versions are kept; review them in Profile → Cloud Sync.'
                 : message,
           ),
+          duration: const Duration(seconds: 5),
+          persist: false,
+          action: conflicted || onUndo == null
+              ? null
+              : SnackBarAction(label: 'Undo', onPressed: onUndo),
         ),
       );
     } catch (_) {
@@ -283,26 +294,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> _deleteSelection() async {
     final count = _selectedItemIds.length;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete $count ${count == 1 ? 'Item' : 'Items'}?'),
-        content: const Text(
-          'These items will be removed from this list and your synced devices. This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted || confirmed != true || !_selectionMode) return;
+    final deletedItems = _currentSession
+        .itemsForList(_activeListId)
+        .where((item) => _selectedItemIds.contains(item.id))
+        .toList(growable: false);
     await _saveSelection(
       ShoppingSessionActions.delete(
         _currentSession,
@@ -310,7 +305,53 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ids: _selectedItemIds,
       ),
       'Deleted $count ${count == 1 ? 'item' : 'items'}.',
+      onUndo: () => _restoreDeletedItems(deletedItems),
     );
+  }
+
+  Future<void> _restoreDeletedItems(List<ShoppingItem> deletedItems) async {
+    if (deletedItems.isEmpty) return;
+    _saving++;
+    _loadRequest++;
+    try {
+      final latest = await _repository.getSessionByDate(_currentSession.date);
+      final availableLists = latest.orderedLists.map((list) => list.id).toSet();
+      final existingIds = latest.items.map((item) => item.id).toSet();
+      final restorable = deletedItems
+          .where((item) {
+            final listId = item.listId ?? ShoppingListGroup.defaultId;
+            return !existingIds.contains(item.id) &&
+                availableLists.contains(listId);
+          })
+          .toList(growable: false);
+      if (restorable.length != deletedItems.length) {
+        throw StateError('The original list or items changed.');
+      }
+      await _repository.saveSession(
+        latest.copyWith(items: [...latest.items, ...restorable]),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Restored ${restorable.length} ${restorable.length == 1 ? 'item' : 'items'}.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not undo the deletion because this list changed. Your latest data is kept.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      _saving--;
+      if (mounted) await _loadSession();
+    }
   }
 
   Widget _selectionBar() => ItemSelectionBar(
@@ -612,7 +653,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 else
                   _buildHeader(formattedDate),
                 _buildListSwitcher(),
-                if (_selectionMode) _selectionBar(),
                 // Content Area
                 Expanded(
                   child: NotificationListener<ScrollNotification>(
@@ -714,7 +754,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
         ),
-        floatingActionButton: _selectionMode ? null : _buildFAB(),
+        floatingActionButton: _selectionMode ? _selectionBar() : _buildFAB(),
+        floatingActionButtonLocation: _selectionMode
+            ? FloatingActionButtonLocation.centerFloat
+            : FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -749,7 +792,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           borderRadius: const BorderRadius.vertical(
             bottom: Radius.circular(24),
           ),
-          border: Border(bottom: BorderSide(color: palette.border)),
         ),
         child: ClipRRect(
           key: const ValueKey('today-shopping-hero-surface'),

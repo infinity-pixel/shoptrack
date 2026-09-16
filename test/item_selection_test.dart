@@ -320,7 +320,7 @@ void main() {
     return store;
   }
 
-  testWidgets('Long press, multi-select, move, return, and confirmed delete', (
+  testWidgets('Long press, multi-select, move, delete, and undo', (
     tester,
   ) async {
     final store = await mount(tester);
@@ -363,13 +363,16 @@ void main() {
     await tester.longPress(find.text('Milk'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(store.sessions.single.items.map((i) => i.id), ['rice', 'soap']);
+    expect(find.text('Undo'), findsOneWidget);
+    tester.widget<SnackBarAction>(find.byType(SnackBarAction)).onPressed();
     await tester.pumpAndSettle();
     expect(store.sessions.single.items, hasLength(3));
-    await tester.tap(find.text('Delete'));
+    await tester.longPress(find.text('Milk'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(store.sessions.single.items.map((i) => i.id), ['rice', 'soap']);
     expect(tester.takeException(), isNull);
@@ -418,7 +421,7 @@ void main() {
             .selectionMode,
         isTrue,
       );
-      await tester.tap(find.text('Move'));
+      await tester.tap(find.byTooltip('Move'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await tester.tap(find.byTooltip('Close'));
