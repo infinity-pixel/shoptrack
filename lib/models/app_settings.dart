@@ -48,7 +48,7 @@ enum DarkPreset {
       case DarkPreset.aurora:
         return 'Aurora';
       case DarkPreset.moonlit:
-        return 'Moonlit';
+        return 'Bleeding Moonlight';
       case DarkPreset.deepForest:
         return 'Deep Forest';
     }

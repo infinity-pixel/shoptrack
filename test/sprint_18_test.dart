@@ -23,6 +23,7 @@ import 'package:shoptrack/models/shopping_session.dart';
 
 final midnight = ThemePresets.darkPresets[DarkPreset.midnight]!;
 final aurora = ThemePresets.darkPresets[DarkPreset.aurora]!;
+final bleedingMoonlight = ThemePresets.darkPresets[DarkPreset.moonlit]!;
 final autumn = ThemePresets.lightPresets[LightPreset.autumn]!;
 final ocean = ThemePresets.lightPresets[LightPreset.ocean]!;
 const milk = ShoppingItem(
@@ -170,7 +171,58 @@ void main() {
       find.byKey(const ValueKey('list-overflow-shadow')),
     );
     final shadowGradient = (shadow.decoration as BoxDecoration).gradient!;
-    expect(shadowGradient.colors.last, Colors.black.withValues(alpha: .32));
+    expect(
+      tester.getSize(find.byKey(const ValueKey('list-overflow-shadow'))).width,
+      12,
+    );
+    expect(shadowGradient.colors.last, Colors.black.withValues(alpha: .35));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Light themes use the shared narrow black list shadow', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemePresets.lightPresets[LightPreset.summer]!.toThemeData(),
+        home: Scaffold(
+          body: ShoppingListSwitcher(
+            lists: const [
+              ShoppingListGroup(id: 'one', name: 'Family', position: 0),
+              ShoppingListGroup(
+                id: 'two',
+                name: 'Grandmother shopping',
+                position: 1,
+              ),
+              ShoppingListGroup(
+                id: 'three',
+                name: 'Weekend shopping',
+                position: 2,
+              ),
+            ],
+            activeListId: 'one',
+            itemCountForList: (_) => 0,
+            onSelected: (_) {},
+            onCreate: () {},
+            onManage: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final shadow = tester.widget<DecoratedBox>(
+      find.byKey(const ValueKey('list-overflow-shadow')),
+    );
+    final shadowGradient = (shadow.decoration as BoxDecoration).gradient!;
+    expect(
+      tester.getSize(find.byKey(const ValueKey('list-overflow-shadow'))).width,
+      12,
+    );
+    expect(shadowGradient.colors.last, Colors.black.withValues(alpha: .12));
     expect(tester.takeException(), isNull);
   });
 
@@ -252,6 +304,55 @@ void main() {
     );
   });
 
+  test('Bleeding Moonlight has a complete, accessible dark identity', () {
+    final p = bleedingMoonlight.palette;
+    double contrast(Color a, Color b) {
+      final x = a.computeLuminance(), y = b.computeLuminance();
+      return (math.max(x, y) + .05) / (math.min(x, y) + .05);
+    }
+
+    expect(bleedingMoonlight.name, 'Bleeding Moonlight');
+    expect(
+      bleedingMoonlight.headerArtworkPath,
+      'assets/images/theme_dark_bleeding_moonlight.webp',
+    );
+    expect(bleedingMoonlight.atmosphericConfig.baseColor, p.background);
+    expect(p.background, isNot(midnight.palette.background));
+    expect(p.primary, isNot(midnight.palette.primary));
+    expect(p.receiptShadow, const Color(0x80000000));
+    expect(
+      p.surface.computeLuminance(),
+      greaterThan(p.background.computeLuminance()),
+    );
+    expect(
+      p.surfaceToBuy.computeLuminance(),
+      greaterThan(p.surface.computeLuminance()),
+    );
+
+    for (final surface in [
+      p.background,
+      p.surface,
+      p.surfaceToBuy,
+      p.surfacePurchased,
+      p.surfaceReceipt,
+      p.receiptEdge,
+    ]) {
+      for (final ink in [
+        p.onSurface,
+        p.textSecondary,
+        p.purchased,
+        p.purchasedStatus,
+        p.pending,
+        p.planned,
+        p.today,
+      ]) {
+        expect(contrast(ink, surface), greaterThanOrEqualTo(4.5));
+      }
+    }
+    expect(contrast(p.onPrimary, p.primary), greaterThanOrEqualTo(4.5));
+    expect(contrast(p.onSecondary, p.secondary), greaterThanOrEqualTo(4.5));
+  });
+
   test('Ocean has a complete, accessible visual identity', () {
     final p = ocean.palette;
     double contrast(Color a, Color b) {
@@ -313,6 +414,11 @@ void main() {
       name: 'Ocean',
       definition: ocean,
       asset: 'assets/images/theme_light_ocean.webp',
+    ),
+    (
+      name: 'Bleeding Moonlight',
+      definition: bleedingMoonlight,
+      asset: 'assets/images/theme_dark_bleeding_moonlight.webp',
     ),
   ]) {
     for (final size in [const Size(320, 640), const Size(640, 360)]) {
@@ -438,7 +544,12 @@ void main() {
       await tester.tap(find.text('Profile').last);
       await tester.pumpAndSettle();
       for (final entry in {
-        'Dark Theme': ['Aurora', 'Deep Forest', 'Midnight', 'Moonlit'],
+        'Dark Theme': [
+          'Aurora',
+          'Bleeding Moonlight',
+          'Deep Forest',
+          'Midnight',
+        ],
         'Light Theme': ['Autumn', 'Ocean', 'Spring', 'Summer'],
       }.entries) {
         await tester.ensureVisible(find.text(entry.key));

@@ -47,8 +47,9 @@ that adds friction needs a clear user benefit.
 
 - Main navigation: Lists, History, Profile.
 - Implemented themes include Light/Summer, Light/Autumn, Light/Ocean,
-  Dark/Midnight, and Dark/Aurora artwork and full palettes. Other named presets
-  exist but may still need their own complete visual identity.
+  Dark/Midnight, Dark/Aurora, and Dark/Bleeding Moonlight artwork and full
+  palettes. Other named presets exist but may still need their own complete
+  visual identity.
 - Shopping sessions support named lists, pricing, purchase state, ordering,
   multi-select move/delete, history search, and custom date-range selection.
 - Google sign-in is connected to Firebase Authentication on Android.

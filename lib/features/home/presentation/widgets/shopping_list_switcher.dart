@@ -108,7 +108,7 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                               right: 0,
                               top: 6,
                               bottom: 6,
-                              width: 16,
+                              width: 12,
                               child: IgnorePointer(
                                 child: DecoratedBox(
                                   key: const ValueKey('list-overflow-shadow'),
@@ -119,10 +119,10 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                                         Theme.of(context).brightness ==
                                                 Brightness.dark
                                             ? Colors.black.withValues(
-                                                alpha: .32,
+                                                alpha: .35,
                                               )
                                             : Colors.black.withValues(
-                                                alpha: .10,
+                                                alpha: .12,
                                               ),
                                       ],
                                     ),

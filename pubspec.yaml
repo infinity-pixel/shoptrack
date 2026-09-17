@@ -76,6 +76,7 @@ flutter:
     - assets/images/theme_light_ocean.webp
     - assets/images/theme_dark_midnight.webp
     - assets/images/theme_dark_aurora.webp
+    - assets/images/theme_dark_bleeding_moonlight.webp
 
   fonts:
     - family: LibreBaskerville
