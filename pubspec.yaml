@@ -74,6 +74,7 @@ flutter:
     - assets/images/theme_light_summer.webp
     - assets/images/theme_light_autumn.webp
     - assets/images/theme_light_ocean.webp
+    - assets/images/theme_light_spring.webp
     - assets/images/theme_dark_midnight.webp
     - assets/images/theme_dark_aurora.webp
     - assets/images/theme_dark_bleeding_moonlight.webp

@@ -26,6 +26,7 @@ final aurora = ThemePresets.darkPresets[DarkPreset.aurora]!;
 final bleedingMoonlight = ThemePresets.darkPresets[DarkPreset.moonlit]!;
 final autumn = ThemePresets.lightPresets[LightPreset.autumn]!;
 final ocean = ThemePresets.lightPresets[LightPreset.ocean]!;
+final spring = ThemePresets.lightPresets[LightPreset.spring]!;
 const milk = ShoppingItem(
   id: 'milk',
   name: 'Milk',
@@ -226,7 +227,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Aurora alone gradients the selected navigation icon', (
+  testWidgets('Aurora and Spring gradient only the selected navigation icon', (
     tester,
   ) async {
     Widget app(ThemeDefinition definition, int index) => MaterialApp(
@@ -251,6 +252,23 @@ void main() {
     expect(
       find.ancestor(
         of: find.byIcon(Icons.watch_later_outlined),
+        matching: find.byType(ShaderMask),
+      ),
+      findsNothing,
+    );
+
+    await tester.pumpWidget(app(spring, 1));
+    await tester.pumpAndSettle();
+    expect(
+      find.ancestor(
+        of: find.byIcon(Icons.watch_later_rounded),
+        matching: find.byType(ShaderMask),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: find.byIcon(Icons.list_alt_outlined),
         matching: find.byType(ShaderMask),
       ),
       findsNothing,
@@ -399,6 +417,44 @@ void main() {
     );
   });
 
+  test('Spring has a complete, accessible mixed-color identity', () {
+    final p = spring.palette;
+    double contrast(Color a, Color b) {
+      final x = a.computeLuminance(), y = b.computeLuminance();
+      return (math.max(x, y) + .05) / (math.min(x, y) + .05);
+    }
+
+    expect(spring.headerArtworkPath, 'assets/images/theme_light_spring.webp');
+    expect(spring.atmosphericConfig.baseColor, p.background);
+    expect(spring.atmosphericConfig.gradientColors, hasLength(3));
+    expect(spring.atmosphericConfig.opacity, greaterThanOrEqualTo(0.3));
+    expect(spring.navigationIconGradient, hasLength(3));
+    expect(p.primary, isNot(p.secondary));
+    expect(p.background, isNot(ocean.palette.background));
+    expect(p.background, isNot(autumn.palette.background));
+    expect(
+      p.surfaceToBuy.computeLuminance(),
+      greaterThan(p.background.computeLuminance()),
+    );
+
+    for (final surface in [
+      p.background,
+      p.surface,
+      p.surfaceToBuy,
+      p.surfacePurchased,
+      p.surfaceReceipt,
+    ]) {
+      expect(contrast(p.onBackground, surface), greaterThanOrEqualTo(4.5));
+      expect(contrast(p.textSecondary, surface), greaterThanOrEqualTo(4.5));
+    }
+    expect(contrast(p.onPrimary, p.primary), greaterThanOrEqualTo(4.5));
+    expect(contrast(p.onSecondary, p.secondary), greaterThanOrEqualTo(4.5));
+    expect(
+      contrast(p.purchasedStatus, p.surfacePurchased),
+      greaterThanOrEqualTo(4.5),
+    );
+  });
+
   for (final theme in [
     (
       name: 'Aurora',
@@ -414,6 +470,11 @@ void main() {
       name: 'Ocean',
       definition: ocean,
       asset: 'assets/images/theme_light_ocean.webp',
+    ),
+    (
+      name: 'Spring',
+      definition: spring,
+      asset: 'assets/images/theme_light_spring.webp',
     ),
     (
       name: 'Bleeding Moonlight',
