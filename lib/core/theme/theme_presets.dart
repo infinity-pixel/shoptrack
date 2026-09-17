@@ -226,13 +226,35 @@ class ThemePresets {
       name: 'Autumn',
       brightness: Brightness.light,
       palette: ShopTrackPalette.light(
-        primary: const Color(0xFF8D6E63), // Earthy brown
-        today: const Color(0xFFD84315), // Burnt orange
+        primary: const Color(0xFFB85C38),
+        secondary: const Color(0xFFA34A2A),
+        today: const Color(0xFFA94B2F),
+        purchased: const Color(0xFF235A34),
+        pending: const Color(0xFFB3261E),
+        planned: const Color(0xFF7B3F84),
+        background: const Color(0xFFFFF3E6),
+        surface: const Color(0xFFFFFCF7),
+        surfaceToBuy: const Color(0xFFFFFCF7),
+        surfacePurchased: const Color(0xFFEDF5E8),
+        border: const Color(0xFFE8D3BF),
+        onBackground: const Color(0xFF3C2A20),
+        textSecondary: const Color(0xFF705F54),
+        surfaceReceipt: const Color(0xFFFFF4D8),
+        receiptEdge: const Color(0xFFE6B96F),
+        receiptShadow: const Color(0x402D1B10),
       ),
       atmosphericConfig: const AtmosphericConfig(
-        gradientColors: [Color(0xFFEFEBE9), Color(0xFFFBE9E7)],
-        opacity: 0.1,
+        baseColor: Color(0xFFFFF3E6),
+        gradientColors: [
+          Color(0xFFF6D2A7),
+          Color(0xFFFFF6EB),
+          Color(0xFFF3C99D),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        opacity: 0.38,
       ),
+      headerArtworkPath: 'assets/images/theme_light_autumn.webp',
     ),
   };
 

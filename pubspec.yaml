@@ -73,6 +73,7 @@ flutter:
   assets:
     - assets/images/lists_icon.png
     - assets/images/theme_light_summer.webp
+    - assets/images/theme_light_autumn.webp
     - assets/images/theme_dark_midnight.webp
 
   fonts:

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoptrack/app.dart';
+import 'package:shoptrack/core/theme/atmospheric_background.dart';
 import 'package:shoptrack/core/theme/theme_presets.dart';
 import 'package:shoptrack/features/history/presentation/pages/history_search_page.dart';
 import 'package:shoptrack/features/history/presentation/widgets/smart_date_range_picker.dart';
@@ -18,6 +19,7 @@ import 'package:shoptrack/models/shopping_item.dart';
 import 'package:shoptrack/models/shopping_session.dart';
 
 final midnight = ThemePresets.darkPresets[DarkPreset.midnight]!;
+final autumn = ThemePresets.lightPresets[LightPreset.autumn]!;
 const milk = ShoppingItem(
   id: 'milk',
   name: 'Milk',
@@ -63,6 +65,74 @@ void seed() {
 }
 
 void main() {
+  test('Autumn has a complete, accessible visual identity', () {
+    final p = autumn.palette;
+    double contrast(Color a, Color b) {
+      final x = a.computeLuminance(), y = b.computeLuminance();
+      return (math.max(x, y) + .05) / (math.min(x, y) + .05);
+    }
+
+    expect(autumn.headerArtworkPath, 'assets/images/theme_light_autumn.webp');
+    expect(autumn.atmosphericConfig.baseColor, p.background);
+    expect(autumn.atmosphericConfig.gradientColors, hasLength(3));
+    expect(autumn.atmosphericConfig.opacity, greaterThan(0.3));
+    expect(
+      p.background,
+      isNot(ThemePresets.lightPresets[LightPreset.summer]!.palette.background),
+    );
+    expect(
+      p.primary,
+      isNot(ThemePresets.lightPresets[LightPreset.summer]!.palette.primary),
+    );
+
+    for (final surface in [
+      p.background,
+      p.surface,
+      p.surfacePurchased,
+      p.surfaceReceipt,
+    ]) {
+      expect(contrast(p.onBackground, surface), greaterThanOrEqualTo(4.5));
+      expect(contrast(p.textSecondary, surface), greaterThanOrEqualTo(4.5));
+    }
+    expect(contrast(p.onPrimary, p.primary), greaterThanOrEqualTo(4.5));
+    expect(
+      contrast(p.purchasedStatus, p.surfacePurchased),
+      greaterThanOrEqualTo(4.5),
+    );
+  });
+
+  for (final size in [const Size(320, 640), const Size(640, 360)]) {
+    testWidgets('Autumn scenery and background fit $size', (tester) async {
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: autumn.toThemeData(),
+          home: Scaffold(
+            body: AtmosphericBackground(
+              config: autumn.atmosphericConfig,
+              child: Column(
+                children: [
+                  RecordHero(date: DateTime(2026, 10, 17), onBack: () {}),
+                  const Expanded(child: SizedBox()),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final artwork = tester.widget<Image>(find.byType(Image));
+      expect(
+        (artwork.image as AssetImage).assetName,
+        'assets/images/theme_light_autumn.webp',
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   test('Midnight text and semantic colors contrast with their surfaces', () {
     final p = midnight.palette;
     double contrast(Color a, Color b) {
