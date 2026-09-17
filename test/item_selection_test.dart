@@ -320,6 +320,27 @@ void main() {
     return store;
   }
 
+  for (final scale in [1.0, 1.3]) {
+    testWidgets('Purchase flight fits compact tiles at text scale $scale', (
+      tester,
+    ) async {
+      await mount(tester, size: const Size(320, 640), scale: scale);
+      for (var toggle = 0; toggle < 2; toggle++) {
+        final tile = tester
+            .widgetList<ShoppingItemTile>(find.byType(ShoppingItemTile))
+            .firstWhere((tile) => tile.item.id == milk.id);
+        tile.onToggle();
+        // Inspect intermediate frames; settling alone can miss overlay overflow.
+        for (var frame = 0; frame < 30; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          expect(tester.takeException(), isNull);
+        }
+        await tester.pumpAndSettle();
+      }
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
   testWidgets('Long press, multi-select, move, delete, and undo', (
     tester,
   ) async {

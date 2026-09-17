@@ -115,15 +115,13 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        palette.onBackground.withValues(
-                                          alpha: 0,
-                                        ),
+                                        Colors.black.withValues(alpha: 0),
                                         Theme.of(context).brightness ==
                                                 Brightness.dark
                                             ? Colors.black.withValues(
                                                 alpha: .32,
                                               )
-                                            : palette.onBackground.withValues(
+                                            : Colors.black.withValues(
                                                 alpha: .10,
                                               ),
                                       ],

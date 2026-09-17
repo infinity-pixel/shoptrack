@@ -30,6 +30,9 @@ that adds friction needs a clear user benefit.
 - If a visual reference or recording is provided, inspect it before claiming
   that the implementation matches. If the environment cannot decode or display
   it, say so plainly.
+- Keep video review lightweight: inspect a small set of downscaled frames around
+  the reported interaction, and sample more only when needed to diagnose it.
+  Avoid full-resolution frame dumps or repeatedly reviewing the entire video.
 - Preserve unrelated user changes in a dirty worktree. Never reset, discard, or
   overwrite them to make the task easier.
 - Make reasonable, reversible assumptions when details are minor. Ask before a

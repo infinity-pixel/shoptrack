@@ -1694,110 +1694,13 @@ class _ItemFlight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = ShopTrackThemeTokens.of(context).palette;
-    final pricing = item.pricing;
-    final quantity = pricing.resolvedQuantity;
-    final unit = pricing.resolvedUnitSymbol;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      decoration: BoxDecoration(
-        color: item.isPurchased
-            ? palette.surfacePurchased
-            : palette.surfaceToBuy,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.border),
-        boxShadow: [
-          BoxShadow(
-            color: palette.onBackground.withValues(alpha: 0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(2, 9, 14, 9),
-        child: Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-              child: Icon(
-                Icons.drag_indicator,
-                color: palette.textSecondary.withValues(alpha: 0.55),
-                size: 20,
-              ),
-            ),
-            Icon(
-              item.isPurchased
-                  ? Icons.check_box
-                  : Icons.check_box_outline_blank,
-              color: item.isPurchased ? palette.purchased : palette.border,
-              size: 26,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: item.isPurchased
-                          ? palette.textSecondary
-                          : palette.onBackground,
-                      decoration: item.isPurchased
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                  ),
-                  if (quantity != null || unit != null)
-                    Text(
-                      '${NumberFormatter.formatQuantity(quantity ?? 0, enteredText: item.quantity)} ${unit ?? ''}'
-                          .trim(),
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.1,
-                        fontWeight: FontWeight.w500,
-                        color: palette.textSecondary,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (pricing.totalPrice > 0)
-                  Text(
-                    NumberFormatter.formatPrice(pricing.totalPrice),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: item.isPurchased
-                          ? palette.purchased
-                          : palette.secondary,
-                    ),
-                  ),
-                if (pricing.unitPrice > 0)
-                  Text(
-                    '${NumberFormatter.formatPrice(pricing.unitPrice)}/${pricing.priceBasisSymbol}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: palette.textSecondary,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
+    // Match the measured source/destination tile, including text scaling.
+    return ShoppingItemTile(
+      item: item,
+      index: 0,
+      onToggle: () {},
+      onTap: () {},
+      onDelete: () {},
     );
   }
 }
