@@ -71,13 +71,14 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/theme_light_summer.webp
-    - assets/images/theme_light_autumn.webp
-    - assets/images/theme_light_ocean.webp
-    - assets/images/theme_light_spring.webp
-    - assets/images/theme_dark_midnight.webp
-    - assets/images/theme_dark_aurora.webp
+    - assets/images/theme_light_golden_summer.webp
+    - assets/images/theme_light_ember_autumn.webp
+    - assets/images/theme_light_tranquil_ocean.webp
+    - assets/images/theme_light_blooming_spring.webp
+    - assets/images/theme_dark_silent_midnight.webp
+    - assets/images/theme_dark_ethereal_aurora.webp
     - assets/images/theme_dark_bleeding_moonlight.webp
+    - assets/images/theme_dark_ancient_forest.webp
 
   fonts:
     - family: LibreBaskerville

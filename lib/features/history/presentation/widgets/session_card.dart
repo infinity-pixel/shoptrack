@@ -160,7 +160,9 @@ class SessionCard extends StatelessWidget {
     if (onDelete == null && onEdit == null) {
       return const Icon(Icons.chevron_right, size: 20);
     }
-    final palette = ShopTrackThemeTokens.of(context).palette;
+    final tokens = ShopTrackThemeTokens.of(context);
+    final palette = tokens.palette;
+    final calendarAccent = tokens.calendarAccent ?? palette.onSurface;
     return PopupMenuButton<String>(
       tooltip: 'Date options',
       onSelected: (value) {
@@ -169,13 +171,13 @@ class SessionCard extends StatelessWidget {
       },
       itemBuilder: (context) => [
         if (onEdit != null)
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'edit',
             child: Row(
               children: [
-                Icon(Icons.edit_calendar_outlined),
-                SizedBox(width: 8),
-                Text('Edit Date'),
+                Icon(Icons.edit_calendar_outlined, color: calendarAccent),
+                const SizedBox(width: 8),
+                const Text('Edit Date'),
               ],
             ),
           ),

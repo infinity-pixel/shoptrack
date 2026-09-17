@@ -114,14 +114,17 @@ void main() {
         darkPreset: DarkPreset.aurora,
       );
       final definition = ThemePresets.getDefinition(settings, Brightness.light);
-      expect(definition.name, 'Aurora');
+      expect(definition.name, 'Ethereal Aurora');
       expect(definition.brightness, Brightness.dark);
     });
 
     test('Summer preset supplies artwork and semantic list surfaces', () {
       final summer = ThemePresets.lightPresets[LightPreset.summer]!;
 
-      expect(summer.headerArtworkPath, 'assets/images/theme_light_summer.webp');
+      expect(
+        summer.headerArtworkPath,
+        'assets/images/theme_light_golden_summer.webp',
+      );
       expect(summer.palette.surfaceToBuy, const Color(0xFFFFFDFA));
       expect(summer.palette.surfacePurchased, const Color(0xFFE8F6EA));
       expect(summer.palette.purchased, const Color(0xFF2E7D32));
@@ -135,7 +138,7 @@ void main() {
       expect(tokens, isNotNull);
       expect(
         tokens!.headerArtworkPath,
-        'assets/images/theme_light_summer.webp',
+        'assets/images/theme_light_golden_summer.webp',
       );
       expect(tokens.palette.border, const Color(0xFFF1E2C6));
     });

@@ -34,7 +34,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final key = GlobalKey();
     final theme = ThemePresets.lightPresets.values
-        .firstWhere((t) => t.name == 'Summer')
+        .firstWhere((t) => t.name == 'Golden Summer')
         .toThemeData();
     await tester.pumpWidget(
       MaterialApp(

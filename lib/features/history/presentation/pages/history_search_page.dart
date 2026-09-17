@@ -133,7 +133,9 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final p = ShopTrackThemeTokens.of(context).palette;
+    final tokens = ShopTrackThemeTokens.of(context);
+    final p = tokens.palette;
+    final calendarAccent = tokens.calendarAccent ?? p.onSurface;
     return Scaffold(
       bottomNavigationBar: widget.onTabSelected == null
           ? null
@@ -231,7 +233,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                   avatar: Icon(
                     Icons.date_range,
                     size: 18,
-                    color: _range != null ? p.onSecondary : p.onSurface,
+                    color: _range != null ? p.onSecondary : calendarAccent,
                   ),
                   label: const Text('Date Range'),
                   onPressed: _pickRange,

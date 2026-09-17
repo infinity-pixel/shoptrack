@@ -46,9 +46,9 @@ that adds friction needs a clear user benefit.
 ## Current Product Status
 
 - Main navigation: Lists, History, Profile.
-- Implemented themes include Light/Summer, Light/Autumn, Light/Ocean,
-  Light/Spring, Dark/Midnight, Dark/Aurora, and Dark/Bleeding Moonlight artwork
-  and full palettes. Dark/Deep Forest still needs its complete visual identity.
+- Implemented themes include Golden Summer, Ember Autumn, Tranquil Ocean,
+  Blooming Spring, Silent Midnight, Ethereal Aurora, and Bleeding Moonlight.
+  Ancient Forest has approved artwork but still needs its complete palette.
 - Shopping sessions support named lists, pricing, purchase state, ordering,
   multi-select move/delete, history search, and custom date-range selection.
 - Google sign-in is connected to Firebase Authentication on Android.
@@ -85,6 +85,10 @@ Keep this section current when those facts change.
 - `firestore.rules`: source-controlled Firestore security rules. Editing this
   file does not deploy it.
 - `tool/test_firestore_rules.mjs`: local-emulator rules checks only.
+- `docs/CODEX_CLOUD_HANDOFF.md`: canonical product, roadmap, release, and
+  Cloud/local continuity handover. Read it when starting a new Codex task.
+- `docs/sprint_17_2_sync.md`: detailed automatic-sync design and acceptance
+  contract. Read it before persistence, restore, account, or sync changes.
 
 ## Architecture and Data-Safety Invariants
 
@@ -143,8 +147,8 @@ These are release-blocking invariants. Do not weaken them for a quicker UI fix.
 - A theme is a complete visual identity, not a new accent pasted over another
   theme. Check backgrounds, surfaces, text, borders, status colors, dialogs,
   sheets, input fields, navigation, receipts, calendars, and header artwork.
-- Keep Light/Summer and Dark/Midnight behavior intact unless the task explicitly
-  changes them. Dark backgrounds use a quiet edge tint; gradients should not
+- Keep Golden Summer and Silent Midnight behavior intact unless the task
+  explicitly changes them. Dark backgrounds use a quiet edge tint; gradients should not
   turn large dark surfaces visibly blue or washed out.
 - Use `ShopTrackNavigationBar` for the shared Lists/History/Profile navigation.
   Preserve outline-to-filled selection, subtle motion, theme tinting, and

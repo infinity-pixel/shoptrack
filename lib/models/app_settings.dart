@@ -24,13 +24,13 @@ enum LightPreset {
   String get displayName {
     switch (this) {
       case LightPreset.summer:
-        return 'Summer';
+        return 'Golden Summer';
       case LightPreset.spring:
-        return 'Spring';
+        return 'Blooming Spring';
       case LightPreset.ocean:
-        return 'Ocean';
+        return 'Tranquil Ocean';
       case LightPreset.autumn:
-        return 'Autumn';
+        return 'Ember Autumn';
     }
   }
 }
@@ -44,13 +44,13 @@ enum DarkPreset {
   String get displayName {
     switch (this) {
       case DarkPreset.midnight:
-        return 'Midnight';
+        return 'Silent Midnight';
       case DarkPreset.aurora:
-        return 'Aurora';
+        return 'Ethereal Aurora';
       case DarkPreset.moonlit:
         return 'Bleeding Moonlight';
       case DarkPreset.deepForest:
-        return 'Deep Forest';
+        return 'Ancient Forest';
     }
   }
 }

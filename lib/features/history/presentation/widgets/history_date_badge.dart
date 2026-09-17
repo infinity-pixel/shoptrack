@@ -13,7 +13,9 @@ class HistoryDateBadge extends StatelessWidget {
   final bool isFuture;
   @override
   Widget build(BuildContext context) {
-    final palette = ShopTrackThemeTokens.of(context).palette;
+    final tokens = ShopTrackThemeTokens.of(context);
+    final palette = tokens.palette;
+    final calendarAccent = tokens.calendarAccent ?? palette.secondary;
     return SizedBox(
       width: 44,
       height: 48,
@@ -24,7 +26,7 @@ class HistoryDateBadge extends StatelessWidget {
             top: 5,
             child: Container(
               decoration: BoxDecoration(
-                border: Border.all(color: palette.secondary, width: 1.5),
+                border: Border.all(color: calendarAccent, width: 1.5),
                 borderRadius: BorderRadius.circular(7),
               ),
               child: Column(
@@ -32,7 +34,7 @@ class HistoryDateBadge extends StatelessWidget {
                   Container(
                     height: 10,
                     decoration: BoxDecoration(
-                      color: palette.secondary,
+                      color: calendarAccent,
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(5),
                       ),
@@ -78,7 +80,7 @@ class HistoryDateBadge extends StatelessWidget {
                   right: alignment == Alignment.topRight ? 9 : 0,
                 ),
                 decoration: BoxDecoration(
-                  color: palette.secondary,
+                  color: calendarAccent,
                   borderRadius: BorderRadius.circular(3),
                   border: Border.all(color: palette.surface, width: .7),
                 ),

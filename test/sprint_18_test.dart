@@ -13,6 +13,7 @@ import 'package:shoptrack/core/theme/theme_presets.dart';
 import 'package:shoptrack/core/widgets/shoptrack_navigation_bar.dart';
 import 'package:shoptrack/features/history/presentation/pages/history_search_page.dart';
 import 'package:shoptrack/features/history/presentation/widgets/smart_date_range_picker.dart';
+import 'package:shoptrack/features/history/presentation/widgets/history_date_badge.dart';
 import 'package:shoptrack/features/home/presentation/widgets/add_item_sheet.dart';
 import 'package:shoptrack/features/home/presentation/widgets/record_hero.dart';
 import 'package:shoptrack/features/home/presentation/widgets/shopping_list_switcher.dart';
@@ -24,6 +25,7 @@ import 'package:shoptrack/models/shopping_session.dart';
 final midnight = ThemePresets.darkPresets[DarkPreset.midnight]!;
 final aurora = ThemePresets.darkPresets[DarkPreset.aurora]!;
 final bleedingMoonlight = ThemePresets.darkPresets[DarkPreset.moonlit]!;
+final ancientForest = ThemePresets.darkPresets[DarkPreset.deepForest]!;
 final autumn = ThemePresets.lightPresets[LightPreset.autumn]!;
 final ocean = ThemePresets.lightPresets[LightPreset.ocean]!;
 final spring = ThemePresets.lightPresets[LightPreset.spring]!;
@@ -72,14 +74,17 @@ void seed() {
 }
 
 void main() {
-  test('Aurora has a complete, accessible dark identity', () {
+  test('Ethereal Aurora has a complete, accessible dark identity', () {
     final p = aurora.palette;
     double contrast(Color a, Color b) {
       final x = a.computeLuminance(), y = b.computeLuminance();
       return (math.max(x, y) + .05) / (math.min(x, y) + .05);
     }
 
-    expect(aurora.headerArtworkPath, 'assets/images/theme_dark_aurora.webp');
+    expect(
+      aurora.headerArtworkPath,
+      'assets/images/theme_dark_ethereal_aurora.webp',
+    );
     expect(aurora.atmosphericConfig.baseColor, p.background);
     expect(p.background, isNot(midnight.palette.background));
     expect(p.primary, isNot(midnight.palette.primary));
@@ -121,7 +126,7 @@ void main() {
     expect(contrast(p.onSecondary, p.secondary), greaterThanOrEqualTo(4.5));
   });
 
-  testWidgets('Aurora keeps a 96 percent dark center and black list shadow', (
+  testWidgets('Ethereal Aurora keeps a 96 percent center and black shadow', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(320, 640));
@@ -227,7 +232,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Aurora and Spring gradient only the selected navigation icon', (
+  testWidgets('Ethereal Aurora and Blooming Spring gradient selected icons', (
     tester,
   ) async {
     Widget app(ThemeDefinition definition, int index) => MaterialApp(
@@ -286,14 +291,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  test('Autumn has a complete, accessible visual identity', () {
+  test('Ember Autumn has a complete, accessible visual identity', () {
     final p = autumn.palette;
     double contrast(Color a, Color b) {
       final x = a.computeLuminance(), y = b.computeLuminance();
       return (math.max(x, y) + .05) / (math.min(x, y) + .05);
     }
 
-    expect(autumn.headerArtworkPath, 'assets/images/theme_light_autumn.webp');
+    expect(
+      autumn.headerArtworkPath,
+      'assets/images/theme_light_ember_autumn.webp',
+    );
     expect(autumn.atmosphericConfig.baseColor, p.background);
     expect(autumn.atmosphericConfig.gradientColors, hasLength(3));
     expect(autumn.atmosphericConfig.opacity, greaterThan(0.3));
@@ -371,14 +379,17 @@ void main() {
     expect(contrast(p.onSecondary, p.secondary), greaterThanOrEqualTo(4.5));
   });
 
-  test('Ocean has a complete, accessible visual identity', () {
+  test('Tranquil Ocean has a complete, accessible visual identity', () {
     final p = ocean.palette;
     double contrast(Color a, Color b) {
       final x = a.computeLuminance(), y = b.computeLuminance();
       return (math.max(x, y) + .05) / (math.min(x, y) + .05);
     }
 
-    expect(ocean.headerArtworkPath, 'assets/images/theme_light_ocean.webp');
+    expect(
+      ocean.headerArtworkPath,
+      'assets/images/theme_light_tranquil_ocean.webp',
+    );
     expect(ocean.atmosphericConfig.baseColor, p.background);
     expect(ocean.atmosphericConfig.gradientColors, hasLength(3));
     expect(ocean.atmosphericConfig.opacity, greaterThanOrEqualTo(0.3));
@@ -417,18 +428,22 @@ void main() {
     );
   });
 
-  test('Spring has a complete, accessible mixed-color identity', () {
+  test('Blooming Spring has a complete accessible mixed-color identity', () {
     final p = spring.palette;
     double contrast(Color a, Color b) {
       final x = a.computeLuminance(), y = b.computeLuminance();
       return (math.max(x, y) + .05) / (math.min(x, y) + .05);
     }
 
-    expect(spring.headerArtworkPath, 'assets/images/theme_light_spring.webp');
+    expect(
+      spring.headerArtworkPath,
+      'assets/images/theme_light_blooming_spring.webp',
+    );
     expect(spring.atmosphericConfig.baseColor, p.background);
     expect(spring.atmosphericConfig.gradientColors, hasLength(3));
     expect(spring.atmosphericConfig.opacity, greaterThanOrEqualTo(0.3));
     expect(spring.navigationIconGradient, hasLength(3));
+    expect(spring.calendarAccent, const Color(0xFFB94F7A));
     expect(p.primary, isNot(p.secondary));
     expect(p.background, isNot(ocean.palette.background));
     expect(p.background, isNot(autumn.palette.background));
@@ -455,31 +470,79 @@ void main() {
     );
   });
 
+  test('Ancient Forest supplies its approved scenery', () {
+    expect(ancientForest.name, 'Ancient Forest');
+    expect(
+      ancientForest.headerArtworkPath,
+      'assets/images/theme_dark_ancient_forest.webp',
+    );
+  });
+
+  testWidgets('Blooming Spring gives its calendar badge a blossom accent', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: spring.toThemeData(),
+        home: Scaffold(body: HistoryDateBadge(date: DateTime(2026, 4, 12))),
+      ),
+    );
+
+    final decorations = tester
+        .widgetList<Container>(
+          find.descendant(
+            of: find.byType(HistoryDateBadge),
+            matching: find.byType(Container),
+          ),
+        )
+        .map((container) => container.decoration)
+        .whereType<BoxDecoration>()
+        .toList();
+    expect(
+      decorations.any(
+        (decoration) => decoration.border?.top.color == spring.calendarAccent,
+      ),
+      isTrue,
+    );
+    expect(
+      decorations.any(
+        (decoration) => decoration.color == spring.calendarAccent,
+      ),
+      isTrue,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   for (final theme in [
     (
-      name: 'Aurora',
+      name: 'Ethereal Aurora',
       definition: aurora,
-      asset: 'assets/images/theme_dark_aurora.webp',
+      asset: 'assets/images/theme_dark_ethereal_aurora.webp',
     ),
     (
-      name: 'Autumn',
+      name: 'Ember Autumn',
       definition: autumn,
-      asset: 'assets/images/theme_light_autumn.webp',
+      asset: 'assets/images/theme_light_ember_autumn.webp',
     ),
     (
-      name: 'Ocean',
+      name: 'Tranquil Ocean',
       definition: ocean,
-      asset: 'assets/images/theme_light_ocean.webp',
+      asset: 'assets/images/theme_light_tranquil_ocean.webp',
     ),
     (
-      name: 'Spring',
+      name: 'Blooming Spring',
       definition: spring,
-      asset: 'assets/images/theme_light_spring.webp',
+      asset: 'assets/images/theme_light_blooming_spring.webp',
     ),
     (
       name: 'Bleeding Moonlight',
       definition: bleedingMoonlight,
       asset: 'assets/images/theme_dark_bleeding_moonlight.webp',
+    ),
+    (
+      name: 'Ancient Forest',
+      definition: ancientForest,
+      asset: 'assets/images/theme_dark_ancient_forest.webp',
     ),
   ]) {
     for (final size in [const Size(320, 640), const Size(640, 360)]) {
@@ -606,12 +669,17 @@ void main() {
       await tester.pumpAndSettle();
       for (final entry in {
         'Dark Theme': [
-          'Aurora',
+          'Ancient Forest',
           'Bleeding Moonlight',
-          'Deep Forest',
-          'Midnight',
+          'Ethereal Aurora',
+          'Silent Midnight',
         ],
-        'Light Theme': ['Autumn', 'Ocean', 'Spring', 'Summer'],
+        'Light Theme': [
+          'Blooming Spring',
+          'Ember Autumn',
+          'Golden Summer',
+          'Tranquil Ocean',
+        ],
       }.entries) {
         await tester.ensureVisible(find.text(entry.key));
         await tester.pumpAndSettle();
@@ -633,7 +701,13 @@ void main() {
           );
         }
         await tester.tap(
-          find.text(entry.key == 'Dark Theme' ? 'Aurora' : 'Ocean').last,
+          find
+              .text(
+                entry.key == 'Dark Theme'
+                    ? 'Ethereal Aurora'
+                    : 'Tranquil Ocean',
+              )
+              .last,
         );
         await tester.pumpAndSettle();
       }
@@ -651,7 +725,7 @@ void main() {
   );
 
   const font = String.fromEnvironment('SHOPTRACK_PREVIEW_FONT');
-  testWidgets('Render Midnight actual screens', (tester) async {
+  testWidgets('Render Silent Midnight actual screens', (tester) async {
     seed();
     await (FontLoader('Roboto')..addFont(
           Future.value(ByteData.sublistView(File(font).readAsBytesSync())),

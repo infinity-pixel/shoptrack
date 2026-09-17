@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/widgets/date_parts_field.dart';
 
 class DateRangeSelection {
@@ -107,6 +108,9 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final calendarAccent =
+        Theme.of(context).extension<ShopTrackThemeTokens>()?.calendarAccent ??
+        colors.secondary;
     final media = MediaQuery.of(context);
     final error = !_valid
         ? 'Enter a valid date (2000–2100).'
@@ -297,14 +301,14 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.date_range, color: colors.secondary),
+                              Icon(Icons.date_range, color: calendarAccent),
                               Container(
                                 width: 1.5,
                                 height: 26,
                                 margin: const EdgeInsets.symmetric(
                                   horizontal: 10,
                                 ),
-                                color: colors.secondary.withValues(alpha: .5),
+                                color: calendarAccent.withValues(alpha: .5),
                               ),
                               Flexible(
                                 child: Text(

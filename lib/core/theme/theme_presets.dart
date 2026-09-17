@@ -28,6 +28,7 @@ class ThemeDefinition {
   final Brightness brightness;
   final String? headerArtworkPath;
   final List<Color>? navigationIconGradient;
+  final Color? calendarAccent;
 
   ThemeDefinition({
     required this.name,
@@ -36,6 +37,7 @@ class ThemeDefinition {
     required this.atmosphericConfig,
     this.headerArtworkPath,
     this.navigationIconGradient,
+    this.calendarAccent,
   }) : typography = ShopTrackTypography.standard(
          brightness == Brightness.light
              ? palette.onBackground
@@ -158,6 +160,7 @@ class ThemeDefinition {
           palette: palette,
           headerArtworkPath: headerArtworkPath,
           navigationIconGradient: navigationIconGradient,
+          calendarAccent: calendarAccent,
         ),
       ],
     );
@@ -170,7 +173,7 @@ class ThemePresets {
   /// Map of Light Presets
   static final Map<LightPreset, ThemeDefinition> lightPresets = {
     LightPreset.summer: ThemeDefinition(
-      name: 'Summer',
+      name: 'Golden Summer',
       brightness: Brightness.light,
       palette: ShopTrackPalette.light(
         primary: const Color(0xFFFFB44D),
@@ -199,10 +202,10 @@ class ThemePresets {
         end: Alignment.bottomCenter,
         opacity: 0.38,
       ),
-      headerArtworkPath: 'assets/images/theme_light_summer.webp',
+      headerArtworkPath: 'assets/images/theme_light_golden_summer.webp',
     ),
     LightPreset.spring: ThemeDefinition(
-      name: 'Spring',
+      name: 'Blooming Spring',
       brightness: Brightness.light,
       palette: ShopTrackPalette.light(
         primary: const Color(0xFF9C3E68),
@@ -233,15 +236,16 @@ class ThemePresets {
         end: Alignment.bottomCenter,
         opacity: 0.42,
       ),
-      headerArtworkPath: 'assets/images/theme_light_spring.webp',
+      headerArtworkPath: 'assets/images/theme_light_blooming_spring.webp',
       navigationIconGradient: const [
         Color(0xFF397A5D),
         Color(0xFFB94F7A),
         Color(0xFF76569B),
       ],
+      calendarAccent: const Color(0xFFB94F7A),
     ),
     LightPreset.ocean: ThemeDefinition(
-      name: 'Ocean',
+      name: 'Tranquil Ocean',
       brightness: Brightness.light,
       palette: ShopTrackPalette.light(
         primary: const Color(0xFF006B8F),
@@ -272,10 +276,10 @@ class ThemePresets {
         end: Alignment.bottomCenter,
         opacity: 0.4,
       ),
-      headerArtworkPath: 'assets/images/theme_light_ocean.webp',
+      headerArtworkPath: 'assets/images/theme_light_tranquil_ocean.webp',
     ),
     LightPreset.autumn: ThemeDefinition(
-      name: 'Autumn',
+      name: 'Ember Autumn',
       brightness: Brightness.light,
       palette: ShopTrackPalette.light(
         primary: const Color(0xFFB85C38),
@@ -306,14 +310,14 @@ class ThemePresets {
         end: Alignment.bottomCenter,
         opacity: 0.38,
       ),
-      headerArtworkPath: 'assets/images/theme_light_autumn.webp',
+      headerArtworkPath: 'assets/images/theme_light_ember_autumn.webp',
     ),
   };
 
   /// Map of Dark Presets
   static final Map<DarkPreset, ThemeDefinition> darkPresets = {
     DarkPreset.midnight: ThemeDefinition(
-      name: 'Midnight',
+      name: 'Silent Midnight',
       brightness: Brightness.dark,
       palette: const ShopTrackPalette(
         primary: Color(0xFFA6AEF5),
@@ -350,10 +354,10 @@ class ThemePresets {
         end: Alignment.bottomCenter,
         opacity: 0.22,
       ),
-      headerArtworkPath: 'assets/images/theme_dark_midnight.webp',
+      headerArtworkPath: 'assets/images/theme_dark_silent_midnight.webp',
     ),
     DarkPreset.aurora: ThemeDefinition(
-      name: 'Aurora',
+      name: 'Ethereal Aurora',
       brightness: Brightness.dark,
       palette: const ShopTrackPalette(
         primary: Color(0xFF66D7B0),
@@ -390,7 +394,7 @@ class ThemePresets {
         end: Alignment.bottomCenter,
         opacity: 1,
       ),
-      headerArtworkPath: 'assets/images/theme_dark_aurora.webp',
+      headerArtworkPath: 'assets/images/theme_dark_ethereal_aurora.webp',
       navigationIconGradient: const [
         Color(0xFF66D7B0),
         Color(0xFF8FD9CB),
@@ -438,7 +442,7 @@ class ThemePresets {
       headerArtworkPath: 'assets/images/theme_dark_bleeding_moonlight.webp',
     ),
     DarkPreset.deepForest: ThemeDefinition(
-      name: 'Deep Forest',
+      name: 'Ancient Forest',
       brightness: Brightness.dark,
       palette: ShopTrackPalette.dark(
         primary: const Color(0xFF81C784), // Pale green
@@ -448,6 +452,7 @@ class ThemePresets {
         gradientColors: [Color(0xFF1B5E20), Color(0xFF002400)],
         opacity: 0.2,
       ),
+      headerArtworkPath: 'assets/images/theme_dark_ancient_forest.webp',
     ),
   };
 
@@ -475,11 +480,13 @@ class ShopTrackThemeTokens extends ThemeExtension<ShopTrackThemeTokens> {
   final ShopTrackPalette palette;
   final String? headerArtworkPath;
   final List<Color>? navigationIconGradient;
+  final Color? calendarAccent;
 
   const ShopTrackThemeTokens({
     required this.palette,
     this.headerArtworkPath,
     this.navigationIconGradient,
+    this.calendarAccent,
   });
 
   static ShopTrackThemeTokens of(BuildContext context) {
@@ -493,11 +500,13 @@ class ShopTrackThemeTokens extends ThemeExtension<ShopTrackThemeTokens> {
     ShopTrackPalette? palette,
     String? headerArtworkPath,
     List<Color>? navigationIconGradient,
+    Color? calendarAccent,
   }) => ShopTrackThemeTokens(
     palette: palette ?? this.palette,
     headerArtworkPath: headerArtworkPath ?? this.headerArtworkPath,
     navigationIconGradient:
         navigationIconGradient ?? this.navigationIconGradient,
+    calendarAccent: calendarAccent ?? this.calendarAccent,
   );
 
   @override

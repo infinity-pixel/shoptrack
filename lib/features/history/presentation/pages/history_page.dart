@@ -336,7 +336,9 @@ class _HistoryPageState extends State<HistoryPage>
   }
 
   Future<void> _showAddCustomDateDialog() async {
-    final palette = ShopTrackThemeTokens.of(context).palette;
+    final tokens = ShopTrackThemeTokens.of(context);
+    final palette = tokens.palette;
+    final calendarAccent = tokens.calendarAccent ?? palette.planned;
     final result = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -360,7 +362,7 @@ class _HistoryPageState extends State<HistoryPage>
                 onTap: () => Navigator.pop(context, 'past'),
               ),
               ListTile(
-                leading: Icon(Icons.calendar_month, color: palette.planned),
+                leading: Icon(Icons.calendar_month, color: calendarAccent),
                 title: const Text('Future Date'),
                 onTap: () => Navigator.pop(context, 'future'),
               ),
@@ -413,13 +415,15 @@ class _CalendarAddIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = ShopTrackThemeTokens.of(context).palette;
+    final tokens = ShopTrackThemeTokens.of(context);
+    final palette = tokens.palette;
+    final calendarAccent = tokens.calendarAccent ?? palette.primary;
     return SizedBox(
       width: 26,
       height: 26,
       child: Stack(
         children: [
-          const Icon(Icons.calendar_month_outlined, size: 24),
+          Icon(Icons.calendar_month_outlined, size: 24, color: calendarAccent),
           Positioned(
             right: 0,
             bottom: 0,
