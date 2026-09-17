@@ -27,6 +27,7 @@ class ThemeDefinition {
   final AtmosphericConfig atmosphericConfig;
   final Brightness brightness;
   final String? headerArtworkPath;
+  final List<Color>? navigationIconGradient;
 
   ThemeDefinition({
     required this.name,
@@ -34,6 +35,7 @@ class ThemeDefinition {
     required this.brightness,
     required this.atmosphericConfig,
     this.headerArtworkPath,
+    this.navigationIconGradient,
   }) : typography = ShopTrackTypography.standard(
          brightness == Brightness.light
              ? palette.onBackground
@@ -155,6 +157,7 @@ class ThemeDefinition {
         ShopTrackThemeTokens(
           palette: palette,
           headerArtworkPath: headerArtworkPath,
+          navigationIconGradient: navigationIconGradient,
         ),
       ],
     );
@@ -303,16 +306,47 @@ class ThemePresets {
     DarkPreset.aurora: ThemeDefinition(
       name: 'Aurora',
       brightness: Brightness.dark,
-      palette: ShopTrackPalette.dark(
-        primary: const Color(0xFF26A69A), // Teal
-        today: const Color(0xFF00897B),
+      palette: const ShopTrackPalette(
+        primary: Color(0xFF66D7B0),
+        secondary: Color(0xFFB5A1E8),
+        background: Color(0xFF091514),
+        surface: Color(0xFF203431),
+        error: Color(0xFFF49A9A),
+        onPrimary: Color(0xFF06231A),
+        onSecondary: Color(0xFF181029),
+        onBackground: Color(0xFFF1F7F5),
+        onSurface: Color(0xFFF1F7F5),
+        onError: Color(0xFF321414),
+        purchased: Color(0xFF7FD5A2),
+        pending: Color(0xFFF49A9A),
+        planned: Color(0xFFC7B1F4),
+        today: Color(0xFF69DCC0),
+        onStatus: Color(0xFF071513),
+        surfaceToBuy: Color(0xFF263D39),
+        surfacePurchased: Color(0xFF204035),
+        border: Color(0xFF38524E),
+        textSecondary: Color(0xFFAABDB7),
+        surfaceReceipt: Color(0xFF223836),
+        receiptEdge: Color(0xFF294744),
+        receiptShadow: Color(0x73000000),
       ),
       atmosphericConfig: const AtmosphericConfig(
-        gradientColors: [Color(0xFF004D40), Color(0xFF1B5E20)],
-        opacity: 0.15,
-        begin: Alignment.bottomLeft,
-        end: Alignment.topRight,
+        baseColor: Color(0xFF091514),
+        gradientColors: [
+          Color(0xFF0C211D),
+          Color(0xFF091514),
+          Color(0xFF17152A),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        opacity: 1,
       ),
+      headerArtworkPath: 'assets/images/theme_dark_aurora.webp',
+      navigationIconGradient: const [
+        Color(0xFF66D7B0),
+        Color(0xFF8FD9CB),
+        Color(0xFFB5A1E8),
+      ],
     ),
     DarkPreset.moonlit: ThemeDefinition(
       name: 'Moonlit',
@@ -363,8 +397,13 @@ class ThemePresets {
 class ShopTrackThemeTokens extends ThemeExtension<ShopTrackThemeTokens> {
   final ShopTrackPalette palette;
   final String? headerArtworkPath;
+  final List<Color>? navigationIconGradient;
 
-  const ShopTrackThemeTokens({required this.palette, this.headerArtworkPath});
+  const ShopTrackThemeTokens({
+    required this.palette,
+    this.headerArtworkPath,
+    this.navigationIconGradient,
+  });
 
   static ShopTrackThemeTokens of(BuildContext context) {
     final tokens = Theme.of(context).extension<ShopTrackThemeTokens>();
@@ -376,9 +415,12 @@ class ShopTrackThemeTokens extends ThemeExtension<ShopTrackThemeTokens> {
   ShopTrackThemeTokens copyWith({
     ShopTrackPalette? palette,
     String? headerArtworkPath,
+    List<Color>? navigationIconGradient,
   }) => ShopTrackThemeTokens(
     palette: palette ?? this.palette,
     headerArtworkPath: headerArtworkPath ?? this.headerArtworkPath,
+    navigationIconGradient:
+        navigationIconGradient ?? this.navigationIconGradient,
   );
 
   @override

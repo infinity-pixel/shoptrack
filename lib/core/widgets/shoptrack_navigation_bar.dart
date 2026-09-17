@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/theme_presets.dart';
+
 /// Shared by the main tabs and History Search, including interaction states.
 class ShopTrackNavigationBar extends StatelessWidget {
   const ShopTrackNavigationBar({
@@ -73,6 +75,30 @@ class _NavigationIcon extends StatelessWidget {
     final duration = reduceMotion
         ? Duration.zero
         : const Duration(milliseconds: 180);
+    final gradientColors = Theme.of(
+      context,
+    ).extension<ShopTrackThemeTokens>()?.navigationIconGradient;
+    final iconKey = ValueKey(
+      'navigation-icon-$index-${selected ? 'filled' : 'outline'}',
+    );
+    final icon = Icon(
+      selected ? filledIcon : outlinedIcon,
+      key: gradientColors == null || !selected ? iconKey : null,
+      size: 25,
+      color: gradientColors != null && selected ? Colors.white : null,
+    );
+    final styledIcon = gradientColors != null && selected
+        ? ShaderMask(
+            key: iconKey,
+            blendMode: BlendMode.srcIn,
+            shaderCallback: (bounds) => LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradientColors,
+            ).createShader(bounds),
+            child: icon,
+          )
+        : icon;
 
     return AnimatedSlide(
       offset: selected && !reduceMotion ? const Offset(0, -0.04) : Offset.zero,
@@ -89,13 +115,7 @@ class _NavigationIcon extends StatelessWidget {
             child: child,
           ),
         ),
-        child: Icon(
-          selected ? filledIcon : outlinedIcon,
-          key: ValueKey(
-            'navigation-icon-$index-${selected ? 'filled' : 'outline'}',
-          ),
-          size: 25,
-        ),
+        child: styledIcon,
       ),
     );
   }

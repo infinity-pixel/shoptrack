@@ -10,15 +10,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoptrack/app.dart';
 import 'package:shoptrack/core/theme/atmospheric_background.dart';
 import 'package:shoptrack/core/theme/theme_presets.dart';
+import 'package:shoptrack/core/widgets/shoptrack_navigation_bar.dart';
 import 'package:shoptrack/features/history/presentation/pages/history_search_page.dart';
 import 'package:shoptrack/features/history/presentation/widgets/smart_date_range_picker.dart';
 import 'package:shoptrack/features/home/presentation/widgets/add_item_sheet.dart';
 import 'package:shoptrack/features/home/presentation/widgets/record_hero.dart';
+import 'package:shoptrack/features/home/presentation/widgets/shopping_list_switcher.dart';
 import 'package:shoptrack/models/app_settings.dart';
 import 'package:shoptrack/models/shopping_item.dart';
+import 'package:shoptrack/models/shopping_list_group.dart';
 import 'package:shoptrack/models/shopping_session.dart';
 
 final midnight = ThemePresets.darkPresets[DarkPreset.midnight]!;
+final aurora = ThemePresets.darkPresets[DarkPreset.aurora]!;
 final autumn = ThemePresets.lightPresets[LightPreset.autumn]!;
 const milk = ShoppingItem(
   id: 'milk',
@@ -65,6 +69,152 @@ void seed() {
 }
 
 void main() {
+  test('Aurora has a complete, accessible dark identity', () {
+    final p = aurora.palette;
+    double contrast(Color a, Color b) {
+      final x = a.computeLuminance(), y = b.computeLuminance();
+      return (math.max(x, y) + .05) / (math.min(x, y) + .05);
+    }
+
+    expect(aurora.headerArtworkPath, 'assets/images/theme_dark_aurora.webp');
+    expect(aurora.atmosphericConfig.baseColor, p.background);
+    expect(p.background, isNot(midnight.palette.background));
+    expect(p.primary, isNot(midnight.palette.primary));
+    expect(p.receiptShadow, const Color(0x73000000));
+    expect(aurora.navigationIconGradient, hasLength(3));
+    expect(
+      p.surface.computeLuminance(),
+      greaterThan(p.background.computeLuminance()),
+    );
+    expect(
+      p.surfaceToBuy.computeLuminance(),
+      greaterThan(p.surface.computeLuminance()),
+    );
+    expect(
+      p.surfacePurchased.computeLuminance(),
+      greaterThan(p.surface.computeLuminance()),
+    );
+
+    for (final surface in [
+      p.background,
+      p.surface,
+      p.surfacePurchased,
+      p.surfaceReceipt,
+      p.receiptEdge,
+    ]) {
+      for (final ink in [
+        p.onSurface,
+        p.textSecondary,
+        p.purchased,
+        p.purchasedStatus,
+        p.pending,
+        p.planned,
+        p.today,
+      ]) {
+        expect(contrast(ink, surface), greaterThanOrEqualTo(4.5));
+      }
+    }
+    expect(contrast(p.onPrimary, p.primary), greaterThanOrEqualTo(4.5));
+    expect(contrast(p.onSecondary, p.secondary), greaterThanOrEqualTo(4.5));
+  });
+
+  testWidgets('Aurora keeps a 96 percent dark center and black list shadow', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    late LinearGradient backgroundGradient;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: aurora.toThemeData(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              backgroundGradient = darkEdgeGradient(context);
+              return AtmosphericBackground(
+                config: aurora.atmosphericConfig,
+                child: ShoppingListSwitcher(
+                  lists: const [
+                    ShoppingListGroup(id: 'one', name: 'Family', position: 0),
+                    ShoppingListGroup(
+                      id: 'two',
+                      name: 'Grandmother',
+                      position: 1,
+                    ),
+                    ShoppingListGroup(
+                      id: 'three',
+                      name: 'Weekend shopping',
+                      position: 2,
+                    ),
+                  ],
+                  activeListId: 'one',
+                  itemCountForList: (_) => 0,
+                  onSelected: (_) {},
+                  onCreate: () {},
+                  onManage: (_) {},
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(backgroundGradient.stops, const [0, .02, .98, 1]);
+    expect(backgroundGradient.colors[1], aurora.palette.background);
+    expect(backgroundGradient.colors[2], aurora.palette.background);
+    final shadow = tester.widget<DecoratedBox>(
+      find.byKey(const ValueKey('list-overflow-shadow')),
+    );
+    final shadowGradient = (shadow.decoration as BoxDecoration).gradient!;
+    expect(shadowGradient.colors.last, Colors.black.withValues(alpha: .32));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Aurora alone gradients the selected navigation icon', (
+    tester,
+  ) async {
+    Widget app(ThemeDefinition definition, int index) => MaterialApp(
+      theme: definition.toThemeData(),
+      home: Scaffold(
+        bottomNavigationBar: ShopTrackNavigationBar(
+          currentIndex: index,
+          onTap: (_) {},
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(app(aurora, 0));
+    await tester.pumpAndSettle();
+    expect(
+      find.ancestor(
+        of: find.byIcon(Icons.list_alt_rounded),
+        matching: find.byType(ShaderMask),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: find.byIcon(Icons.watch_later_outlined),
+        matching: find.byType(ShaderMask),
+      ),
+      findsNothing,
+    );
+
+    await tester.pumpWidget(app(midnight, 0));
+    await tester.pumpAndSettle();
+    expect(
+      find.ancestor(
+        of: find.byIcon(Icons.list_alt_rounded),
+        matching: find.byType(ShaderMask),
+      ),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   test('Autumn has a complete, accessible visual identity', () {
     final p = autumn.palette;
     double contrast(Color a, Color b) {
@@ -101,36 +251,48 @@ void main() {
     );
   });
 
-  for (final size in [const Size(320, 640), const Size(640, 360)]) {
-    testWidgets('Autumn scenery and background fit $size', (tester) async {
-      await tester.binding.setSurfaceSize(size);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+  for (final theme in [
+    (
+      name: 'Aurora',
+      definition: aurora,
+      asset: 'assets/images/theme_dark_aurora.webp',
+    ),
+    (
+      name: 'Autumn',
+      definition: autumn,
+      asset: 'assets/images/theme_light_autumn.webp',
+    ),
+  ]) {
+    for (final size in [const Size(320, 640), const Size(640, 360)]) {
+      testWidgets('${theme.name} scenery and background fit $size', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(size);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: autumn.toThemeData(),
-          home: Scaffold(
-            body: AtmosphericBackground(
-              config: autumn.atmosphericConfig,
-              child: Column(
-                children: [
-                  RecordHero(date: DateTime(2026, 10, 17), onBack: () {}),
-                  const Expanded(child: SizedBox()),
-                ],
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme.definition.toThemeData(),
+            home: Scaffold(
+              body: AtmosphericBackground(
+                config: theme.definition.atmosphericConfig,
+                child: Column(
+                  children: [
+                    RecordHero(date: DateTime(2026, 10, 17), onBack: () {}),
+                    const Expanded(child: SizedBox()),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final artwork = tester.widget<Image>(find.byType(Image));
-      expect(
-        (artwork.image as AssetImage).assetName,
-        'assets/images/theme_light_autumn.webp',
-      );
-      expect(tester.takeException(), isNull);
-    });
+        final artwork = tester.widget<Image>(find.byType(Image));
+        expect((artwork.image as AssetImage).assetName, theme.asset);
+        expect(tester.takeException(), isNull);
+      });
+    }
   }
 
   test('Midnight text and semantic colors contrast with their surfaces', () {
