@@ -133,11 +133,7 @@ void main() {
           priceValue: 50,
           isPurchased: true,
         ),
-        ShoppingItem(
-          id: 'pending',
-          name: 'Pending',
-          priceValue: 100,
-        ),
+        ShoppingItem(id: 'pending', name: 'Pending', priceValue: 100),
       ],
     );
 
@@ -181,11 +177,7 @@ void main() {
           name: 'Rice',
           listId: ShoppingListGroup.defaultId,
         ),
-        ShoppingItem(
-          id: 'oil',
-          name: 'Oil',
-          listId: 'grandmother',
-        ),
+        ShoppingItem(id: 'oil', name: 'Oil', listId: 'grandmother'),
       ],
     );
     SharedPreferences.setMockInitialValues({
@@ -203,7 +195,7 @@ void main() {
     expect(find.text('Rice'), findsOneWidget);
     expect(find.text('Oil'), findsNothing);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Grandmother  1'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Grandmother'));
     await tester.pumpAndSettle();
 
     expect(find.text('Rice'), findsNothing);
@@ -249,7 +241,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('New shopping list'), findsNothing);
-    expect(find.widgetWithText(ChoiceChip, 'Grandmother  0'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'Grandmother'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -281,10 +273,7 @@ void main() {
     );
 
     controller.handleNotification(
-      ScrollStartNotification(
-        metrics: metrics,
-        context: notificationContext,
-      ),
+      ScrollStartNotification(metrics: metrics, context: notificationContext),
     );
     controller.handleNotification(
       ScrollUpdateNotification(

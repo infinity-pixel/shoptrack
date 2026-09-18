@@ -33,9 +33,11 @@ class MemoryRemote implements SyncRemote {
   bool offline = false;
   Completer<void>? hold;
   int writes = 0;
+  int watches = 0;
 
   @override
   Stream<RemoteSessions> watch(String uid) {
+    watches++;
     final stream = streams.putIfAbsent(uid, () => StreamController.broadcast());
     return stream.stream;
   }
@@ -81,6 +83,45 @@ void main() {
     LocalShoppingRepository.activeStore = null;
   });
   tearDown(() => LocalShoppingRepository.activeStore = null);
+
+  testWidgets(
+    'Resume preserves a healthy listener and reconnects after offline state',
+    (tester) async {
+      final identities = StreamController<String?>.broadcast();
+      final remote = MemoryRemote();
+      final sync = ShoppingSyncService.testing(
+        currentUid: () => 'alice',
+        identities: identities.stream,
+        remote: remote,
+      );
+      await sync.start();
+      remote.emit('alice');
+      await tester.pump();
+      expect(sync.status, ShoppingSyncState.saved);
+      final initialWatches = remote.watches;
+      for (var i = 0; i < 3; i++) {
+        sync.didChangeAppLifecycleState(AppLifecycleState.inactive);
+        sync.didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await tester.pump();
+        expect(sync.status, ShoppingSyncState.saved);
+      }
+      expect(remote.watches, initialWatches);
+      expect(remote.writes, 0);
+      remote.emit('alice', cached: true);
+      await tester.pump();
+      sync.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pump();
+      expect(remote.watches, initialWatches + 1);
+      expect(sync.status, ShoppingSyncState.deviceOnly);
+      remote.emit('alice');
+      await tester.pump();
+      expect(sync.status, ShoppingSyncState.saved);
+      sync.dispose();
+      await identities.close();
+      await remote.close();
+    },
+  );
 
   Future<SyncStore> store(
     String uid, {

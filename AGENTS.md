@@ -51,6 +51,10 @@ that adds friction needs a clear user benefit.
   Moonlight, and Ancient Forest.
 - Profile opens one dedicated Appearance screen for mode selection and compact,
   alphabetized previews of all light and dark themes.
+- Profile shows only the active theme name. Cloud Sync is the single entry for
+  automatic sync and advanced file/Drive backup screens.
+- Selection deletion and list moves require confirmation; moves and item
+  deletions offer Undo. Swipe deletion remains immediate with Undo.
 - Shopping sessions support named lists, pricing, purchase state, ordering,
   multi-select move/delete, history search, and custom date-range selection.
 - Google sign-in is connected to Firebase Authentication on Android.
@@ -123,6 +127,8 @@ These are release-blocking invariants. Do not weaken them for a quicker UI fix.
   edits must be retained for review, not resolved by last-write-wins guessing.
 - Moves within one shopping date preserve item IDs and all item details. A
   Future-to-Today transfer spans two dates and must remain atomic.
+- Move Undo restores only placement and preserves subsequent item edits. Refuse
+  Undo if items were removed, moved/reordered again, or the source list is gone.
 - Do not silently replace malformed, unknown-version, or conflicting persisted
   data with an empty history.
 - Keep session/operation payload safeguards below Firestore's document limit.

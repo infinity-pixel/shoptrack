@@ -28,7 +28,7 @@ class CloudSyncPage extends StatelessWidget {
                 children: [
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -42,21 +42,29 @@ class CloudSyncPage extends StatelessWidget {
                           const SizedBox(height: 12),
                           Text(
                             service.statusLabel,
-                            style: Theme.of(context).textTheme.titleLarge,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           const SizedBox(height: 8),
-                          Text(service.explanation),
+                          Text(
+                            service.explanation,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: p.textSecondary, height: 1.4),
+                          ),
                           if (service.lastSaved != null) ...[
                             const SizedBox(height: 8),
                             Text(
                               'Last Saved: ${DateFormat.yMMMd().add_jm().format(service.lastSaved!)}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: p.textSecondary),
                             ),
                           ],
                           if (service.status == ShoppingSyncState.saving) ...[
                             const SizedBox(height: 16),
                             const LinearProgressIndicator(),
                           ],
-                          if (service.status != ShoppingSyncState.saved)
+                          if (service.status == ShoppingSyncState.attention ||
+                              service.status == ShoppingSyncState.deviceOnly)
                             TextButton.icon(
                               onPressed: service.retry,
                               icon: const Icon(Icons.refresh),
@@ -66,12 +74,35 @@ class CloudSyncPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      'Shopping lists, items, quantities, prices and purchase history are included. '
-                      'Appearance preferences and profile photos remain on this device. '
-                      'Open ShopTrack on your other device and sign in to the same account to load your history.',
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _info(
+                            context,
+                            Icons.checklist_outlined,
+                            'Synced',
+                            'Lists, items, prices, quantities and history.',
+                          ),
+                          const SizedBox(height: 16),
+                          _info(
+                            context,
+                            Icons.phone_android_outlined,
+                            'On This Device',
+                            'Appearance and your ShopTrack profile.',
+                          ),
+                          const SizedBox(height: 16),
+                          _info(
+                            context,
+                            Icons.devices_outlined,
+                            'Use Another Device',
+                            'Sign in to the same account to load your lists.',
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   if (conflicts.isNotEmpty) ...[
@@ -140,17 +171,21 @@ class CloudSyncPage extends StatelessWidget {
                       ),
                   ],
                   const SizedBox(height: 16),
-                  ListTile(
-                    leading: const Icon(Icons.settings_backup_restore),
-                    title: const Text('Advanced Backup & Restore'),
-                    subtitle: const Text(
-                      'Export a file or access your existing Google Drive backup',
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const BackupRestorePage(),
+                  Card(
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      leading: const Icon(Icons.settings_backup_restore),
+                      title: const Text('Advanced Backup & Restore'),
+                      subtitle: const Text('File and Google Drive backups'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const BackupRestorePage(),
+                        ),
                       ),
                     ),
                   ),
@@ -162,6 +197,43 @@ class CloudSyncPage extends StatelessWidget {
       );
     },
   );
+
+  Widget _info(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String detail,
+  ) {
+    final p = ShopTrackThemeTokens.of(context).palette;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: p.primary, size: 22),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                detail,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: p.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   String _describe(Json? value) {
     if (value == null) return 'Date Removed';

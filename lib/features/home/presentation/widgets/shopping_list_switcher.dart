@@ -78,16 +78,50 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                                 child: ChoiceChip(
                                   selected: selected,
                                   onSelected: (_) => widget.onSelected(list.id),
-                                  avatar: Icon(
-                                    Icons.list_alt_outlined,
-                                    size: 17,
-                                    color: selected
-                                        ? palette.onPrimary
-                                        : palette.secondary,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
                                   ),
-                                  label: Text(
-                                    '${list.name}  ${widget.itemCountForList(list.id)}',
-                                    overflow: TextOverflow.ellipsis,
+                                  labelPadding: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                  ),
+                                  label: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.list_alt_outlined,
+                                        size: 17,
+                                        color: selected
+                                            ? palette.onPrimary
+                                            : palette.secondary,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxWidth:
+                                              MediaQuery.sizeOf(context).width *
+                                              .42,
+                                        ),
+                                        child: Text(
+                                          list.name,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 1,
+                                        height: 14,
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 7,
+                                        ),
+                                        color:
+                                            (selected
+                                                    ? palette.onPrimary
+                                                    : palette.textSecondary)
+                                                .withValues(alpha: .45),
+                                      ),
+                                      Text(
+                                        '${widget.itemCountForList(list.id)}',
+                                      ),
+                                    ],
                                   ),
                                   labelStyle: TextStyle(
                                     color: selected

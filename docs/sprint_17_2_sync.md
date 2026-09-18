@@ -8,7 +8,10 @@ The existing shopping models and pricing calculations remain in use.
 Theme preferences, ShopTrack profile fields/photos and dismissed suggestions are
 local-only in this increment. Apple sign-in and iOS native configuration are not
 implemented by this change. No scheduled/background worker is installed:
-sync runs while the app is open and reconnects on resume.
+sync runs while the app is open. On resume it retains a healthy listener and
+reconnects when disconnected, errored, or the authenticated account changed.
+Temporary overlays (including screenshot UI) must not force a reconnect or
+reset confirmed sync status. Screenshot/gallery contents are not sync inputs.
 
 Profile → Cloud Sync shows device-only, saving, saved or needs-attention status,
 with conflict review and a link to advanced file/Google Drive backups. Existing

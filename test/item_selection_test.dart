@@ -88,6 +88,53 @@ Future<SyncStore> createStore({String uid = 'alice'}) async {
 }
 
 void main() {
+  Future<void> confirm(WidgetTester tester, String action) async {
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(TextButton, action),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  test(
+    'Move undo preserves later pricing but refuses changed placement or missing items',
+    () {
+      final moved = move(seed());
+      final edited = moved.copyWith(
+        items: [
+          for (final item in moved.items)
+            item.id == 'milk' ? item.copyWith(priceValue: 200) : item,
+        ],
+      );
+      final restored = ShoppingSessionActions.undoMove(
+        edited,
+        originals: [milk, rice],
+        moved: moved,
+      );
+      expect(restored.itemsForList(source), hasLength(2));
+      expect(restored.items.firstWhere((i) => i.id == 'milk').priceValue, 200);
+      expect(
+        restored.items.firstWhere((i) => i.id == 'milk').position,
+        milk.position,
+      );
+      for (final changed in [
+        move(moved, from: family.id, to: work.id),
+        moved.copyWith(items: [rice, soap]),
+        moved.copyWith(lists: [family, work]),
+      ]) {
+        expect(
+          () => ShoppingSessionActions.undoMove(
+            changed,
+            originals: [milk, rice],
+            moved: moved,
+          ),
+          throwsStateError,
+        );
+      }
+    },
+  );
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -356,8 +403,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'Grandmother'));
     await tester.pumpAndSettle();
+    expect(store.sessions.single.itemsForList(source), hasLength(2));
+    await confirm(tester, 'Move');
     expect(store.sessions.single.itemsForList(source), isEmpty);
-    final familyChip = find.widgetWithText(ChoiceChip, 'Grandmother  3');
+    final familyChip = find.widgetWithText(ChoiceChip, 'Grandmother');
     await tester.ensureVisible(familyChip);
     await tester.pumpAndSettle();
     await tester.tap(familyChip);
@@ -370,12 +419,13 @@ void main() {
       find.widgetWithText(ListTile, ShoppingListGroup.defaultList.name),
     );
     await tester.pumpAndSettle();
+    await confirm(tester, 'Move');
     expect(store.sessions.single.itemsForList(source).single.id, 'milk');
     await tester.drag(find.byType(ChoiceChip).first, const Offset(500, 0));
     await tester.pumpAndSettle();
     final sourceChip = find.widgetWithText(
       ChoiceChip,
-      '${ShoppingListGroup.defaultList.name}  1',
+      ShoppingListGroup.defaultList.name,
     );
     await tester.ensureVisible(sourceChip);
     await tester.pumpAndSettle();
@@ -384,6 +434,8 @@ void main() {
     await tester.longPress(find.text('Milk'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await confirm(tester, 'Delete');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(store.sessions.single.items.map((i) => i.id), ['rice', 'soap']);
@@ -395,6 +447,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
+    await confirm(tester, 'Delete');
     expect(store.sessions.single.items.map((i) => i.id), ['rice', 'soap']);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
@@ -419,6 +472,7 @@ void main() {
       await tester.pump();
       await tester.tap(find.widgetWithText(ListTile, 'Grandmother'));
       await tester.pumpAndSettle();
+      await confirm(tester, 'Move');
       expect(store.conflicts, hasLength(1));
       expect(store.sessions.single.itemsForList(source), hasLength(2));
       expect(find.textContaining('Both versions are kept'), findsOneWidget);
@@ -496,6 +550,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(ListTile, 'Grandmother'));
         await tester.pumpAndSettle();
+        await confirm(tester, 'Move');
       }
 
       await attempt();
@@ -510,6 +565,40 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+
+  testWidgets('Cancel retains selection; confirmed move can be undone', (
+    tester,
+  ) async {
+    final store = await mount(tester);
+    await tester.longPress(find.text('Milk'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Select All'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await confirm(tester, 'Cancel');
+    expect(find.text('2 Selected'), findsOneWidget);
+    expect(store.sessions.single.items, hasLength(3));
+    Future<void> chooseMove() async {
+      await tester.tap(find.text('Move'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, 'Grandmother'));
+      await tester.pumpAndSettle();
+    }
+
+    await chooseMove();
+    await confirm(tester, 'Cancel');
+    expect(store.sessions.single.itemsForList(source), hasLength(2));
+    await chooseMove();
+    await confirm(tester, 'Move');
+    expect(store.sessions.single.itemsForList(source), isEmpty);
+    tester.widget<SnackBarAction>(find.byType(SnackBarAction)).onPressed();
+    await tester.pumpAndSettle();
+    expect(store.sessions.single.itemsForList(source), hasLength(2));
+    expect(store.sessions.single.itemsForList(family.id).single.id, 'soap');
+    expect(find.text('Move undone.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('Explicit drag handle still reorders without entering selection', (
     tester,

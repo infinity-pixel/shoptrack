@@ -371,6 +371,15 @@ class ShoppingSyncService extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) retry();
+    if (state != AppLifecycleState.resumed) return;
+    // Temporary overlays can resume the app without losing its connection.
+    // Firestore maintains its healthy listener; do not reset server evidence.
+    if (currentUid() != _uid ||
+        (_uid != null &&
+            (_remoteListener == null || !_serverSeen || error != null))) {
+      retry();
+    } else {
+      _schedule();
+    }
   }
 }

@@ -1,6 +1,6 @@
 # ShopTrack — Codex Cloud and Local Development Handover
 
-Last reviewed against the local checkout: **17 September 2026**.
+Last reviewed against the local checkout: **19 September 2026**.
 
 This is the canonical continuity document for moving ShopTrack work between
 Codex Cloud and local Codex tasks. It records the product intent, implemented
@@ -75,31 +75,37 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Latest committed revision: `74fe66e` —
-  `Refinements on Ancient Forest theme, and fixed FAB + button issue.`
-- The working tree contains the dedicated Appearance screen work.
+- Latest committed revision: `362e806` —
+  `Sprint 18.4: Add dedicated Appearance screen with eight theme previews and persistent mode selection`.
+- The working tree contains Profile, shopping-action and sync-resume refinements.
 - These local changes must be reviewed, committed, and pushed before a Cloud
   task can reliably continue from them.
 
 The uncommitted work includes:
 
-- replacing Profile's three theme-selection dialogs with one Appearance row;
-- a dedicated Appearance destination for System/Light/Dark mode;
-- alphabetized Light and Dark groups with all eight scenery previews;
-- clear selected states and responsive narrow, landscape, and text-scale tests;
-- current `AGENTS.md` and handover status corrections.
+- compact Profile header and active-theme subtitle;
+- one Cloud Sync entry with advanced backups inside, concise status/help text,
+  shorter sign-out wording and a standalone About ShopTrack card;
+- themed completion cards and compact list chips with name/count dividers;
+- confirmation for selection deletion and moves, plus placement-only Move Undo;
+- retaining healthy Firestore listeners across app resumes;
+- regression coverage and documentation updates.
 
 Latest verification performed for this work:
 
 ```powershell
 flutter analyze --no-pub
-flutter test test\sprint_18_test.dart --no-pub --reporter expanded
+flutter test --no-pub
 ```
 
-Result for the current work: analysis clean; the Appearance, Account layout,
-and Sprint 18 theme suites pass. A native-resolution preview was rendered and
-inspected. Run the complete suite before treating the uncommitted group as
-final.
+Profile and Cloud Sync previews are rendered locally for inspection. Automated
+checks cover completion accents across all themes, compact layouts, confirmation,
+Move Undo and healthy/offline resume behavior. Physical-phone screenshot and
+reconnect acceptance still require the device checklist below.
+
+19 September verification: analysis clean; full suite 266 passed, 7 optional
+visual tests skipped. Profile and Cloud Sync preview tests were also run with
+a local font and their rendered images inspected. No commit or deployment.
 
 ## 4. Product Purpose and Design Principle
 
@@ -461,7 +467,8 @@ The app must not be called store-ready yet:
   description.
 - iOS Firebase configuration is absent.
 - Apple sign-in is absent.
-- Ancient Forest's complete palette is unfinished.
+- Ancient Forest's full identity is implemented; continue device acceptance
+  after material theme changes.
 - full current regression testing and physical-device theme acceptance remain
   necessary after the uncommitted theme changes.
 - privacy/store policy work has not been documented as complete.
@@ -585,6 +592,10 @@ checks have not occurred. State the boundary plainly.
 - Conflicts are retained for review, not guessed away.
 - The app remains ad-free; donation, if added, is optional and non-coercive.
 - Multi-currency totals are grouped, not silently converted.
+- Currency and Language remain planned work. The amount-to-quantity calculator
+  proposal was dropped; do not implement it as part of these refinements.
+- Sync receipt/tombstone retention needs a separate safe cleanup design before
+  scaling; do not purge them as routine UI cleanup.
 - OCR output requires user confirmation.
 - Cloud agents must not infer permission to deploy, push, bill, or alter live
   Firebase resources.

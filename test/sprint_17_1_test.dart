@@ -178,7 +178,11 @@ void main() {
       );
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('remain accessible'), findsOneWidget);
+      expect(find.textContaining('stay accessible'), findsOneWidget);
+      expect(
+        find.textContaining('Cloud data and backups are kept'),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(auth.signOuts, 0);

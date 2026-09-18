@@ -64,7 +64,9 @@ class AccountPage extends StatelessWidget {
                             icon: Icons.palette_outlined,
                             title: 'Appearance',
                             subtitle:
-                                '${settings.theme.displayName} · ${settings.lightPreset.displayName} · ${settings.darkPreset.displayName}',
+                                Theme.of(context).brightness == Brightness.dark
+                                ? settings.darkPreset.displayName
+                                : settings.lightPreset.displayName,
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -129,39 +131,25 @@ class AccountPage extends StatelessWidget {
                               }
                             },
                           ),
-                          _buildSettingsTile(
-                            context,
-                            icon: Icons.settings_backup_restore_outlined,
-                            title: 'Backup & Restore',
-                            subtitle: 'Advanced: file and Google Drive backups',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const BackupRestorePage(initialTab: 0),
-                              ),
-                            ),
-                          ),
                           if (authState is AuthAuthenticated)
                             _buildSettingsTile(
                               context,
                               icon: Icons.logout,
                               title: 'Sign Out',
-                              subtitle:
-                                  'Local shopping data stays on this device',
+                              subtitle: 'Lists stay on this device',
                               onTap: () => confirmSignOut(context, authService),
                             ),
                         ],
                       ),
                     ),
-                    _buildSectionHeader(context, 'About'),
+                    const SizedBox(height: 20),
                     _surface(
                       context,
                       Column(
                         children: [
                           _buildSettingsTile(
                             context,
-                            icon: Icons.info_outline,
+                            icon: Icons.shopping_cart_outlined,
                             title: 'About ShopTrack',
                             onTap: () => Navigator.push(
                               context,
@@ -169,12 +157,6 @@ class AccountPage extends StatelessWidget {
                                 builder: (context) => const AboutPage(),
                               ),
                             ),
-                          ),
-                          _buildSettingsTile(
-                            context,
-                            icon: Icons.verified_outlined,
-                            title: 'App Version',
-                            subtitle: '1.0.0+1',
                           ),
                         ],
                       ),
@@ -196,7 +178,7 @@ class AccountPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: p.onBackground.withValues(alpha: .035),
+            color: Colors.black.withValues(alpha: .035),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -258,69 +240,58 @@ class AccountPage extends StatelessWidget {
     return _surface(
       context,
       Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (account != null)
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: !profiles.loaded || profiles.loadError != null
+            Row(
+              children: [
+                ProfileAvatar(
+                  name: displayName,
+                  radius: 25,
+                  photo: local?.photo,
+                  googlePhoto: local?.hideGooglePhoto == true
                       ? null
-                      : () async {
-                          await Navigator.push<bool>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => EditProfilePage(
-                                account: account,
-                                profiles: profiles,
-                                auth: authService,
-                              ),
-                            ),
-                          );
-                        },
-                  icon: const Icon(Icons.edit_outlined, size: 17),
-                  label: const Text('Edit'),
+                      : account?.photoUrl,
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    account != null ? displayName : 'Welcome to ShopTrack',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: p.onSurface,
+                    ),
+                  ),
+                ),
+                if (account != null)
+                  IconButton(
+                    tooltip: 'Edit Profile',
+                    onPressed: !profiles.loaded || profiles.loadError != null
+                        ? null
+                        : () async {
+                            await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EditProfilePage(
+                                  account: account,
+                                  profiles: profiles,
+                                  auth: authService,
+                                ),
+                              ),
+                            );
+                          },
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                  ),
+              ],
+            ),
             if (profiles.loadError != null)
               Text(
                 'Your saved profile could not be loaded. Please restart the app.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: p.error),
               ),
-            Center(
-              child: account == null
-                  ? CircleAvatar(
-                      radius: 34,
-                      backgroundColor: p.primary.withValues(alpha: .18),
-                      child: Icon(
-                        Icons.person_outline,
-                        color: p.onSurface,
-                        size: 34,
-                      ),
-                    )
-                  : ProfileAvatar(
-                      name: displayName,
-                      photo: local?.photo,
-                      googlePhoto: local?.hideGooglePhoto == true
-                          ? null
-                          : account.photoUrl,
-                    ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: Text(
-                account != null ? displayName : 'Welcome to ShopTrack',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: p.onSurface,
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             if (account != null)
               Tooltip(
                 message: account.email,

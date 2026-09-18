@@ -280,6 +280,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
     if (!mounted || target == null || !_selectionMode) return;
     final count = _selectedItemIds.length;
+    if (!await _confirmSelectionAction(
+          'Move $count ${count == 1 ? 'item' : 'items'}?',
+          'Move to ${target.name}? You can undo this afterwards.',
+          'Move',
+        ) ||
+        !mounted ||
+        !_selectionMode) {
+      return;
+    }
+    final originals = _currentSession.items
+        .where((item) => _selectedItemIds.contains(item.id))
+        .toList();
+    final date = _currentSession.date;
     final updated = ShoppingSessionActions.move(
       _currentSession,
       sourceListId: _activeListId,
@@ -289,11 +302,93 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     await _saveSelection(
       updated,
       'Moved $count ${count == 1 ? 'item' : 'items'} to ${target.name}.',
+      onUndo: () => _undoMove(date, originals, updated),
     );
+  }
+
+  Future<bool> _confirmSelectionAction(
+    String title,
+    String message,
+    String action,
+  ) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            scrollable: true,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(action),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _undoMove(
+    DateTime date,
+    List<ShoppingItem> originals,
+    ShoppingSession moved,
+  ) async {
+    if (!mounted) return;
+    _saving++;
+    _loadRequest++;
+    try {
+      final latest = await _repository.getSessionByDate(date);
+      final beforeConflicts = _repository.conflictCount;
+      await _repository.saveSession(
+        ShoppingSessionActions.undoMove(
+          latest,
+          originals: originals,
+          moved: moved,
+        ),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _repository.conflictCount > beforeConflicts
+                ? 'This record changed elsewhere. Review changes in Profile → Cloud Sync.'
+                : 'Move undone.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not undo the move. The items or lists may have changed; your latest data is kept.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      _saving--;
+      if (mounted) await _loadSession();
+    }
   }
 
   Future<void> _deleteSelection() async {
     final count = _selectedItemIds.length;
+    if (count == 0) return;
+    if (!await _confirmSelectionAction(
+          'Delete $count ${count == 1 ? 'item' : 'items'}?',
+          'Remove the selected items from this list? You can undo this afterwards.',
+          'Delete',
+        ) ||
+        !mounted ||
+        !_selectionMode) {
+      return;
+    }
     final deletedItems = _currentSession
         .itemsForList(_activeListId)
         .where((item) => _selectedItemIds.contains(item.id))
@@ -1486,25 +1581,30 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       margin: const EdgeInsets.only(bottom: 30),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: palette.surfacePurchased,
+        color: Color.alphaBlend(
+          palette.primary.withValues(alpha: .08),
+          palette.surface,
+        ),
         border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         children: [
-          Icon(Icons.receipt_long_outlined, size: 48, color: palette.purchased),
+          Icon(Icons.receipt_long_outlined, size: 48, color: palette.primary),
           const SizedBox(height: 16),
           Text(
             "Shopping Completed",
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: palette.purchased,
+              color: palette.primary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             "All items have been purchased.",
+            textAlign: TextAlign.center,
             style: TextStyle(color: palette.textSecondary, fontSize: 14),
           ),
         ],

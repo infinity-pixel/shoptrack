@@ -52,7 +52,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('App Version'),
+        find.text('About ShopTrack'),
         180,
         scrollable: scroll,
       );
