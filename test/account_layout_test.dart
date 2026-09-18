@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoptrack/app.dart';
 import 'package:shoptrack/features/account/presentation/pages/account_page.dart';
+import 'package:shoptrack/features/account/presentation/pages/appearance_page.dart';
 import 'package:shoptrack/models/app_settings.dart';
 
 void main() {
@@ -25,11 +26,13 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.tap(find.text('Appearance'));
       await tester.pumpAndSettle();
+      expect(find.text('Choose Theme'), findsOneWidget);
       await tester.tap(find.text('Dark').last);
       await tester.pumpAndSettle();
-      final context = tester.element(find.byType(AccountPage));
+      final context = tester.element(find.byType(AppearancePage));
       expect(ShopTrackApp.of(context).settings.theme, AppTheme.dark);
-      expect(find.text('Choose Appearance'), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
       final scroll = find
           .descendant(
             of: find.byType(AccountPage),
@@ -41,6 +44,8 @@ void main() {
         180,
         scrollable: scroll,
       );
+      await tester.drag(scroll, const Offset(0, -80));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Cloud Backup'));
       await tester.pumpAndSettle();
       expect(find.text('Sign In Required'), findsOneWidget);

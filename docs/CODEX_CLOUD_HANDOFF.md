@@ -75,25 +75,19 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Latest committed revision: `adca661` —
-  `Sprint 18.3.6: Created a full Spring Light Theme.`
-- The working tree is intentionally dirty with post-commit theme work.
+- Latest committed revision: `74fe66e` —
+  `Refinements on Ancient Forest theme, and fixed FAB + button issue.`
+- The working tree contains the dedicated Appearance screen work.
 - These local changes must be reviewed, committed, and pushed before a Cloud
   task can reliably continue from them.
 
 The uncommitted work includes:
 
-- renaming all public theme labels to their approved two-word names;
-- renaming the corresponding WebP assets;
-- the Blooming Spring blossom-pink calendar accent;
-- calendar-accent plumbing through History, History Search, date badges, date
-  range summary, add-date, and edit-date UI;
-- the new Ancient Forest WebP scenery and its header integration;
-- updated theme, calendar, persistence, responsive-layout, and asset tests;
-- current `AGENTS.md` status corrections.
-
-Git may display the scenery changes as deleted old assets plus untracked new
-assets until staged. They are deliberate renames, not accidental data loss.
+- replacing Profile's three theme-selection dialogs with one Appearance row;
+- a dedicated Appearance destination for System/Light/Dark mode;
+- alphabetized Light and Dark groups with all eight scenery previews;
+- clear selected states and responsive narrow, landscape, and text-scale tests;
+- current `AGENTS.md` and handover status corrections.
 
 Latest verification performed for this work:
 
@@ -102,10 +96,10 @@ flutter analyze --no-pub
 flutter test test\sprint_18_test.dart --no-pub --reporter expanded
 ```
 
-Result: analysis clean; Sprint 18 suite passed with one optional screenshot
-preview skipped because no preview font was supplied. The broader related
-theme/calendar suites also passed during the naming and calendar refinement.
-Run the complete suite before treating the uncommitted theme group as final.
+Result for the current work: analysis clean; the Appearance, Account layout,
+and Sprint 18 theme suites pass. A native-resolution preview was rendered and
+inspected. Run the complete suite before treating the uncommitted group as
+final.
 
 ## 4. Product Purpose and Design Principle
 
@@ -186,7 +180,8 @@ Implemented behavior includes:
 - local JSON export/restore;
 - Google Drive App Data backup/restore as a separate advanced system;
 - About and app-version UI;
-- basic appearance, light-preset, dark-preset, currency, and language dialogs.
+- a dedicated Appearance screen, plus currency and language placeholder
+  dialogs.
 
 Important distinction: the ShopTrack display name/photo is local app profile
 data. It does not edit the user's Google account.
@@ -210,7 +205,7 @@ The public names, stable internal enum values, and scenery assets are:
 | Silent Midnight | `DarkPreset.midnight` | `theme_dark_silent_midnight.webp` | Complete identity |
 | Ethereal Aurora | `DarkPreset.aurora` | `theme_dark_ethereal_aurora.webp` | Complete identity; special mixed navigation |
 | Bleeding Moonlight | `DarkPreset.moonlit` | `theme_dark_bleeding_moonlight.webp` | Complete identity |
-| Ancient Forest | `DarkPreset.deepForest` | `theme_dark_ancient_forest.webp` | Artwork wired; complete palette still pending |
+| Ancient Forest | `DarkPreset.deepForest` | `theme_dark_ancient_forest.webp` | Complete identity |
 
 Do not rename the enum values. They are persisted in user settings. Only the
 display names and asset filenames changed.
@@ -235,37 +230,26 @@ Theme rules:
   navigation icons;
 - Blooming Spring uses its blossom accent for calendar UI.
 
-### Immediate visual task
+Ancient Forest is the charcoal-evergreen, moss, dark-earth, restrained-amber
+identity. Keep it grounded and distinct from the luminous teal/violet Ethereal
+Aurora palette.
 
-Ancient Forest is the next unfinished theme task. Its approved artwork is a
-near-black evergreen forest with a monumental old tree and restrained antique-
-amber lights. Its final palette should remain distinct from Ethereal Aurora:
+## 7. Appearance UI
 
-- Ethereal Aurora: luminous teal, violet, airy, expressive;
-- Ancient Forest: charcoal evergreen, moss, dark earth, restrained amber,
-  grounded and quiet.
-
-Ancient Forest still uses the earlier generic dark factory palette. Build and
-test a complete palette before marking the eighth theme finished. Follow dark
-edge-gradient rules and keep item cards visibly lighter than the background.
-
-## 7. Appearance UI Still Planned
-
-The current Profile tab shows separate Appearance, Light Theme, and Dark Theme
-rows that open radio dialogs. The approved future design is one Appearance
-destination with three groups:
+The Profile tab opens one dedicated Appearance destination with three groups:
 
 1. Choose Theme: System, Light, Dark.
 2. Light Theme: Blooming Spring, Ember Autumn, Golden Summer, Tranquil Ocean.
 3. Dark Theme: Ancient Forest, Bleeding Moonlight, Ethereal Aurora,
    Silent Midnight.
 
-Each preset should have a compact scenery preview and clear selected state.
-Keep the list alphabetical inside Light and Dark groups. The screen must remain
-usable on narrow/short layouts and with enlarged text.
+Each preset has a compact scenery preview and clear selected state. Light and
+Dark choices are alphabetized, and the screen is scrollable on narrow/short
+layouts and with enlarged text.
 
-This screen is planned, not implemented. Do not claim the current radio dialogs
-already satisfy it.
+Each preset has a compact scenery preview and clear selected state. The lists
+are alphabetical and the page remains scrollable on compact layouts. Preserve
+this shared destination instead of restoring separate selection dialogs.
 
 ## 8. Architecture and Data Ownership
 
@@ -414,7 +398,6 @@ financial data must be reviewable.
 
 Discussed but not implemented:
 
-- a more polished dedicated Appearance screen;
 - Rate ShopTrack, opening the correct store listing;
 - Help & Feedback;
 - an optional donation/support presentation;
@@ -436,10 +419,8 @@ The safest path to a tester-ready build is:
 
 ### Phase A — finish the established UI system
 
-1. Complete the Ancient Forest palette and responsive theme tests.
-2. Perform a device pass across all eight themes.
-3. Build the dedicated Appearance screen with scenery previews.
-4. Refine Profile subpages and text hierarchy without changing account/data
+1. Keep the all-eight-themes physical-device acceptance pass green.
+2. Refine Profile subpages and text hierarchy without changing account/data
    semantics.
 
 ### Phase B — complete essential convenience

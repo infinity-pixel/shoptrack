@@ -715,7 +715,7 @@ void main() {
   }
 
   testWidgets(
-    'Theme selection remains alphabetical and switching preserves settings',
+    'Appearance screen stays alphabetical and switching preserves settings',
     (tester) async {
       seed();
       await tester.binding.setSurfaceSize(const Size(390, 1000));
@@ -724,50 +724,45 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Profile').last);
       await tester.pumpAndSettle();
-      for (final entry in {
-        'Dark Theme': [
-          'Ancient Forest',
-          'Bleeding Moonlight',
-          'Ethereal Aurora',
-          'Silent Midnight',
-        ],
-        'Light Theme': [
-          'Blooming Spring',
-          'Ember Autumn',
-          'Golden Summer',
-          'Tranquil Ocean',
-        ],
-      }.entries) {
-        await tester.ensureVisible(find.text(entry.key));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(entry.key));
-        await tester.pumpAndSettle();
-        final labels = tester
-            .widgetList<RadioListTile<dynamic>>(
-              find.byType(RadioListTile<DarkPreset>),
-            )
-            .map((t) => (t.title! as Text).data)
-            .toList();
-        if (entry.key == 'Dark Theme') expect(labels, entry.value);
-        for (var i = 1; i < entry.value.length; i++) {
-          expect(
-            tester.getTopLeft(find.text(entry.value[i]).last).dy,
-            greaterThan(
-              tester.getTopLeft(find.text(entry.value[i - 1]).last).dy,
-            ),
-          );
-        }
-        await tester.tap(
-          find
-              .text(
-                entry.key == 'Dark Theme'
-                    ? 'Ethereal Aurora'
-                    : 'Tranquil Ocean',
-              )
-              .last,
+      await tester.tap(find.text('Appearance'));
+      await tester.pumpAndSettle();
+      expect(find.text('Choose Theme'), findsOneWidget);
+
+      const lightLabels = [
+        'Blooming Spring',
+        'Ember Autumn',
+        'Golden Summer',
+        'Tranquil Ocean',
+      ];
+      for (var i = 1; i < lightLabels.length; i++) {
+        expect(
+          tester.getTopLeft(find.text(lightLabels[i])).dy,
+          greaterThanOrEqualTo(
+            tester.getTopLeft(find.text(lightLabels[i - 1])).dy,
+          ),
         );
-        await tester.pumpAndSettle();
       }
+      await tester.tap(find.text('Tranquil Ocean'));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(find.text('Ancient Forest'), 220);
+      await tester.pumpAndSettle();
+      const darkLabels = [
+        'Ancient Forest',
+        'Bleeding Moonlight',
+        'Ethereal Aurora',
+        'Silent Midnight',
+      ];
+      for (var i = 1; i < darkLabels.length; i++) {
+        expect(
+          tester.getTopLeft(find.text(darkLabels[i])).dy,
+          greaterThanOrEqualTo(
+            tester.getTopLeft(find.text(darkLabels[i - 1])).dy,
+          ),
+        );
+      }
+      await tester.tap(find.text('Ethereal Aurora'));
+      await tester.pumpAndSettle();
       final saved =
           jsonDecode(
                 (await SharedPreferences.getInstance()).getString(

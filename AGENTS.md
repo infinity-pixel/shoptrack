@@ -46,9 +46,11 @@ that adds friction needs a clear user benefit.
 ## Current Product Status
 
 - Main navigation: Lists, History, Profile.
-- Implemented themes include Golden Summer, Ember Autumn, Tranquil Ocean,
-  Blooming Spring, Silent Midnight, Ethereal Aurora, and Bleeding Moonlight.
-  Ancient Forest has approved artwork but still needs its complete palette.
+- All eight visual themes are implemented: Golden Summer, Ember Autumn,
+  Tranquil Ocean, Blooming Spring, Silent Midnight, Ethereal Aurora, Bleeding
+  Moonlight, and Ancient Forest.
+- Profile opens one dedicated Appearance screen for mode selection and compact,
+  alphabetized previews of all light and dark themes.
 - Shopping sessions support named lists, pricing, purchase state, ordering,
   multi-select move/delete, history search, and custom date-range selection.
 - Google sign-in is connected to Firebase Authentication on Android.

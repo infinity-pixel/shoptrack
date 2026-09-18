@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../app.dart';
 import '../../../../core/theme/theme_presets.dart';
-import '../../../../models/app_settings.dart';
 import '../../../../models/auth_state.dart';
 import '../../../../services/auth_service.dart';
-import '../../../../services/settings_service.dart';
 import 'about_page.dart';
+import 'appearance_page.dart';
 import 'edit_profile_page.dart';
 import '../widgets/profile_avatar.dart';
 import '../widgets/sign_out_dialog.dart';
@@ -64,27 +63,16 @@ class AccountPage extends StatelessWidget {
                             context,
                             icon: Icons.palette_outlined,
                             title: 'Appearance',
-                            subtitle: settings.theme.displayName,
-                            onTap: () =>
-                                _showAppearanceDialog(context, settingsService),
-                          ),
-                          _buildSettingsTile(
-                            context,
-                            icon: Icons.light_mode_outlined,
-                            title: 'Light Theme',
-                            subtitle: settings.lightPreset.displayName,
-                            onTap: () => _showLightPresetDialog(
+                            subtitle:
+                                '${settings.theme.displayName} · ${settings.lightPreset.displayName} · ${settings.darkPreset.displayName}',
+                            onTap: () => Navigator.push(
                               context,
-                              settingsService,
+                              MaterialPageRoute(
+                                builder: (_) => AppearancePage(
+                                  settingsService: settingsService,
+                                ),
+                              ),
                             ),
-                          ),
-                          _buildSettingsTile(
-                            context,
-                            icon: Icons.dark_mode_outlined,
-                            title: 'Dark Theme',
-                            subtitle: settings.darkPreset.displayName,
-                            onTap: () =>
-                                _showDarkPresetDialog(context, settingsService),
                           ),
                           _buildSettingsTile(
                             context,
@@ -449,86 +437,6 @@ class AccountPage extends StatelessWidget {
           ? null
           : Icon(Icons.chevron_right, size: 20, color: p.textSecondary),
       onTap: onTap,
-    );
-  }
-
-  void _showAppearanceDialog(BuildContext context, SettingsService service) {
-    _choose<AppTheme>(
-      context,
-      'Choose Appearance',
-      AppTheme.values,
-      service.settings.theme,
-      (v) => v.displayName,
-      (v) {
-        service.updateTheme(v);
-      },
-    );
-  }
-
-  void _showLightPresetDialog(BuildContext context, SettingsService service) {
-    _choose<LightPreset>(
-      context,
-      'Light Theme Preset',
-      [...LightPreset.values]
-        ..sort((a, b) => a.displayName.compareTo(b.displayName)),
-      service.settings.lightPreset,
-      (v) => v.displayName,
-      (v) {
-        service.updateLightPreset(v);
-      },
-    );
-  }
-
-  void _showDarkPresetDialog(BuildContext context, SettingsService service) {
-    _choose<DarkPreset>(
-      context,
-      'Dark Theme Preset',
-      [...DarkPreset.values]
-        ..sort((a, b) => a.displayName.compareTo(b.displayName)),
-      service.settings.darkPreset,
-      (v) => v.displayName,
-      (v) {
-        service.updateDarkPreset(v);
-      },
-    );
-  }
-
-  void _choose<T>(
-    BuildContext context,
-    String title,
-    List<T> values,
-    T selected,
-    String Function(T) label,
-    void Function(T) onSelected,
-  ) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        scrollable: true,
-        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-        content: RadioGroup<T>(
-          groupValue: selected,
-          onChanged: (value) {
-            if (value == null) return;
-            Navigator.pop(dialogContext);
-            onSelected(value);
-          },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final value in values)
-                RadioListTile<T>(title: Text(label(value)), value: value),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
     );
   }
 
