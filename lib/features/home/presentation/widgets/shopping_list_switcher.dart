@@ -12,6 +12,7 @@ class ShoppingListSwitcher extends StatefulWidget {
     required this.onSelected,
     required this.onCreate,
     required this.onManage,
+    this.onShare,
   });
 
   final List<ShoppingListGroup> lists;
@@ -20,6 +21,7 @@ class ShoppingListSwitcher extends StatefulWidget {
   final ValueChanged<String> onSelected;
   final VoidCallback onCreate;
   final ValueChanged<ShoppingListGroup> onManage;
+  final VoidCallback? onShare;
 
   @override
   State<ShoppingListSwitcher> createState() => _ShoppingListSwitcherState();
@@ -169,6 +171,16 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                     ),
                   ),
                 ),
+                if (widget.onShare != null)
+                  IconButton(
+                    tooltip: 'Copy or share shopping list',
+                    onPressed: widget.onShare,
+                    icon: Icon(
+                      Icons.ios_share_outlined,
+                      color: palette.secondary,
+                      size: 22,
+                    ),
+                  ),
                 Container(
                   key: const ValueKey('new-list-divider'),
                   width: 1.5,

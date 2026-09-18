@@ -57,6 +57,9 @@ that adds friction needs a clear user benefit.
   deletions offer Undo. Swipe deletion remains immediate with Undo.
 - Shopping sessions support named lists, pricing, purchase state, ordering,
   multi-select move/delete, history search, and custom date-range selection.
+- Any shopping date can be copied or shared as structured plain text with its
+  separate lists, pending/purchased states, quantities, notes, prices, and
+  totals. Native destination support still depends on the installed apps.
 - Google sign-in is connected to Firebase Authentication on Android.
 - Shopping sessions synchronize through Cloud Firestore with offline queues and
   conflict review. Read `docs/sprint_17_2_sync.md` before changing this system.
@@ -82,6 +85,7 @@ Keep this section current when those facts change.
   definitions.
 - `lib/core/utils/`: pricing, dates, grouping, and pure session actions.
 - `lib/core/widgets/`: reusable shared widgets, including navigation and dates.
+  This also owns the shared modal hierarchy and shopping-list share sheet.
 - `lib/services/`: authentication, Firestore synchronization, Drive/file backup,
   search, profile, and settings services.
 - `lib/features/home/`: Lists tab and shopping-date record UI.
@@ -169,6 +173,9 @@ These are release-blocking invariants. Do not weaken them for a quicker UI fix.
 - Preserve existing interactions: a tile tap edits, purchase control toggles,
   the explicit drag handle reorders, and long-press enters item selection.
 - Every modal and editor must remain usable with the keyboard visible.
+- Use `ShopTrackSheetHeader` and `ShopTrackSheetEmptyState` for compact action
+  sheets rather than inventing different title, spacing, and empty-state
+  structures on each screen.
 - Verify narrow portrait (`320x640`), short landscape (`640x360`), larger
   screens, text scaling around `1.3x`, safe areas, and keyboard insets. Do not
   fix overflow by merely clipping necessary controls.

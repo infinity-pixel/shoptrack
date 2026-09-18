@@ -510,6 +510,63 @@ void main() {
   }
 
   testWidgets(
+    'Move sheet has a compact create-list path and concise confirmation',
+    (tester) async {
+      final store = SyncStore(
+        await SharedPreferences.getInstance(),
+        'single-list',
+      );
+      await store.load(
+        seed: [
+          seed().copyWith(
+            lists: const [ShoppingListGroup.defaultList],
+            items: const [milk, rice],
+          ),
+        ],
+      );
+      await mount(
+        tester,
+        size: const Size(320, 640),
+        scale: 1.3,
+        initialStore: store,
+      );
+      await tester.longPress(find.text('Milk'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Move'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Move to List'), findsOneWidget);
+      expect(find.text('No other lists yet'), findsOneWidget);
+      expect(find.text('Create List'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text('Create List'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Errands');
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('undo this'), findsNothing);
+      expect(find.text('Move 1 item?'), findsOneWidget);
+      await confirm(tester, 'Move');
+      expect(store.sessions.single.orderedLists.map((list) => list.name), [
+        'My List',
+        'Errands',
+      ]);
+      expect(store.sessions.single.itemsForList(source).single.id, 'rice');
+      expect(
+        store.sessions.single
+            .itemsForList(store.sessions.single.orderedLists.last.id)
+            .single
+            .id,
+        'milk',
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
     'Selecting a purchased item does not change purchase status or allow swipe deletion',
     (tester) async {
       final store = await mount(tester);

@@ -4,6 +4,7 @@ import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/utils/session_date_manager.dart';
 import '../../../../models/monthly_summary.dart';
 import '../../../../models/shopping_session.dart';
+import '../../../../core/widgets/shopping_list_share_sheet.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../widgets/session_card.dart';
 
@@ -147,6 +148,7 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
           return SessionCard(
             session: session,
             onTap: () => _openSession(session.date),
+            onShare: () => showShoppingListShareSheet(context, session),
             onEdit: () => _editSessionDate(session),
             onDelete: () => _deleteSession(session),
           );

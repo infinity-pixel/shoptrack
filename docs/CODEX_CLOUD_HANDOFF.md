@@ -75,21 +75,25 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Latest committed revision: `362e806` —
-  `Sprint 18.4: Add dedicated Appearance screen with eight theme previews and persistent mode selection`.
-- The working tree contains Profile, shopping-action and sync-resume refinements.
-- These local changes must be reviewed, committed, and pushed before a Cloud
-  task can reliably continue from them.
+- Current local milestone: **Sprint 18.4.2 — list sharing and responsive UI
+  refinements**.
+- Its preceding revision is `1ae0cd8` —
+  `Sprint 18.4.1: Refine Profile, shopping actions, list presentation, and sync resume behavior`.
+- The branch containing Sprint 18.4.2 must be pushed before a Cloud task can
+  reliably continue from it.
 
-The uncommitted work includes:
+Sprint 18.4.2 work includes:
 
-- compact Profile header and active-theme subtitle;
-- one Cloud Sync entry with advanced backups inside, concise status/help text,
-  shorter sign-out wording and a standalone About ShopTrack card;
-- themed completion cards and compact list chips with name/count dividers;
-- confirmation for selection deletion and moves, plus placement-only Move Undo;
-- retaining healthy Firestore listeners across app resumes;
-- regression coverage and documentation updates.
+- restoring the centered Profile identity while keeping its vertical density
+  compact;
+- ordering Upcoming before Today in History;
+- consistent theme-aware dialogs, menus, action-sheet headers, spacing, and
+  compact empty states;
+- concise move/delete confirmations and a create-list path when Move has no
+  destination;
+- plain-text copy/share for Today and any other shopping date;
+- honest retry states for initial list, History, and sync-startup failures;
+- responsive, text-scale, selection, sharing, and theme regression coverage.
 
 Latest verification performed for this work:
 
@@ -103,9 +107,10 @@ checks cover completion accents across all themes, compact layouts, confirmation
 Move Undo and healthy/offline resume behavior. Physical-phone screenshot and
 reconnect acceptance still require the device checklist below.
 
-19 September verification: analysis clean; full suite 266 passed, 7 optional
-visual tests skipped. Profile and Cloud Sync preview tests were also run with
-a local font and their rendered images inspected. No commit or deployment.
+19 September Sprint 18.4.2 verification: analysis clean; full suite 272 passed,
+7 optional visual tests skipped. Compact portrait and short landscape share and
+Move sheets passed at 1.3x text scale. Native share destinations, the signed-in
+Profile card, and subjective spacing still require physical-device acceptance.
 
 ## 4. Product Purpose and Design Principle
 
@@ -349,11 +354,11 @@ release security audit. App Check, schema/field validation, abuse controls,
 quota monitoring, privacy documentation, and account deletion requirements
 still need deliberate release review.
 
-## 10. Planned Features — Not Yet Implemented
+## 10. Convenience and Planned Features
 
-### Share a shopping list as text
+### Share a shopping list as text — implemented
 
-Approved direction:
+Implemented behavior:
 
 - share Today or any selected date as plain text;
 - support the native share sheet for WhatsApp, Messenger, X, and compatible
@@ -364,8 +369,12 @@ Approved direction:
 - do not claim Instagram supports arbitrary plain-text posts; platform behavior
   must be tested through the native share sheet.
 
-`share_plus` already exists for backup-file export, but list-text sharing is not
-implemented.
+The active Lists screen exposes Copy/Share beside the list switcher. History
+record menus expose the same flow for any date. One readable plain-text export
+contains all non-empty named lists, pending/purchased sections, quantities,
+notes, prices, and pending/purchased totals. The native share destination list
+depends on apps installed on the device; Instagram and other platforms may not
+accept arbitrary plain text.
 
 ### Multi-currency shopping
 
@@ -429,11 +438,14 @@ The safest path to a tester-ready build is:
 2. Refine Profile subpages and text hierarchy without changing account/data
    semantics.
 
-### Phase B — complete essential convenience
+### Phase B — essential convenience implemented; device acceptance remains
 
-1. Add plain-text list copying/sharing.
-2. Add clear empty/error/offline states where device testing finds gaps.
-3. Run accessibility, narrow-screen, landscape, keyboard, and text-scale checks.
+1. Keep plain-text list copying/sharing covered while list and currency models
+   evolve.
+2. Continue recording and correcting specific empty/error/offline gaps found on
+   real devices.
+3. Complete the physical accessibility, native-share, keyboard, and device
+   acceptance checklist before tester distribution.
 
 ### Phase C — release engineering and tester distribution
 

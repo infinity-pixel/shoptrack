@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/shoptrack_modal.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../models/auth_state.dart';
 import '../../../../services/auth_service.dart';
@@ -128,14 +129,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                'Profile Photo',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+            ShopTrackSheetHeader(
+              title: 'Profile Photo',
+              subtitle: 'Choose how your profile appears in ShopTrack.',
+              onClose: () => Navigator.pop(context),
             ),
             ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: const Icon(Icons.photo_library_outlined),
               title: const Text('Choose From Gallery'),
               onTap: () => Navigator.pop(context, 'choose'),
@@ -143,6 +143,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             if (_photo != null ||
                 (!_hideGoogle && widget.account.photoUrl != null))
               ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 leading: Icon(
                   Icons.delete_outline,
                   color: Theme.of(context).colorScheme.error,
@@ -150,10 +151,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 title: const Text('Remove Photo'),
                 onTap: () => Navigator.pop(context, 'remove'),
               ),
-            ListTile(
-              title: const Text('Cancel', textAlign: TextAlign.center),
-              onTap: () => Navigator.pop(context),
-            ),
+            const SizedBox(height: 12),
           ],
         ),
       ),

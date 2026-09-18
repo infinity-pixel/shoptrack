@@ -5,6 +5,8 @@ import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/session_date_manager.dart';
 import '../../../../core/widgets/scroll_aware_fab.dart';
+import '../../../../core/widgets/shopping_list_share_sheet.dart';
+import '../../../../core/widgets/shoptrack_modal.dart';
 import '../../../../models/shopping_session.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../widgets/session_card.dart';
@@ -32,6 +34,7 @@ class _HistoryPageState extends State<HistoryPage>
   late final Animation<double> _headingGlow;
   List<ShoppingSession> _sessions = [];
   bool _isLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -64,12 +67,22 @@ class _HistoryPageState extends State<HistoryPage>
   }
 
   Future<void> _loadSessions() async {
-    final sessions = await _repository.getAllSessions();
-    if (!mounted) return;
-    setState(() {
-      _sessions = sessions;
-      _isLoading = false;
-    });
+    try {
+      final sessions = await _repository.getAllSessions();
+      if (!mounted) return;
+      setState(() {
+        _sessions = sessions;
+        _loadError = null;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loadError =
+            'Could not load history. Your saved records have not been changed.';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -104,20 +117,13 @@ class _HistoryPageState extends State<HistoryPage>
           Expanded(
             child: NotificationListener<ScrollNotification>(
               onNotification: _fabController.handleNotification,
-              child: _sessions.isEmpty
+              child: _loadError != null
+                  ? _buildErrorState()
+                  : _sessions.isEmpty
                   ? _buildEmptyState()
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
                       children: [
-                        if (today.isNotEmpty) ...[
-                          _buildSectionHeader(
-                            'TODAY',
-                            palette.today,
-                            animated: true,
-                          ),
-                          ...today.map(_buildSessionCard),
-                          const SizedBox(height: 16),
-                        ],
                         if (upcoming.isNotEmpty) ...[
                           _buildSectionHeader(
                             'UPCOMING',
@@ -125,6 +131,15 @@ class _HistoryPageState extends State<HistoryPage>
                             animated: true,
                           ),
                           ...upcoming.map(_buildSessionCard),
+                          const SizedBox(height: 16),
+                        ],
+                        if (today.isNotEmpty) ...[
+                          _buildSectionHeader(
+                            'TODAY',
+                            palette.today,
+                            animated: true,
+                          ),
+                          ...today.map(_buildSessionCard),
                           const SizedBox(height: 16),
                         ],
                         for (final entry in pastGroups.entries) ...[
@@ -240,6 +255,7 @@ class _HistoryPageState extends State<HistoryPage>
       session: session,
       glowAnimation: _headingGlow,
       onTap: () => _openSession(session.date),
+      onShare: () => showShoppingListShareSheet(context, session),
       onEdit: () => _editSessionDate(session),
       onDelete: () => _deleteSession(session),
     );
@@ -335,6 +351,32 @@ class _HistoryPageState extends State<HistoryPage>
     );
   }
 
+  Widget _buildErrorState() {
+    final palette = ShopTrackThemeTokens.of(context).palette;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: palette.pending),
+            const SizedBox(height: 12),
+            Text(_loadError!, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: () {
+                setState(() => _isLoading = true);
+                _loadSessions();
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _showAddCustomDateDialog() async {
     final tokens = ShopTrackThemeTokens.of(context);
     final palette = tokens.palette;
@@ -349,19 +391,19 @@ class _HistoryPageState extends State<HistoryPage>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(8, 4, 8, 12),
-                child: Text(
-                  'New Date',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
+              ShopTrackSheetHeader(
+                title: 'New Date',
+                subtitle: 'Add an earlier record or plan a future trip.',
+                onClose: () => Navigator.pop(context),
               ),
               ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 leading: Icon(Icons.history, color: palette.secondary),
                 title: const Text('Past Date'),
                 onTap: () => Navigator.pop(context, 'past'),
               ),
               ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 leading: Icon(Icons.calendar_month, color: calendarAccent),
                 title: const Text('Future Date'),
                 onTap: () => Navigator.pop(context, 'future'),

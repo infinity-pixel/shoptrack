@@ -115,10 +115,7 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([
-        settingsService,
-        ?syncService,
-      ]),
+      listenable: Listenable.merge([settingsService, ?syncService]),
       builder: (context, child) {
         final platformBrightness = MediaQuery.of(context).platformBrightness;
         final themeDefinition = ThemePresets.getDefinition(
@@ -149,9 +146,22 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
                       padding: const EdgeInsets.all(24),
                       child: syncService!.error == null
                           ? const CircularProgressIndicator()
-                          : Text(
-                              syncService!.error!,
-                              textAlign: TextAlign.center,
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.cloud_off_outlined, size: 42),
+                                const SizedBox(height: 12),
+                                Text(
+                                  syncService!.error!,
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 12),
+                                FilledButton.icon(
+                                  onPressed: syncService!.retry,
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Try Again'),
+                                ),
+                              ],
                             ),
                     ),
                   ),

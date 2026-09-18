@@ -65,25 +65,25 @@ class ThemeDefinition {
         outline: palette.textSecondary,
         outlineVariant: palette.border,
       ),
-      // Dark surfaces stay neutral; accents belong to controls, not every panel.
-      dialogTheme: brightness == Brightness.dark
-          ? DialogThemeData(
-              backgroundColor: palette.surface,
-              surfaceTintColor: Colors.transparent,
-            )
-          : null,
-      bottomSheetTheme: brightness == Brightness.dark
-          ? BottomSheetThemeData(
-              backgroundColor: palette.surface,
-              surfaceTintColor: Colors.transparent,
-            )
-          : null,
-      popupMenuTheme: brightness == Brightness.dark
-          ? PopupMenuThemeData(
-              color: palette.surface,
-              surfaceTintColor: Colors.transparent,
-            )
-          : null,
+      // Modal surfaces share one hierarchy in every preset. Accents belong to
+      // controls; the surrounding panel stays quiet and theme-aware.
+      dialogTheme: DialogThemeData(
+        backgroundColor: palette.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: palette.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: palette.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
       inputDecorationTheme: brightness == Brightness.dark
           ? InputDecorationTheme(
               fillColor: palette.background,

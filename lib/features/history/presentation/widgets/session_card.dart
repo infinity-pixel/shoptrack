@@ -14,6 +14,7 @@ class SessionCard extends StatelessWidget {
     required this.onTap,
     this.onDelete,
     this.onEdit,
+    this.onShare,
     this.glowAnimation,
   });
 
@@ -21,6 +22,7 @@ class SessionCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
+  final VoidCallback? onShare;
   final Animation<double>? glowAnimation;
 
   @override
@@ -157,7 +159,7 @@ class SessionCard extends StatelessWidget {
   }
 
   Widget _buildMenu(BuildContext context) {
-    if (onDelete == null && onEdit == null) {
+    if (onDelete == null && onEdit == null && onShare == null) {
       return const Icon(Icons.chevron_right, size: 20);
     }
     final tokens = ShopTrackThemeTokens.of(context);
@@ -166,10 +168,22 @@ class SessionCard extends StatelessWidget {
     return PopupMenuButton<String>(
       tooltip: 'Date options',
       onSelected: (value) {
+        if (value == 'share') onShare?.call();
         if (value == 'edit') onEdit?.call();
         if (value == 'delete') onDelete?.call();
       },
       itemBuilder: (context) => [
+        if (onShare != null)
+          PopupMenuItem(
+            value: 'share',
+            child: Row(
+              children: [
+                Icon(Icons.ios_share_outlined, color: palette.secondary),
+                const SizedBox(width: 8),
+                const Text('Copy or Share'),
+              ],
+            ),
+          ),
         if (onEdit != null)
           PopupMenuItem(
             value: 'edit',

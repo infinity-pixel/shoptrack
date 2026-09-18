@@ -240,99 +240,116 @@ class AccountPage extends StatelessWidget {
     return _surface(
       context,
       Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        child: Stack(
           children: [
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ProfileAvatar(
-                  name: displayName,
-                  radius: 25,
-                  photo: local?.photo,
-                  googlePhoto: local?.hideGooglePhoto == true
-                      ? null
-                      : account?.photoUrl,
+                Center(
+                  child: account == null
+                      ? CircleAvatar(
+                          radius: 29,
+                          backgroundColor: p.primary.withValues(alpha: .18),
+                          child: Icon(
+                            Icons.person_outline,
+                            color: p.onSurface,
+                            size: 29,
+                          ),
+                        )
+                      : ProfileAvatar(
+                          name: displayName,
+                          radius: 29,
+                          photo: local?.photo,
+                          googlePhoto: local?.hideGooglePhoto == true
+                              ? null
+                              : account.photoUrl,
+                        ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    account != null ? displayName : 'Welcome to ShopTrack',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: p.onSurface,
+                const SizedBox(height: 8),
+                Text(
+                  account != null ? displayName : 'Welcome to ShopTrack',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: p.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                if (account != null)
+                  Tooltip(
+                    message: account.email,
+                    child: Text(
+                      account.email,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: p.textSecondary),
+                    ),
+                  )
+                else
+                  Text(
+                    errorMessage ?? 'Sign in with Google to use cloud backup.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: errorMessage != null ? p.error : p.textSecondary,
                     ),
                   ),
-                ),
-                if (account != null)
-                  IconButton(
-                    tooltip: 'Edit Profile',
-                    onPressed: !profiles.loaded || profiles.loadError != null
-                        ? null
-                        : () async {
-                            await Navigator.push<bool>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => EditProfilePage(
-                                  account: account,
-                                  profiles: profiles,
-                                  auth: authService,
-                                ),
-                              ),
-                            );
-                          },
-                    icon: const Icon(Icons.edit_outlined, size: 20),
+                if (profiles.loadError != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Your saved profile could not be loaded. Please restart the app.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: p.error),
                   ),
+                ],
+                if (account == null) ...[
+                  const SizedBox(height: 10),
+                  Divider(color: p.border),
+                  Center(
+                    child: state is AuthLoading
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(),
+                          )
+                        : TextButton.icon(
+                            onPressed: () => authService.signIn(),
+                            icon: const Icon(Icons.login, size: 18),
+                            label: Text(
+                              errorMessage != null
+                                  ? 'Retry Sign In'
+                                  : 'Sign In With Google',
+                            ),
+                          ),
+                  ),
+                ],
               ],
             ),
-            if (profiles.loadError != null)
-              Text(
-                'Your saved profile could not be loaded. Please restart the app.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: p.error),
-              ),
-            const SizedBox(height: 8),
             if (account != null)
-              Tooltip(
-                message: account.email,
-                child: Text(
-                  account.email,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: p.textSecondary),
-                ),
-              )
-            else
-              Text(
-                errorMessage ?? 'Sign in with Google to use cloud backup.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: errorMessage != null ? p.error : p.textSecondary,
+              Positioned(
+                top: -8,
+                right: -6,
+                child: TextButton.icon(
+                  onPressed: !profiles.loaded || profiles.loadError != null
+                      ? null
+                      : () async {
+                          await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditProfilePage(
+                                account: account,
+                                profiles: profiles,
+                                auth: authService,
+                              ),
+                            ),
+                          );
+                        },
+                  icon: const Icon(Icons.edit_outlined, size: 17),
+                  label: const Text('Edit'),
                 ),
               ),
-            if (account == null) ...[
-              const SizedBox(height: 12),
-              Divider(color: p.border),
-              Center(
-                child: state is AuthLoading
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: CircularProgressIndicator(),
-                      )
-                    : TextButton.icon(
-                        onPressed: () => authService.signIn(),
-                        icon: const Icon(Icons.login, size: 18),
-                        label: Text(
-                          errorMessage != null
-                              ? 'Retry Sign In'
-                              : 'Sign In With Google',
-                        ),
-                      ),
-              ),
-            ],
           ],
         ),
       ),

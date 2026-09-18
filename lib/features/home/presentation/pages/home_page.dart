@@ -10,6 +10,8 @@ import '../../../../core/theme/atmospheric_background.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/utils/shopping_session_actions.dart';
 import '../../../../core/widgets/scroll_aware_fab.dart';
+import '../../../../core/widgets/shopping_list_share_sheet.dart';
+import '../../../../core/widgets/shoptrack_modal.dart';
 import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_item.dart';
 import '../../../../models/shopping_list_group.dart';
@@ -49,6 +51,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _openEditors = 0;
   bool _selectionMode = false;
   bool _selectionBusy = false;
+  bool _hasLoadedSession = false;
+  String? _loadError;
   final Set<String> _selectedItemIds = {};
   late final FrequentItemsService _frequentItemsService;
   List<FrequentItemSuggestion> _frequentSuggestions = [];
@@ -106,17 +110,33 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     if (_openEditors > 0) return;
     final request = ++_loadRequest;
     final date = widget.sessionDate ?? DateTime.now();
-    final session = await _repository.getSessionByDate(date);
-    if (mounted && request == _loadRequest) {
+    try {
+      final session = await _repository.getSessionByDate(date);
+      if (mounted && request == _loadRequest) {
+        setState(() {
+          _currentSession = session;
+          _hasLoadedSession = true;
+          _loadError = null;
+          final listIds = session.orderedLists.map((list) => list.id).toSet();
+          if (!listIds.contains(_activeListId)) {
+            _activeListId = session.orderedLists.first.id;
+          }
+          _isLoading = false;
+        });
+        await _refreshFrequentSuggestions();
+      }
+    } catch (_) {
+      if (!mounted || request != _loadRequest) return;
       setState(() {
-        _currentSession = session;
-        final listIds = session.orderedLists.map((list) => list.id).toSet();
-        if (!listIds.contains(_activeListId)) {
-          _activeListId = session.orderedLists.first.id;
-        }
+        _loadError =
+            'Could not open this shopping list. Your data is still on this device.';
         _isLoading = false;
       });
-      await _refreshFrequentSuggestions();
+      if (_hasLoadedSession) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_loadError!)));
+      }
     }
   }
 
@@ -216,73 +236,104 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final destinations = _currentSession.orderedLists
         .where((list) => list.id != _activeListId)
         .toList();
-    final target = await showModalBottomSheet<ShoppingListGroup>(
+    final choice = await showModalBottomSheet<Object>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * .6,
+            maxHeight: MediaQuery.sizeOf(context).height * .85,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Move To List',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Close',
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Text('Items keep their details and shopping date.'),
+              ShopTrackSheetHeader(
+                title: 'Move to List',
+                subtitle: 'Choose where the selected items should go.',
+                onClose: () => Navigator.pop(context),
               ),
               if (destinations.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'Create another list for this date first, then move your items here.',
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: ShopTrackSheetEmptyState(
+                      icon: Icons.playlist_add_outlined,
+                      title: 'No other lists yet',
+                      message:
+                          'Create another list, then move these items into it.',
+                      actionLabel: 'Create List',
+                      onAction: () => Navigator.pop(context, 'create'),
+                    ),
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    itemCount: destinations.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 4),
+                    itemBuilder: (context, index) {
+                      final list = destinations[index];
+                      return ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        leading: const Icon(Icons.checklist_rounded),
+                        title: Text(list.name),
+                        subtitle: Text(
+                          '${_currentSession.itemsForList(list.id).length} ${_currentSession.itemsForList(list.id).length == 1 ? 'item' : 'items'}',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.pop(context, list),
+                      );
+                    },
                   ),
                 ),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: destinations.length,
-                  itemBuilder: (context, index) {
-                    final list = destinations[index];
-                    return ListTile(
-                      leading: const Icon(Icons.checklist_rounded),
-                      title: Text(list.name),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Navigator.pop(context, list),
-                    );
-                  },
-                ),
-              ),
               const SizedBox(height: 12),
             ],
           ),
         ),
       ),
     );
-    if (!mounted || target == null || !_selectionMode) return;
+    if (!mounted || choice == null || !_selectionMode) return;
+    ShoppingListGroup target;
+    var sessionForMove = _currentSession;
+    if (choice == 'create') {
+      final name = await showDialog<String>(
+        context: context,
+        builder: (_) => const ShoppingListNameDialog(
+          title: 'New shopping list',
+          actionLabel: 'Create',
+          hintText: 'e.g. Household',
+        ),
+      );
+      if (!mounted || name == null || name.isEmpty || !_selectionMode) return;
+      if (_currentSession.orderedLists.any(
+        (list) => list.name.toLowerCase() == name.toLowerCase(),
+      )) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('A list with that name already exists.'),
+          ),
+        );
+        return;
+      }
+      target = ShoppingListGroup(
+        id: const Uuid().v4(),
+        name: name,
+        position: _currentSession.orderedLists.length,
+      );
+      sessionForMove = _currentSession.copyWith(
+        lists: [..._currentSession.orderedLists, target],
+      );
+    } else {
+      target = choice as ShoppingListGroup;
+    }
     final count = _selectedItemIds.length;
     if (!await _confirmSelectionAction(
           'Move $count ${count == 1 ? 'item' : 'items'}?',
-          'Move to ${target.name}? You can undo this afterwards.',
+          'Move the selected ${count == 1 ? 'item' : 'items'} to ${target.name}?',
           'Move',
         ) ||
         !mounted ||
@@ -294,7 +345,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         .toList();
     final date = _currentSession.date;
     final updated = ShoppingSessionActions.move(
-      _currentSession,
+      sessionForMove,
       sourceListId: _activeListId,
       destinationListId: target.id,
       ids: _selectedItemIds,
@@ -382,7 +433,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     if (count == 0) return;
     if (!await _confirmSelectionAction(
           'Delete $count ${count == 1 ? 'item' : 'items'}?',
-          'Remove the selected items from this list? You can undo this afterwards.',
+          'Remove the selected ${count == 1 ? 'item' : 'items'} from this list?',
           'Delete',
         ) ||
         !mounted ||
@@ -636,6 +687,37 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (!_hasLoadedSession) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.cloud_off_outlined, size: 42),
+                  const SizedBox(height: 12),
+                  Text(
+                    _loadError ?? 'Could not open this shopping list.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () {
+                      setState(() => _isLoading = true);
+                      _loadSession();
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Try Again'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     final String formattedDate = widget.sessionDate != null
@@ -1114,6 +1196,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           }
           if (mounted) _showListActions(list);
         },
+        onShare: () => showShoppingListShareSheet(context, _currentSession),
       ),
     );
   }
@@ -1158,27 +1241,36 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           context: context,
           showDragHandle: true,
           builder: (context) => SafeArea(
-            child: Wrap(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
+                ShopTrackSheetHeader(
+                  title: list.name,
+                  subtitle: 'Manage this shopping list.',
+                  onClose: () => Navigator.pop(context),
+                ),
                 ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                   leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Rename list'),
+                  title: const Text('Rename List'),
                   onTap: () => Navigator.pop(context, 'rename'),
                 ),
                 if (_currentSession.orderedLists.length > 1)
                   ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                     leading: Icon(
                       Icons.delete_outline,
                       color: Theme.of(context).colorScheme.error,
                     ),
                     title: Text(
-                      'Delete list',
+                      'Delete List',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
                     onTap: () => Navigator.pop(context, 'delete'),
                   ),
+                const SizedBox(height: 12),
               ],
             ),
           ),
