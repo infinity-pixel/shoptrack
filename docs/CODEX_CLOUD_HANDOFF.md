@@ -75,12 +75,10 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 18.4.2 — list sharing and responsive UI
-  refinements**.
-- Its preceding revision is `1ae0cd8` —
-  `Sprint 18.4.1: Refine Profile, shopping actions, list presentation, and sync resume behavior`.
-- The branch containing Sprint 18.4.2 must be pushed before a Cloud task can
-  reliably continue from it.
+- Current local milestone: **Sprint 18.4.3 — scoped list sharing and polished
+  plain-text exports**.
+- Its preceding revision is `da15069` —
+  `Sprint 18.4.2: Add list sharing and responsive UI refinements`.
 
 Sprint 18.4.2 work includes:
 
@@ -95,11 +93,21 @@ Sprint 18.4.2 work includes:
 - honest retry states for initial list, History, and sync-startup failures;
 - responsive, text-scale, selection, sharing, and theme regression coverage.
 
+Sprint 18.4.3 extends that work with:
+
+- an organized scope picker for the current list, chosen lists, all lists, or
+  selected items;
+- direct sharing from long-press item selection without clearing the selection;
+- a readable preview and consistent Copy Text / native Share actions;
+- structured headings, separators, counts, and per-list/combined totals; and
+- the concise `System` label in Appearance.
+
 Latest verification performed for this work:
 
 ```powershell
 flutter analyze --no-pub
 flutter test --no-pub
+flutter build apk --debug
 ```
 
 Profile and Cloud Sync previews are rendered locally for inspection. Automated
@@ -107,10 +115,11 @@ checks cover completion accents across all themes, compact layouts, confirmation
 Move Undo and healthy/offline resume behavior. Physical-phone screenshot and
 reconnect acceptance still require the device checklist below.
 
-19 September Sprint 18.4.2 verification: analysis clean; full suite 272 passed,
-7 optional visual tests skipped. Compact portrait and short landscape share and
-Move sheets passed at 1.3x text scale. Native share destinations, the signed-in
-Profile card, and subjective spacing still require physical-device acceptance.
+19 September Sprint 18.4.3 verification: analysis clean; full suite 274 passed,
+7 optional visual tests skipped; Android debug APK built. Compact portrait and
+short landscape share and Move sheets passed at 1.3x text scale. Native share
+destinations, the signed-in Profile card, and subjective spacing still require
+physical-device acceptance.
 
 ## 4. Product Purpose and Design Principle
 
@@ -370,9 +379,12 @@ Implemented behavior:
   must be tested through the native share sheet.
 
 The active Lists screen exposes Copy/Share beside the list switcher. History
-record menus expose the same flow for any date. One readable plain-text export
-contains all non-empty named lists, pending/purchased sections, quantities,
-notes, prices, and pending/purchased totals. The native share destination list
+record menus expose the same flow for any date, and long-press selection offers
+a direct selected-items share action. The sheet can export the current list,
+one or more chosen lists, all lists, or selected items. Its preview and exported
+text share the same formatter, including clear headings, separators, item
+counts, pending/purchased sections, quantities, notes, prices, per-list totals,
+and an all-lists summary when relevant. The native share destination list
 depends on apps installed on the device; Instagram and other platforms may not
 accept arbitrary plain text.
 

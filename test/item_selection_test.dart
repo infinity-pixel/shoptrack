@@ -399,7 +399,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2 Selected'), findsOneWidget);
     expect(store.sessions.single.purchasedCount, 1);
-    await tester.tap(find.text('Move'));
+    await tester.tap(find.byTooltip('Move'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'Grandmother'));
     await tester.pumpAndSettle();
@@ -413,7 +413,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.longPress(find.text('Milk'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Move'));
+    await tester.tap(find.byTooltip('Move'));
     await tester.pumpAndSettle();
     await tester.tap(
       find.widgetWithText(ListTile, ShoppingListGroup.defaultList.name),
@@ -433,7 +433,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.longPress(find.text('Milk'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
+    await tester.tap(find.byTooltip('Delete'));
     await tester.pumpAndSettle();
     await confirm(tester, 'Delete');
     await tester.pump();
@@ -445,7 +445,7 @@ void main() {
     expect(store.sessions.single.items, hasLength(3));
     await tester.longPress(find.text('Milk'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
+    await tester.tap(find.byTooltip('Delete'));
     await tester.pumpAndSettle();
     await confirm(tester, 'Delete');
     expect(store.sessions.single.items.map((i) => i.id), ['rice', 'soap']);
@@ -454,12 +454,39 @@ void main() {
   });
 
   testWidgets(
+    'Selected items open the share flow with selected scope and preview',
+    (tester) async {
+      await mount(tester, size: const Size(320, 640), scale: 1.3);
+      await tester.longPress(find.text('Milk'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Copy or Share Selected Items'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Copy or Share'), findsOneWidget);
+      expect(find.text('Selected Items'), findsOneWidget);
+      expect(find.text('1 item'), findsWidgets);
+      final previews = tester
+          .widgetList<SelectableText>(find.byType(SelectableText))
+          .map((widget) => widget.data ?? widget.textSpan?.toPlainText() ?? '')
+          .join();
+      expect(previews, contains('SELECTED ITEMS'));
+      expect(previews, contains('Milk'));
+      expect(previews, isNot(contains('Rice')));
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 Selected'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
     'Remote destination deletion while selecting is preserved for review',
     (tester) async {
       final store = await mount(tester);
       await tester.longPress(find.text('Milk'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Move'));
+      await tester.tap(find.byTooltip('Move'));
       await tester.pumpAndSettle();
       await store.receive({
         sessionDay(date): seed()
@@ -603,7 +630,7 @@ void main() {
       await tester.longPress(find.text('Milk'));
       await tester.pumpAndSettle();
       Future<void> attempt() async {
-        await tester.tap(find.text('Move'));
+        await tester.tap(find.byTooltip('Move'));
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(ListTile, 'Grandmother'));
         await tester.pumpAndSettle();
@@ -631,13 +658,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Select All'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
+    await tester.tap(find.byTooltip('Delete'));
     await tester.pumpAndSettle();
     await confirm(tester, 'Cancel');
     expect(find.text('2 Selected'), findsOneWidget);
     expect(store.sessions.single.items, hasLength(3));
     Future<void> chooseMove() async {
-      await tester.tap(find.text('Move'));
+      await tester.tap(find.byTooltip('Move'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ListTile, 'Grandmother'));
       await tester.pumpAndSettle();
@@ -726,7 +753,7 @@ void main() {
     await tester.longPress(find.text('Milk'));
     await tester.pumpAndSettle();
     await capture('selection');
-    await tester.tap(find.text('Move'));
+    await tester.tap(find.byTooltip('Move'));
     await tester.pumpAndSettle();
     await capture('destination');
     await tester.pumpWidget(const SizedBox());

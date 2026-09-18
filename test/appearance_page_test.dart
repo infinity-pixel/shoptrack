@@ -45,6 +45,8 @@ void main() {
     await openAppearance(tester, size: const Size(320, 640), textScale: 1.3);
 
     expect(find.text('Choose Theme'), findsOneWidget);
+    expect(find.text('System'), findsOneWidget);
+    expect(find.text('System Default'), findsNothing);
     expect(find.text('Blooming Spring'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Silent Midnight'), 220);
     await tester.pumpAndSettle();

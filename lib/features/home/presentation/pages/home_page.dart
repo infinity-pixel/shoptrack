@@ -512,6 +512,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         _selectedItemIds.addAll(_activeItems.map((item) => item.id));
       }
     }),
+    onShare: () => showShoppingListShareSheet(
+      context,
+      _currentSession,
+      currentListId: _activeListId,
+      selectedItemIds: Set.unmodifiable(_selectedItemIds),
+      preferSelectedItems: true,
+    ),
     onMove: _moveSelection,
     onDelete: _deleteSelection,
   );
@@ -1196,7 +1203,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           }
           if (mounted) _showListActions(list);
         },
-        onShare: () => showShoppingListShareSheet(context, _currentSession),
+        onShare: () => showShoppingListShareSheet(
+          context,
+          _currentSession,
+          currentListId: _activeListId,
+        ),
       ),
     );
   }

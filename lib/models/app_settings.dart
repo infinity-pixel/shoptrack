@@ -6,7 +6,7 @@ enum AppTheme {
   String get displayName {
     switch (this) {
       case AppTheme.system:
-        return 'System Default';
+        return 'System';
       case AppTheme.light:
         return 'Light';
       case AppTheme.dark:

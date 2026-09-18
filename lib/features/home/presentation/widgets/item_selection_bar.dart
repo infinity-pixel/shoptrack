@@ -8,19 +8,20 @@ class ItemSelectionBar extends StatelessWidget {
     required this.busy,
     required this.onClose,
     required this.onSelectAll,
+    required this.onShare,
     required this.onMove,
     required this.onDelete,
   });
   final int count;
   final bool allSelected, busy;
-  final VoidCallback onClose, onSelectAll, onMove, onDelete;
+  final VoidCallback onClose, onSelectAll, onShare, onMove, onDelete;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final width = (MediaQuery.sizeOf(context).width - 24).clamp(0.0, 480.0);
     final compact =
-        width < 340 || MediaQuery.textScalerOf(context).scale(1) > 1.2;
+        width < 440 || MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return SizedBox(
       width: width,
       child: Material(
@@ -67,6 +68,11 @@ class ItemSelectionBar extends StatelessWidget {
                 ),
               if (compact) ...[
                 IconButton(
+                  tooltip: 'Copy or Share Selected Items',
+                  onPressed: busy || count == 0 ? null : onShare,
+                  icon: const Icon(Icons.ios_share_outlined, size: 21),
+                ),
+                IconButton(
                   tooltip: 'Move',
                   onPressed: busy || count == 0 ? null : onMove,
                   icon: const Icon(Icons.drive_file_move_outline, size: 21),
@@ -78,24 +84,42 @@ class ItemSelectionBar extends StatelessWidget {
                   icon: const Icon(Icons.delete_outline, size: 21),
                 ),
               ] else ...[
-                TextButton.icon(
-                  onPressed: busy || count == 0 ? null : onMove,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    visualDensity: VisualDensity.compact,
+                Tooltip(
+                  message: 'Copy or Share Selected Items',
+                  child: TextButton.icon(
+                    onPressed: busy || count == 0 ? null : onShare,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.ios_share_outlined, size: 19),
+                    label: const Text('Share'),
                   ),
-                  icon: const Icon(Icons.drive_file_move_outline, size: 19),
-                  label: const Text('Move'),
                 ),
-                TextButton.icon(
-                  onPressed: busy || count == 0 ? null : onDelete,
-                  style: TextButton.styleFrom(
-                    foregroundColor: colors.error,
-                    padding: const EdgeInsets.fromLTRB(6, 0, 10, 0),
-                    visualDensity: VisualDensity.compact,
+                Tooltip(
+                  message: 'Move',
+                  child: TextButton.icon(
+                    onPressed: busy || count == 0 ? null : onMove,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.drive_file_move_outline, size: 19),
+                    label: const Text('Move'),
                   ),
-                  icon: const Icon(Icons.delete_outline, size: 19),
-                  label: const Text('Delete'),
+                ),
+                Tooltip(
+                  message: 'Delete',
+                  child: TextButton.icon(
+                    onPressed: busy || count == 0 ? null : onDelete,
+                    style: TextButton.styleFrom(
+                      foregroundColor: colors.error,
+                      padding: const EdgeInsets.fromLTRB(6, 0, 10, 0),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.delete_outline, size: 19),
+                    label: const Text('Delete'),
+                  ),
                 ),
               ],
             ],

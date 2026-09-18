@@ -54,14 +54,59 @@ void main() {
       );
 
       final text = ShoppingListTextFormatter.format(session);
-      expect(text, contains('ShopTrack — Saturday, 19 September 2026'));
-      expect(text, contains('My List\nTo Buy'));
+      expect(text, startsWith('ShopTrack\nSaturday, 19 September 2026'));
+      expect(text, contains('My List\n-------\nTO BUY (1)'));
       expect(text, contains('☐ Rice — 2.5 kg — ৳200'));
       expect(text, contains('Note: Fine grain'));
-      expect(text, contains('Family\nPurchased'));
+      expect(text, contains('Family\n------\nPURCHASED (1)'));
       expect(text, contains('☑ Soap — ৳45'));
       expect(text, contains('Pending total: ৳200'));
       expect(text, contains('Purchased total: ৳45'));
+      expect(text, contains('ALL LISTS\n========='));
+    },
+  );
+
+  test(
+    'plain-text sharing filters lists and selected items with scoped totals',
+    () {
+      final session = ShoppingSession(
+        id: 'scopes',
+        date: DateTime(2026, 9, 19),
+        lists: const [
+          ShoppingListGroup.defaultList,
+          ShoppingListGroup(id: 'nani', name: 'Nani', position: 1),
+        ],
+        items: const [
+          ShoppingItem(id: 'radish', name: 'Radish', priceValue: 90),
+          ShoppingItem(
+            id: 'jhinga',
+            name: 'Jhinga',
+            listId: 'nani',
+            priceValue: 64,
+            isPurchased: true,
+          ),
+        ],
+      );
+
+      final oneList = ShoppingListTextFormatter.format(
+        session,
+        listIds: {'nani'},
+      );
+      expect(oneList, isNot(contains('My List')));
+      expect(oneList, contains('Nani\n----'));
+      expect(oneList, contains('Purchased total: ৳64'));
+      expect(oneList, isNot(contains('ALL LISTS')));
+
+      final selected = ShoppingListTextFormatter.format(
+        session,
+        itemIds: {'radish'},
+        selectedItems: true,
+      );
+      expect(selected, contains('SELECTED ITEMS'));
+      expect(selected, contains('☐ Radish — ৳90'));
+      expect(selected, isNot(contains('Jhinga')));
+      expect(selected, contains('Pending total: ৳90'));
+      expect(selected, contains('Purchased total: ৳0'));
     },
   );
 
@@ -125,7 +170,14 @@ void main() {
       final session = ShoppingSession(
         id: 'share-sheet',
         date: date,
-        items: const [ShoppingItem(id: 'milk', name: 'Milk')],
+        lists: const [
+          ShoppingListGroup.defaultList,
+          ShoppingListGroup(id: 'nani', name: 'Nani', position: 1),
+        ],
+        items: const [
+          ShoppingItem(id: 'milk', name: 'Milk'),
+          ShoppingItem(id: 'rice', name: 'Rice', listId: 'nani'),
+        ],
       );
       final store = SyncStore(await SharedPreferences.getInstance(), 'share');
       await store.load(seed: [session]);
@@ -149,8 +201,12 @@ void main() {
       await tester.tap(find.byTooltip('Copy or share shopping list'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Share Shopping List'), findsOneWidget);
-      expect(find.text('Copy as Text'), findsOneWidget);
+      expect(find.text('Copy or Share'), findsOneWidget);
+      expect(find.text('Current List'), findsOneWidget);
+      expect(find.text('Choose Lists'), findsOneWidget);
+      expect(find.text('All Lists'), findsOneWidget);
+      expect(find.text('Preview'), findsOneWidget);
+      expect(find.text('Copy Text'), findsOneWidget);
       expect(find.text('Share'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.tap(find.byTooltip('Close'));

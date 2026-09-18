@@ -57,9 +57,10 @@ that adds friction needs a clear user benefit.
   deletions offer Undo. Swipe deletion remains immediate with Undo.
 - Shopping sessions support named lists, pricing, purchase state, ordering,
   multi-select move/delete, history search, and custom date-range selection.
-- Any shopping date can be copied or shared as structured plain text with its
-  separate lists, pending/purchased states, quantities, notes, prices, and
-  totals. Native destination support still depends on the installed apps.
+- Any shopping date can be copied or shared as structured plain text. Users can
+  export the current list, chosen lists, all lists, or a long-press selection;
+  output includes pending/purchased states, quantities, notes, prices, and
+  scoped totals. Native destination support still depends on installed apps.
 - Google sign-in is connected to Firebase Authentication on Android.
 - Shopping sessions synchronize through Cloud Firestore with offline queues and
   conflict review. Read `docs/sprint_17_2_sync.md` before changing this system.
