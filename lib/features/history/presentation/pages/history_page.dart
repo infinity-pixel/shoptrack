@@ -143,7 +143,7 @@ class _HistoryPageState extends State<HistoryPage>
         builder: (context, _) => DelayedExtendedFab(
           expanded: _fabController.isExpanded,
           onPressed: _showAddCustomDateDialog,
-          icon: const _CalendarAddIcon(),
+          icon: const Icon(Icons.add, size: 24),
           label: 'New Date',
           tooltip: 'Create a past or future date',
         ),
@@ -407,36 +407,5 @@ class _HistoryPageState extends State<HistoryPage>
       ),
     );
     if (confirmed == true) _openSession(selectedDate);
-  }
-}
-
-class _CalendarAddIcon extends StatelessWidget {
-  const _CalendarAddIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ShopTrackThemeTokens.of(context);
-    final palette = tokens.palette;
-    final calendarAccent = tokens.calendarAccent ?? palette.primary;
-    return SizedBox(
-      width: 26,
-      height: 26,
-      child: Stack(
-        children: [
-          Icon(Icons.calendar_month_outlined, size: 24, color: calendarAccent),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: palette.onPrimary,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.add, size: 12, color: palette.primary),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

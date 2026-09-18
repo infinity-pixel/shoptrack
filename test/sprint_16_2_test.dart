@@ -155,6 +155,7 @@ void main() {
     );
     await show(true);
     expect(tester.getSize(find.byType(DelayedExtendedFab)).height, 56);
+    expect(tester.getSize(find.byIcon(Icons.add)), const Size(24, 24));
     final expandedWidth = tester.getSize(find.byType(DelayedExtendedFab)).width;
     await show(false);
     await tester.pump(const Duration(milliseconds: 120));

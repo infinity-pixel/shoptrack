@@ -29,6 +29,7 @@ final ancientForest = ThemePresets.darkPresets[DarkPreset.deepForest]!;
 final autumn = ThemePresets.lightPresets[LightPreset.autumn]!;
 final ocean = ThemePresets.lightPresets[LightPreset.ocean]!;
 final spring = ThemePresets.lightPresets[LightPreset.spring]!;
+final summer = ThemePresets.lightPresets[LightPreset.summer]!;
 const milk = ShoppingItem(
   id: 'milk',
   name: 'Milk',
@@ -470,11 +471,48 @@ void main() {
     );
   });
 
-  test('Ancient Forest supplies its approved scenery', () {
+  test('Ancient Forest has a complete, accessible dark identity', () {
+    final p = ancientForest.palette;
+    double contrast(Color a, Color b) {
+      final x = a.computeLuminance(), y = b.computeLuminance();
+      return (math.max(x, y) + .05) / (math.min(x, y) + .05);
+    }
+
     expect(ancientForest.name, 'Ancient Forest');
     expect(
       ancientForest.headerArtworkPath,
       'assets/images/theme_dark_ancient_forest.webp',
+    );
+    expect(ancientForest.atmosphericConfig.baseColor, p.background);
+    expect(ancientForest.atmosphericConfig.gradientColors, hasLength(3));
+    expect(ancientForest.atmosphericConfig.opacity, 1);
+    expect(p.primary, isNot(aurora.palette.primary));
+    expect(p.secondary, isNot(aurora.palette.secondary));
+    expect(p.background, isNot(aurora.palette.background));
+    expect(
+      p.surfaceToBuy.computeLuminance(),
+      greaterThan(p.background.computeLuminance()),
+    );
+    expect(p.receiptShadow, const Color(0x80000000));
+
+    for (final surface in [
+      p.background,
+      p.surface,
+      p.surfaceToBuy,
+      p.surfacePurchased,
+      p.surfaceReceipt,
+    ]) {
+      expect(contrast(p.onBackground, surface), greaterThanOrEqualTo(4.5));
+      expect(contrast(p.textSecondary, surface), greaterThanOrEqualTo(4.5));
+    }
+    for (final status in [p.purchased, p.pending, p.planned, p.today]) {
+      expect(contrast(p.onStatus, status), greaterThanOrEqualTo(4.5));
+    }
+    expect(contrast(p.onPrimary, p.primary), greaterThanOrEqualTo(4.5));
+    expect(contrast(p.onSecondary, p.secondary), greaterThanOrEqualTo(4.5));
+    expect(
+      contrast(p.purchasedStatus, p.surfacePurchased),
+      greaterThanOrEqualTo(4.5),
     );
   });
 
@@ -514,6 +552,16 @@ void main() {
   });
 
   for (final theme in [
+    (
+      name: 'Golden Summer',
+      definition: summer,
+      asset: 'assets/images/theme_light_golden_summer.webp',
+    ),
+    (
+      name: 'Silent Midnight',
+      definition: midnight,
+      asset: 'assets/images/theme_dark_silent_midnight.webp',
+    ),
     (
       name: 'Ethereal Aurora',
       definition: aurora,
@@ -608,53 +656,62 @@ void main() {
     expect(midnight.headerArtworkPath, endsWith('.webp'));
   });
 
-  for (final size in [
-    const Size(320, 640),
-    const Size(640, 360),
-    const Size(800, 1000),
+  for (final theme in [
+    (name: 'Silent Midnight', definition: midnight),
+    (name: 'Ancient Forest', definition: ancientForest),
   ]) {
-    testWidgets('Midnight calendar and item drawer fit $size with keyboard', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(size);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      for (final child in <Widget>[
-        SmartDateRangePicker(
-          initialRange: DateTimeRange(
-            start: DateTime(2026, 9, 7),
-            end: DateTime(2026, 9, 13),
-          ),
-        ),
-        const AddItemSheet(nextPosition: 2, initialItem: milk),
-      ]) {
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: midnight.toThemeData(),
-            home: MediaQuery(
-              data: MediaQueryData(
-                size: size,
-                textScaler: const TextScaler.linear(1.3),
-                viewInsets: EdgeInsets.only(bottom: size.height * .4),
-              ),
-              child: Scaffold(
-                resizeToAvoidBottomInset: false,
-                body: Align(alignment: Alignment.bottomCenter, child: child),
+    for (final size in [
+      const Size(320, 640),
+      const Size(640, 360),
+      const Size(800, 1000),
+    ]) {
+      testWidgets(
+        '${theme.name} calendar and item drawer fit $size with keyboard',
+        (tester) async {
+          await tester.binding.setSurfaceSize(size);
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          for (final child in <Widget>[
+            SmartDateRangePicker(
+              initialRange: DateTimeRange(
+                start: DateTime(2026, 9, 7),
+                end: DateTime(2026, 9, 13),
               ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        if (child is AddItemSheet) {
-          await tester.ensureVisible(find.text('Save'));
-          await tester.pumpAndSettle();
-          expect(
-            tester.getBottomRight(find.text('Save')).dy,
-            lessThan(size.height * .6),
-          );
-        }
-      }
-    });
+            const AddItemSheet(nextPosition: 2, initialItem: milk),
+          ]) {
+            await tester.pumpWidget(
+              MaterialApp(
+                theme: theme.definition.toThemeData(),
+                home: MediaQuery(
+                  data: MediaQueryData(
+                    size: size,
+                    textScaler: const TextScaler.linear(1.3),
+                    viewInsets: EdgeInsets.only(bottom: size.height * .4),
+                  ),
+                  child: Scaffold(
+                    resizeToAvoidBottomInset: false,
+                    body: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: child,
+                    ),
+                  ),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+            if (child is AddItemSheet) {
+              await tester.ensureVisible(find.text('Save'));
+              await tester.pumpAndSettle();
+              expect(
+                tester.getBottomRight(find.text('Save')).dy,
+                lessThan(size.height * .6),
+              );
+            }
+          }
+        },
+      );
+    }
   }
 
   testWidgets(
