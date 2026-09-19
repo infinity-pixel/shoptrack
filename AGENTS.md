@@ -61,6 +61,10 @@ that adds friction needs a clear user benefit.
   export the current list, chosen lists, all lists, or a long-press selection;
   output includes pending/purchased states, quantities, notes, prices, and
   scoped totals. Native destination support still depends on installed apps.
+- Lists keeps Add Item permanently expanded and exposes the single optional
+  `Share Your List` action through its split FAB. The follow-up sheet uses a
+  compact one-or-more-list chooser without an export preview. History keeps a
+  permanently expanded calendar-plus `New Date` action.
 - Google sign-in is connected to Firebase Authentication on Android.
 - Shopping sessions synchronize through Cloud Firestore with offline queues and
   conflict review. Read `docs/sprint_17_2_sync.md` before changing this system.

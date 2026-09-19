@@ -98,9 +98,16 @@ Sprint 18.4.3 extends that work with:
 - an organized scope picker for the current list, chosen lists, all lists, or
   selected items;
 - direct sharing from long-press item selection without clearing the selection;
-- a readable preview and consistent Copy Text / native Share actions;
+- consistent Copy Text / native Share actions;
 - structured headings, separators, counts, and per-list/combined totals; and
 - the concise `System` label in Appearance.
+
+The following refinement removes the preview-heavy entry point: Lists now uses
+a permanently expanded split FAB with one optional `Share Your List` action.
+That action opens a compact checkbox chooser for one or more lists, while
+long-press selection keeps its direct selected-items flow. The list switcher no
+longer carries a share icon. History restores a permanently expanded
+calendar-plus `New Date` action.
 
 Latest verification performed for this work:
 
@@ -120,6 +127,12 @@ reconnect acceptance still require the device checklist below.
 short landscape share and Move sheets passed at 1.3x text scale. Native share
 destinations, the signed-in Profile card, and subjective spacing still require
 physical-device acceptance.
+
+19 September split-FAB refinement verification: analysis clean; full suite 273
+passed, 7 optional visual tests skipped; Android debug APK built. The compact
+list chooser passed at 320x640 and 640x360 with 1.3x text scale. The native
+share destination sheet and animation feel still require physical-device
+acceptance.
 
 ## 4. Product Purpose and Design Principle
 
@@ -378,15 +391,15 @@ Implemented behavior:
 - do not claim Instagram supports arbitrary plain-text posts; platform behavior
   must be tested through the native share sheet.
 
-The active Lists screen exposes Copy/Share beside the list switcher. History
-record menus expose the same flow for any date, and long-press selection offers
-a direct selected-items share action. The sheet can export the current list,
-one or more chosen lists, all lists, or selected items. Its preview and exported
-text share the same formatter, including clear headings, separators, item
-counts, pending/purchased sections, quantities, notes, prices, per-list totals,
-and an all-lists summary when relevant. The native share destination list
-depends on apps installed on the device; Instagram and other platforms may not
-accept arbitrary plain text.
+The active Lists screen exposes one optional `Share Your List` action above its
+split Add Item FAB. History record menus expose the same flow for any date, and
+long-press selection offers a direct selected-items share action. The compact
+sheet can export one or more chosen lists or selected items without adding a
+preview step. Exported text uses the shared formatter with clear headings,
+separators, item counts, pending/purchased sections, quantities, notes, prices,
+per-list totals, and an all-lists summary when relevant. The native share
+destination list depends on apps installed on the device; Instagram and other
+platforms may not accept arbitrary plain text.
 
 ### Multi-currency shopping
 

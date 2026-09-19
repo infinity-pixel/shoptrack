@@ -453,32 +453,26 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets(
-    'Selected items open the share flow with selected scope and preview',
-    (tester) async {
-      await mount(tester, size: const Size(320, 640), scale: 1.3);
-      await tester.longPress(find.text('Milk'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Copy or Share Selected Items'));
-      await tester.pumpAndSettle();
+  testWidgets('Selected items open the compact share flow without a preview', (
+    tester,
+  ) async {
+    await mount(tester, size: const Size(320, 640), scale: 1.3);
+    await tester.longPress(find.text('Milk'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Copy or Share Selected Items'));
+    await tester.pumpAndSettle();
 
-      expect(find.text('Copy or Share'), findsOneWidget);
-      expect(find.text('Selected Items'), findsOneWidget);
-      expect(find.text('1 item'), findsWidgets);
-      final previews = tester
-          .widgetList<SelectableText>(find.byType(SelectableText))
-          .map((widget) => widget.data ?? widget.textSpan?.toPlainText() ?? '')
-          .join();
-      expect(previews, contains('SELECTED ITEMS'));
-      expect(previews, contains('Milk'));
-      expect(previews, isNot(contains('Rice')));
-      expect(tester.takeException(), isNull);
-      await tester.tap(find.byTooltip('Close'));
-      await tester.pumpAndSettle();
-      expect(find.text('1 Selected'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
+    expect(find.text('Share Selected Items'), findsOneWidget);
+    expect(find.text('1 selected item'), findsOneWidget);
+    expect(find.text('Preview'), findsNothing);
+    expect(find.text('Copy Text'), findsOneWidget);
+    expect(find.text('Share'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 Selected'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets(
     'Remote destination deletion while selecting is preserved for review',

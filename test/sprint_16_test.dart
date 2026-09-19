@@ -7,7 +7,6 @@ import 'package:shoptrack/core/data/shopping_repository.dart';
 import 'package:shoptrack/core/animation/rolling_digit.dart';
 import 'package:shoptrack/core/theme/theme_presets.dart';
 import 'package:shoptrack/core/utils/number_formatter.dart';
-import 'package:shoptrack/core/widgets/scroll_aware_fab.dart';
 import 'package:shoptrack/features/history/presentation/widgets/session_card.dart';
 import 'package:shoptrack/features/home/presentation/pages/home_page.dart';
 import 'package:shoptrack/models/shopping_item.dart';
@@ -243,66 +242,6 @@ void main() {
     expect(find.text('New shopping list'), findsNothing);
     expect(find.widgetWithText(ChoiceChip, 'Grandmother'), findsOneWidget);
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('FAB ignores programmatic scrolling and waits for user travel', (
-    tester,
-  ) async {
-    late BuildContext notificationContext;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
-          builder: (context) {
-            notificationContext = context;
-            return const SizedBox();
-          },
-        ),
-      ),
-    );
-    final controller = ScrollAwareFabController(
-      travelThreshold: 20,
-      settleDelay: const Duration(milliseconds: 50),
-    );
-    final metrics = FixedScrollMetrics(
-      minScrollExtent: 0,
-      maxScrollExtent: 500,
-      pixels: 100,
-      viewportDimension: 300,
-      axisDirection: AxisDirection.down,
-      devicePixelRatio: 1,
-    );
-
-    controller.handleNotification(
-      ScrollStartNotification(metrics: metrics, context: notificationContext),
-    );
-    controller.handleNotification(
-      ScrollUpdateNotification(
-        metrics: metrics,
-        context: notificationContext,
-        scrollDelta: 40,
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 70));
-    expect(controller.isExpanded, isTrue);
-
-    controller.handleNotification(
-      ScrollStartNotification(
-        metrics: metrics,
-        context: notificationContext,
-        dragDetails: DragStartDetails(),
-      ),
-    );
-    controller.handleNotification(
-      ScrollUpdateNotification(
-        metrics: metrics,
-        context: notificationContext,
-        scrollDelta: 24,
-        dragDetails: DragUpdateDetails(globalPosition: Offset.zero),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 70));
-    expect(controller.isExpanded, isFalse);
-    controller.dispose();
   });
 }
 

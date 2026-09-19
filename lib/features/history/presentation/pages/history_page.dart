@@ -29,7 +29,6 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage>
     with SingleTickerProviderStateMixin {
   final LocalShoppingRepository _repository = LocalShoppingRepository();
-  late final ScrollAwareFabController _fabController;
   late final AnimationController _headingGlowController;
   late final Animation<double> _headingGlow;
   List<ShoppingSession> _sessions = [];
@@ -40,7 +39,6 @@ class _HistoryPageState extends State<HistoryPage>
   void initState() {
     super.initState();
     _repository.changes?.addListener(_loadSessions);
-    _fabController = ScrollAwareFabController();
     _headingGlowController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2100),
@@ -61,7 +59,6 @@ class _HistoryPageState extends State<HistoryPage>
   @override
   void dispose() {
     _repository.changes?.removeListener(_loadSessions);
-    _fabController.dispose();
     _headingGlowController.dispose();
     super.dispose();
   }
@@ -115,53 +112,47 @@ class _HistoryPageState extends State<HistoryPage>
         children: [
           _buildSearchBar(),
           Expanded(
-            child: NotificationListener<ScrollNotification>(
-              onNotification: _fabController.handleNotification,
-              child: _loadError != null
-                  ? _buildErrorState()
-                  : _sessions.isEmpty
-                  ? _buildEmptyState()
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
-                      children: [
-                        if (upcoming.isNotEmpty) ...[
-                          _buildSectionHeader(
-                            'UPCOMING',
-                            palette.planned,
-                            animated: true,
-                          ),
-                          ...upcoming.map(_buildSessionCard),
-                          const SizedBox(height: 16),
-                        ],
-                        if (today.isNotEmpty) ...[
-                          _buildSectionHeader(
-                            'TODAY',
-                            palette.today,
-                            animated: true,
-                          ),
-                          ...today.map(_buildSessionCard),
-                          const SizedBox(height: 16),
-                        ],
-                        for (final entry in pastGroups.entries) ...[
-                          _buildSectionHeader(entry.key, palette.textSecondary),
-                          ...entry.value.map(_buildSessionCard),
-                          const SizedBox(height: 16),
-                        ],
+            child: _loadError != null
+                ? _buildErrorState()
+                : _sessions.isEmpty
+                ? _buildEmptyState()
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
+                    children: [
+                      if (upcoming.isNotEmpty) ...[
+                        _buildSectionHeader(
+                          'UPCOMING',
+                          palette.planned,
+                          animated: true,
+                        ),
+                        ...upcoming.map(_buildSessionCard),
+                        const SizedBox(height: 16),
                       ],
-                    ),
-            ),
+                      if (today.isNotEmpty) ...[
+                        _buildSectionHeader(
+                          'TODAY',
+                          palette.today,
+                          animated: true,
+                        ),
+                        ...today.map(_buildSessionCard),
+                        const SizedBox(height: 16),
+                      ],
+                      for (final entry in pastGroups.entries) ...[
+                        _buildSectionHeader(entry.key, palette.textSecondary),
+                        ...entry.value.map(_buildSessionCard),
+                        const SizedBox(height: 16),
+                      ],
+                    ],
+                  ),
           ),
         ],
       ),
-      floatingActionButton: ListenableBuilder(
-        listenable: _fabController,
-        builder: (context, _) => DelayedExtendedFab(
-          expanded: _fabController.isExpanded,
-          onPressed: _showAddCustomDateDialog,
-          icon: const Icon(Icons.add, size: 24),
-          label: 'New Date',
-          tooltip: 'Create a past or future date',
-        ),
+      floatingActionButton: DelayedExtendedFab(
+        expanded: true,
+        onPressed: _showAddCustomDateDialog,
+        icon: const CalendarAddIcon(),
+        label: 'New Date',
+        tooltip: 'Create a past or future date',
       ),
     );
   }

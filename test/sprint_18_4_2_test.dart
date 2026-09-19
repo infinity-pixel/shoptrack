@@ -198,14 +198,20 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Copy or share shopping list'));
+      expect(find.text('Add Item'), findsOneWidget);
+      expect(find.byTooltip('Copy or share shopping list'), findsNothing);
+      await tester.tap(find.byTooltip('More actions'));
+      await tester.pumpAndSettle();
+      expect(find.text('Share Your List'), findsOneWidget);
+      await tester.tap(find.text('Share Your List'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Copy or Share'), findsOneWidget);
-      expect(find.text('Current List'), findsOneWidget);
-      expect(find.text('Choose Lists'), findsOneWidget);
+      expect(find.text('Share Your List'), findsWidgets);
+      expect(find.text('Choose one or more lists'), findsOneWidget);
       expect(find.text('All Lists'), findsOneWidget);
-      expect(find.text('Preview'), findsOneWidget);
+      expect(find.text('My List'), findsWidgets);
+      expect(find.text('Nani'), findsWidgets);
+      expect(find.text('Preview'), findsNothing);
       expect(find.text('Copy Text'), findsOneWidget);
       expect(find.text('Share'), findsOneWidget);
       expect(tester.takeException(), isNull);

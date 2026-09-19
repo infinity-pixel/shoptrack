@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/utils/session_date_manager.dart';
+import '../../../../core/widgets/scroll_aware_fab.dart';
 import '../../../../models/monthly_summary.dart';
 import '../../../../models/shopping_session.dart';
 import '../../../../core/widgets/shopping_list_share_sheet.dart';
@@ -156,7 +157,7 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDateDialog,
-        child: const Icon(Icons.add),
+        child: const CalendarAddIcon(),
       ),
     );
   }

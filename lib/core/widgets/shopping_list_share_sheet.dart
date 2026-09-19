@@ -8,16 +8,14 @@ import '../../models/shopping_session.dart';
 import '../utils/shopping_list_text_formatter.dart';
 import 'shoptrack_modal.dart';
 
-enum _ShareScope { current, choose, all, selected }
-
 enum _ShareAction { copy, share }
 
 class _ShareRequest {
   const _ShareRequest({
     required this.action,
-    this.listIds,
-    this.itemIds,
-    this.selectedItems = false,
+    required this.listIds,
+    required this.itemIds,
+    required this.selectedItems,
   });
 
   final _ShareAction action;
@@ -110,60 +108,35 @@ class _ShoppingListShareSheet extends StatefulWidget {
 }
 
 class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
-  late _ShareScope _scope;
+  late final List<ShoppingListGroup> _availableLists;
+  late final Set<String> _validSelectedItemIds;
+  late final bool _selectedItemsOnly;
   late Set<String> _chosenListIds;
-
-  List<ShoppingListGroup> get _nonEmptyLists => widget.session.orderedLists
-      .where((list) => widget.session.itemsForList(list.id).isNotEmpty)
-      .toList(growable: false);
-
-  ShoppingListGroup? get _currentList {
-    for (final list in _nonEmptyLists) {
-      if (list.id == widget.currentListId) return list;
-    }
-    return null;
-  }
-
-  Set<String> get _validSelectedItemIds {
-    final validIds = widget.session.items.map((item) => item.id).toSet();
-    return widget.selectedItemIds.intersection(validIds);
-  }
 
   @override
   void initState() {
     super.initState();
-    final current = _currentList;
-    _chosenListIds = {if (current != null) current.id};
-    if (_chosenListIds.isEmpty && _nonEmptyLists.isNotEmpty) {
-      _chosenListIds.add(_nonEmptyLists.first.id);
-    }
-    _scope = widget.preferSelectedItems && _validSelectedItemIds.isNotEmpty
-        ? _ShareScope.selected
-        : current != null
-        ? _ShareScope.current
-        : _ShareScope.all;
+    _availableLists = widget.session.orderedLists
+        .where((list) => widget.session.itemsForList(list.id).isNotEmpty)
+        .toList(growable: false);
+    final validItemIds = widget.session.items.map((item) => item.id).toSet();
+    _validSelectedItemIds = widget.selectedItemIds.intersection(validItemIds);
+    _selectedItemsOnly =
+        widget.preferSelectedItems && _validSelectedItemIds.isNotEmpty;
+
+    final currentIsAvailable = _availableLists.any(
+      (list) => list.id == widget.currentListId,
+    );
+    _chosenListIds = currentIsAvailable
+        ? {widget.currentListId!}
+        : _availableLists.map((list) => list.id).toSet();
   }
 
-  Set<String>? get _listIds {
-    return switch (_scope) {
-      _ShareScope.current => {_currentList!.id},
-      _ShareScope.choose => _chosenListIds,
-      _ShareScope.all || _ShareScope.selected => null,
-    };
-  }
+  bool get _allChosen =>
+      _chosenListIds.length == _availableLists.length &&
+      _availableLists.isNotEmpty;
 
-  Set<String>? get _itemIds =>
-      _scope == _ShareScope.selected ? _validSelectedItemIds : null;
-
-  bool get _canExport =>
-      _scope != _ShareScope.choose || _chosenListIds.isNotEmpty;
-
-  String get _preview => ShoppingListTextFormatter.format(
-    widget.session,
-    listIds: _listIds,
-    itemIds: _itemIds,
-    selectedItems: _scope == _ShareScope.selected,
-  );
+  bool get _canExport => _selectedItemsOnly || _chosenListIds.isNotEmpty;
 
   void _finish(_ShareAction action) {
     if (!_canExport) return;
@@ -171,9 +144,11 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
       context,
       _ShareRequest(
         action: action,
-        listIds: _listIds == null ? null : Set.unmodifiable(_listIds!),
-        itemIds: _itemIds == null ? null : Set.unmodifiable(_itemIds!),
-        selectedItems: _scope == _ShareScope.selected,
+        listIds: _selectedItemsOnly ? null : Set.unmodifiable(_chosenListIds),
+        itemIds: _selectedItemsOnly
+            ? Set.unmodifiable(_validSelectedItemIds)
+            : null,
+        selectedItems: _selectedItemsOnly,
       ),
     );
   }
@@ -185,13 +160,15 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .88,
+          maxHeight: MediaQuery.sizeOf(context).height * .82,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ShopTrackSheetHeader(
-              title: 'Copy or Share',
+              title: _selectedItemsOnly
+                  ? 'Share Selected Items'
+                  : 'Share Your List',
               subtitle: DateFormat(
                 'EEEE, d MMMM yyyy',
               ).format(widget.session.date),
@@ -199,123 +176,10 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Choose what to include',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    RadioGroup<_ShareScope>(
-                      groupValue: _scope,
-                      onChanged: (scope) {
-                        if (scope != null) setState(() => _scope = scope);
-                      },
-                      child: Column(
-                        children: [
-                          if (_currentList case final current?)
-                            _scopeTile(
-                              value: _ShareScope.current,
-                              icon: Icons.checklist_rounded,
-                              title: 'Current List',
-                              subtitle: current.name,
-                            ),
-                          if (_nonEmptyLists.length > 1)
-                            _scopeTile(
-                              value: _ShareScope.choose,
-                              icon: Icons.library_add_check_outlined,
-                              title: 'Choose Lists',
-                              subtitle: 'Select one or more lists',
-                            ),
-                          _scopeTile(
-                            value: _ShareScope.all,
-                            icon: Icons.select_all_rounded,
-                            title: 'All Lists',
-                            subtitle:
-                                '${_nonEmptyLists.length} ${_nonEmptyLists.length == 1 ? 'list' : 'lists'}',
-                          ),
-                          if (_validSelectedItemIds.isNotEmpty)
-                            _scopeTile(
-                              value: _ShareScope.selected,
-                              icon: Icons.done_all_rounded,
-                              title: 'Selected Items',
-                              subtitle:
-                                  '${_validSelectedItemIds.length} ${_validSelectedItemIds.length == 1 ? 'item' : 'items'}',
-                            ),
-                        ],
-                      ),
-                    ),
-                    if (_scope == _ShareScope.choose) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: colors.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
-                          children: [
-                            for (final list in _nonEmptyLists)
-                              CheckboxListTile(
-                                dense: true,
-                                value: _chosenListIds.contains(list.id),
-                                title: Text(list.name),
-                                subtitle: Text(
-                                  '${widget.session.itemsForList(list.id).length} ${widget.session.itemsForList(list.id).length == 1 ? 'item' : 'items'}',
-                                ),
-                                onChanged: (checked) => setState(() {
-                                  if (checked ?? false) {
-                                    _chosenListIds.add(list.id);
-                                  } else {
-                                    _chosenListIds.remove(list.id);
-                                  }
-                                }),
-                              ),
-                          ],
-                        ),
-                      ),
-                      if (_chosenListIds.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                          child: Text(
-                            'Select at least one list.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.error,
-                            ),
-                          ),
-                        ),
-                    ],
-                    const SizedBox(height: 16),
-                    Text(
-                      'Preview',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 180),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: colors.outlineVariant),
-                      ),
-                      child: SingleChildScrollView(
-                        child: SelectableText(
-                          _preview,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            height: 1.45,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: _selectedItemsOnly
+                    ? _selectedSummary(theme, colors)
+                    : _listChooser(theme, colors),
               ),
             ),
             Container(
@@ -354,19 +218,103 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
     );
   }
 
-  Widget _scopeTile({
-    required _ShareScope value,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return RadioListTile<_ShareScope>(
-      dense: true,
-      value: value,
-      secondary: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+  Widget _selectedSummary(ThemeData theme, ColorScheme colors) {
+    final count = _validSelectedItemIds.length;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.done_all_rounded, color: colors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$count selected ${count == 1 ? 'item' : 'items'}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _listChooser(ThemeData theme, ColorScheme colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Choose one or more lists',
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Material(
+          color: colors.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.outlineVariant),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              if (_availableLists.length > 1) ...[
+                CheckboxListTile(
+                  dense: true,
+                  value: _allChosen,
+                  title: const Text('All Lists'),
+                  subtitle: Text('${_availableLists.length} lists'),
+                  secondary: const Icon(Icons.select_all_rounded),
+                  onChanged: (checked) => setState(() {
+                    _chosenListIds = checked ?? false
+                        ? _availableLists.map((list) => list.id).toSet()
+                        : <String>{};
+                  }),
+                ),
+                Divider(height: 1, color: colors.outlineVariant),
+              ],
+              for (var index = 0; index < _availableLists.length; index++) ...[
+                Builder(
+                  builder: (context) {
+                    final list = _availableLists[index];
+                    final count = widget.session.itemsForList(list.id).length;
+                    return CheckboxListTile(
+                      dense: true,
+                      value: _chosenListIds.contains(list.id),
+                      title: Text(list.name),
+                      subtitle: Text('$count ${count == 1 ? 'item' : 'items'}'),
+                      secondary: const Icon(Icons.checklist_rounded),
+                      onChanged: (checked) => setState(() {
+                        if (checked ?? false) {
+                          _chosenListIds.add(list.id);
+                        } else {
+                          _chosenListIds.remove(list.id);
+                        }
+                      }),
+                    );
+                  },
+                ),
+                if (index != _availableLists.length - 1)
+                  Divider(height: 1, color: colors.outlineVariant),
+              ],
+            ],
+          ),
+        ),
+        if (_chosenListIds.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Text(
+              'Select at least one list.',
+              style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+            ),
+          ),
+      ],
     );
   }
 }

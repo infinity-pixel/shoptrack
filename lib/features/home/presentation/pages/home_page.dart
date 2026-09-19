@@ -58,7 +58,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   List<FrequentItemSuggestion> _frequentSuggestions = [];
   bool _isLoading = true;
   late final ScrollController _scrollController;
-  late final ScrollAwareFabController _fabController;
   String _activeListId = ShoppingListGroup.defaultId;
   final Set<String> _transitioningItemIds = <String>{};
   final Map<String, bool> _checkmarkTransitionStates = <String, bool>{};
@@ -68,7 +67,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _fabController = ScrollAwareFabController();
     _frequentItemsService = FrequentItemsService(_repository);
     _repository.changes?.addListener(_onShoppingChanged);
     _loadSession().then((_) {
@@ -102,7 +100,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void dispose() {
     _repository.changes?.removeListener(_onShoppingChanged);
     _scrollController.dispose();
-    _fabController.dispose();
     super.dispose();
   }
 
@@ -839,100 +836,94 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 _buildListSwitcher(),
                 // Content Area
                 Expanded(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _fabController.handleNotification,
-                    child: !hasActiveListItems
-                        ? _buildEmptyState()
-                        : ListView(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            children: [
-                              if (allPurchased) _buildCompletedState(),
+                  child: !hasActiveListItems
+                      ? _buildEmptyState()
+                      : ListView(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          children: [
+                            if (allPurchased) _buildCompletedState(),
 
-                              // To Buy Section
-                              if (activeItems.isNotEmpty) ...[
-                                _buildSectionLabel(
-                                  'To Buy',
-                                  Icons.shopping_cart_outlined,
-                                  activeItems.length,
-                                ),
-                                const SizedBox(height: 8),
-                                ReorderableListView.builder(
-                                  buildDefaultDragHandles: false,
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: activeItems.length,
-                                  proxyDecorator: _buildReorderProxy,
-                                  // ignore: deprecated_member_use
-                                  onReorder: (oldIndex, newIndex) => _onReorder(
-                                    activeItems,
-                                    oldIndex,
-                                    newIndex,
-                                  ),
-                                  itemBuilder: (context, index) {
-                                    final item = activeItems[index];
-                                    return KeyedSubtree(
-                                      key: _itemKey(item.id),
-                                      child: Opacity(
-                                        opacity:
-                                            _transitioningItemIds.contains(
-                                              item.id,
-                                            )
-                                            ? 0
-                                            : 1,
-                                        child: _shoppingTile(item, index),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-                                _buildTotalAmountRow(),
-                                const SizedBox(height: 28),
-                              ],
-
-                              // Purchased Section
-                              if (purchasedItems.isNotEmpty) ...[
-                                _buildSectionLabel(
-                                  'Purchased',
-                                  Icons.check_circle_outline,
-                                  purchasedItems.length,
-                                ),
-                                const SizedBox(height: 8),
-                                ReorderableListView.builder(
-                                  buildDefaultDragHandles: false,
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: purchasedItems.length,
-                                  proxyDecorator: _buildReorderProxy,
-                                  // ignore: deprecated_member_use
-                                  onReorder: (oldIndex, newIndex) => _onReorder(
-                                    purchasedItems,
-                                    oldIndex,
-                                    newIndex,
-                                  ),
-                                  itemBuilder: (context, index) {
-                                    final item = purchasedItems[index];
-                                    return KeyedSubtree(
-                                      key: _itemKey(item.id),
-                                      child: Opacity(
-                                        opacity:
-                                            _transitioningItemIds.contains(
-                                              item.id,
-                                            )
-                                            ? 0
-                                            : 1,
-                                        child: _shoppingTile(item, index),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 20),
-                                _buildPurchasedAmountCard(),
-                              ],
-                              const SizedBox(height: 100), // FAB Clearance
+                            // To Buy Section
+                            if (activeItems.isNotEmpty) ...[
+                              _buildSectionLabel(
+                                'To Buy',
+                                Icons.shopping_cart_outlined,
+                                activeItems.length,
+                              ),
+                              const SizedBox(height: 8),
+                              ReorderableListView.builder(
+                                buildDefaultDragHandles: false,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: activeItems.length,
+                                proxyDecorator: _buildReorderProxy,
+                                // ignore: deprecated_member_use
+                                onReorder: (oldIndex, newIndex) =>
+                                    _onReorder(activeItems, oldIndex, newIndex),
+                                itemBuilder: (context, index) {
+                                  final item = activeItems[index];
+                                  return KeyedSubtree(
+                                    key: _itemKey(item.id),
+                                    child: Opacity(
+                                      opacity:
+                                          _transitioningItemIds.contains(
+                                            item.id,
+                                          )
+                                          ? 0
+                                          : 1,
+                                      child: _shoppingTile(item, index),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              _buildTotalAmountRow(),
+                              const SizedBox(height: 28),
                             ],
-                          ),
-                  ),
+
+                            // Purchased Section
+                            if (purchasedItems.isNotEmpty) ...[
+                              _buildSectionLabel(
+                                'Purchased',
+                                Icons.check_circle_outline,
+                                purchasedItems.length,
+                              ),
+                              const SizedBox(height: 8),
+                              ReorderableListView.builder(
+                                buildDefaultDragHandles: false,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: purchasedItems.length,
+                                proxyDecorator: _buildReorderProxy,
+                                // ignore: deprecated_member_use
+                                onReorder: (oldIndex, newIndex) => _onReorder(
+                                  purchasedItems,
+                                  oldIndex,
+                                  newIndex,
+                                ),
+                                itemBuilder: (context, index) {
+                                  final item = purchasedItems[index];
+                                  return KeyedSubtree(
+                                    key: _itemKey(item.id),
+                                    child: Opacity(
+                                      opacity:
+                                          _transitioningItemIds.contains(
+                                            item.id,
+                                          )
+                                          ? 0
+                                          : 1,
+                                      child: _shoppingTile(item, index),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              _buildPurchasedAmountCard(),
+                            ],
+                            const SizedBox(height: 100), // FAB Clearance
+                          ],
+                        ),
                 ),
               ],
             ),
@@ -1203,11 +1194,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           }
           if (mounted) _showListActions(list);
         },
-        onShare: () => showShoppingListShareSheet(
-          context,
-          _currentSession,
-          currentListId: _activeListId,
-        ),
       ),
     );
   }
@@ -1373,14 +1359,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   });
 
   Widget _buildFAB() {
-    return ListenableBuilder(
-      listenable: _fabController,
-      builder: (context, _) => DelayedExtendedFab(
-        expanded: _fabController.isExpanded,
-        onPressed: () => _openAddSheet(),
-        icon: const Icon(Icons.add),
-        label: 'Add Item',
-        tooltip: 'Add item',
+    return ShoppingSplitFab(
+      onAddPressed: () => _openAddSheet(),
+      onSharePressed: () => showShoppingListShareSheet(
+        context,
+        _currentSession,
+        currentListId: _activeListId,
       ),
     );
   }
