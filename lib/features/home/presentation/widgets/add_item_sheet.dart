@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/currency/currency_catalog.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/utils/pricing_calculator.dart';
 import '../../../../models/frequent_item_suggestion.dart';
@@ -184,6 +185,8 @@ class _AddItemSheetState extends State<AddItemSheet> {
           : _quantityController.text.trim(),
       quantityValue: double.tryParse(_quantityController.text),
       priceValue: price,
+      currencyCode:
+          widget.initialItem?.currencyCode ?? CurrencyCatalog.defaultCode,
       pricingMode: _pricingMode,
       shoppingUnit: _selectedUnit,
       priceBasis: _selectedPriceBasis,
@@ -222,7 +225,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
 
       if (item.priceValue != null) {
         _priceReferenceText =
-            'Last used price: ${NumberFormatter.formatPrice(item.priceValue!)}';
+            'Last used price: ${NumberFormatter.formatPrice(item.priceValue!, currencyCode: item.currencyCode)}';
       } else {
         _priceReferenceText = null;
       }

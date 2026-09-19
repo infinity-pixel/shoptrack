@@ -1,3 +1,4 @@
+import '../core/currency/currency_catalog.dart';
 import '../core/utils/pricing_calculator.dart';
 
 enum PricingMode { total, unit }
@@ -78,6 +79,7 @@ class ShoppingItem {
   // New Pricing System Fields
   final double? quantityValue;
   final double? priceValue;
+  final String currencyCode;
   final PricingMode pricingMode;
   final ShoppingUnit? shoppingUnit;
   final ShoppingUnit? priceBasis;
@@ -96,6 +98,7 @@ class ShoppingItem {
     this.isPurchased = false,
     this.quantityValue,
     this.priceValue,
+    this.currencyCode = CurrencyCatalog.defaultCode,
     this.pricingMode = PricingMode.total,
     this.shoppingUnit,
     this.priceBasis,
@@ -126,6 +129,7 @@ class ShoppingItem {
       'isPurchased': isPurchased,
       'quantityValue': quantityValue,
       'priceValue': priceValue,
+      'currencyCode': currencyCode,
       'pricingMode': pricingMode.name,
       'shoppingUnit': shoppingUnit?.name,
       'priceBasis': priceBasis?.name,
@@ -145,6 +149,7 @@ class ShoppingItem {
       isPurchased: json['isPurchased'] as bool? ?? false,
       quantityValue: (json['quantityValue'] as num?)?.toDouble(),
       priceValue: (json['priceValue'] as num?)?.toDouble(),
+      currencyCode: CurrencyCatalog.normalizeItemCode(json['currencyCode']),
       pricingMode: PricingMode.values.firstWhere(
         (e) => e.name == json['pricingMode'],
         orElse: () => PricingMode.total,
@@ -172,6 +177,7 @@ class ShoppingItem {
     bool? isPurchased,
     double? quantityValue,
     double? priceValue,
+    String? currencyCode,
     PricingMode? pricingMode,
     ShoppingUnit? shoppingUnit,
     ShoppingUnit? priceBasis,
@@ -188,6 +194,7 @@ class ShoppingItem {
       isPurchased: isPurchased ?? this.isPurchased,
       quantityValue: quantityValue ?? this.quantityValue,
       priceValue: priceValue ?? this.priceValue,
+      currencyCode: currencyCode ?? this.currencyCode,
       pricingMode: pricingMode ?? this.pricingMode,
       shoppingUnit: shoppingUnit ?? this.shoppingUnit,
       priceBasis: priceBasis ?? this.priceBasis,

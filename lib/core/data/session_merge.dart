@@ -101,6 +101,7 @@ class SessionMerge {
         'price',
         'quantityValue',
         'priceValue',
+        'currencyCode',
         'pricingMode',
         'shoppingUnit',
         'priceBasis',

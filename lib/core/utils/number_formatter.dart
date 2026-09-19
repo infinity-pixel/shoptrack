@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 
+import '../currency/currency_catalog.dart';
+
 class NumberFormatter {
   /// Formats a number with international thousands separators (commas).
   /// Preserves decimals but removes unnecessary trailing zeros.
@@ -18,17 +20,30 @@ class NumberFormatter {
     return format(value);
   }
 
-  /// Formats a price with currency symbol and separators.
-  /// If there are decimals, shows up to 2 decimal places.
-  static String formatPrice(double price) {
-    if (price == 0) return '৳0';
+  /// Formats a price with its currency symbol and minor-unit precision.
+  static String formatPrice(
+    double price, {
+    String currencyCode = CurrencyCatalog.defaultCode,
+    bool includeCode = false,
+  }) {
+    final currency = CurrencyCatalog.resolve(currencyCode);
+    final symbol = currency.symbol;
+    final marker = symbol.isEmpty ? '${currency.code} ' : symbol;
+    final prefix = includeCode && symbol.isNotEmpty
+        ? '${currency.code} $symbol'
+        : marker;
+    if (price == 0) return '${prefix}0';
 
     if (price == price.roundToDouble()) {
-      return '৳${NumberFormat("#,##0", "en_US").format(price)}';
+      return '$prefix${NumberFormat("#,##0", "en_US").format(price)}';
     }
 
-    // For prices with decimals, usually 2 decimal places is standard.
-    // The requirement says: 500.50 -> 500.50
-    return '৳${NumberFormat("#,##0.00", "en_US").format(price)}';
+    // Preserve meaningful calculated unit prices even for zero-minor-unit
+    // currencies while respecting currencies that use three decimal places.
+    final decimalDigits = currency.decimalDigits < 2
+        ? 2
+        : currency.decimalDigits;
+    final pattern = '#,##0.${'0' * decimalDigits}';
+    return '$prefix${NumberFormat(pattern, "en_US").format(price)}';
   }
 }

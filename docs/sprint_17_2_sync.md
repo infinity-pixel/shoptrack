@@ -39,9 +39,11 @@ Drive backup files are not automatically imported or overwritten by sync.
 
 `users/<Firebase UID>/sessions/<YYYY-MM-DD>`:
 
-- `schema: 1`, `revision`, `updatedAt`, `deleted`, `session`
+- `schema: 1|2`, `revision`, `updatedAt`, `deleted`, `session`
 - One document per shopping date; `session` contains the existing model JSON.
 - Deleted dates use tombstones so offline clients cannot silently resurrect them.
+- Sprint 19 reads legacy schema 1 and writes schema 2. Schema 2 guarantees that
+  an older client rejects per-item currencies instead of stripping them.
 
 `users/<Firebase UID>/syncOperations/<operation UUID>`:
 
@@ -53,8 +55,10 @@ Drive backup files are not automatically imported or overwritten by sync.
 
 Transactions read the current session and operation receipt, then perform a
 three-way merge against the editor's baseline. Independent changes merge;
-different edits to the same field require review. All financial input fields
-are merged as one group. List deletion versus new items also requires review.
+different edits to the same field require review. Quantity, price, pricing
+mode, unit/basis, and `currencyCode` are merged as one atomic group so a price
+can never silently acquire the currency from another device's concurrent edit.
+List deletion versus new items also requires review.
 Future-to-Today transfers commit both dates in one transaction; either both
 succeed or both require review. Transfer conflict choices apply to both dates.
 Local acknowledgement of a transfer is also one envelope write.
@@ -62,6 +66,12 @@ Local acknowledgement of a transfer is also one envelope write.
 Server revisions prevent a delayed acknowledgement from overwriting newer
 snapshots. Cache/pending-write snapshots are not treated as proof of cloud save.
 Open item/list editors retain their baseline while remote changes arrive.
+
+Sprint 19 adds `currencyCode` to each item without changing the Firestore
+document path. Readers treat a missing item currency as BDT, matching all data
+created before multi-currency support. Valid unknown
+three-letter codes are preserved for forward compatibility. Totals are derived
+per currency and are never converted or combined across currencies.
 
 The existing UID-owner `firestore.rules` covers sessions and receipts. This turn
 did not modify or publish production rules, upload production records, change

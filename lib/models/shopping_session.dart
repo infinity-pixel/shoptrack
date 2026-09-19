@@ -1,3 +1,4 @@
+import '../core/currency/currency_totals.dart';
 import 'shopping_item.dart';
 import 'shopping_list_group.dart';
 
@@ -37,12 +38,18 @@ class ShoppingSession {
   int get pendingCount => items.where((i) => !i.isPurchased).length;
   int get plannedCount => isFuture ? pendingCount : items.length;
 
-  double get totalPurchasedAmount => items
-      .where((i) => i.isPurchased)
-      .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
+  CurrencyTotals get totalsByCurrency => CurrencyTotals.fromItems(items);
 
-  double get totalAmount =>
-      items.fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
+  CurrencyTotals get pendingTotalsByCurrency =>
+      CurrencyTotals.fromItems(items, where: (item) => !item.isPurchased);
+
+  CurrencyTotals get purchasedTotalsByCurrency =>
+      CurrencyTotals.fromItems(items, where: (item) => item.isPurchased);
+
+  double get totalPurchasedAmount =>
+      purchasedTotalsByCurrency.singleValueOrZero;
+
+  double get totalAmount => totalsByCurrency.singleValueOrZero;
 
   List<ShoppingListGroup> get orderedLists {
     final result = lists.isEmpty

@@ -87,7 +87,10 @@ class SearchResultCard extends StatelessWidget {
                   child: Text(
                     result.status == SearchItemStatus.purchased &&
                             item.priceValue != null
-                        ? NumberFormatter.formatPrice(item.pricing.totalPrice)
+                        ? NumberFormatter.formatPrice(
+                            item.pricing.totalPrice,
+                            currencyCode: item.currencyCode,
+                          )
                         : '—',
                     textAlign: TextAlign.right,
                     style: TextStyle(

@@ -29,6 +29,8 @@ abstract class SyncRemote {
 
 class FirestoreSyncRemote implements SyncRemote {
   FirestoreSyncRemote(this.firestore);
+  static const int _currentSessionSchema = 2;
+
   final FirebaseFirestore firestore;
 
   CollectionReference<Json> _sessions(String uid) =>
@@ -36,7 +38,8 @@ class FirestoreSyncRemote implements SyncRemote {
 
   Json? _read(Json? document) {
     if (document == null) return null;
-    if (document['schema'] != 1) {
+    final schema = document['schema'];
+    if (schema != 1 && schema != _currentSessionSchema) {
       throw const FormatException(
         'This cloud data requires a newer ShopTrack version',
       );
@@ -140,7 +143,7 @@ class FirestoreSyncRemote implements SyncRemote {
         }
         if (changed) {
           transaction.set(docs[i], {
-            'schema': 1,
+            'schema': _currentSessionSchema,
             'deleted': result == null,
             'session': result,
             'revision': revisions[i] + 1,

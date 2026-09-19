@@ -57,6 +57,12 @@ that adds friction needs a clear user benefit.
   deletions offer Undo. Swipe deletion remains immediate with Undo.
 - Shopping sessions support named lists, pricing, purchase state, ordering,
   multi-select move/delete, history search, and custom date-range selection.
+- Sprint 19 adds the multi-currency data foundation: every priced item owns an
+  ISO currency code, legacy items migrate to BDT, settings retain a default and
+  bounded recent choices, totals group by currency with no implicit conversion,
+  and currency travels through local storage, backup, sharing, merge, and sync.
+  New exports use backup schema 2 so older builds cannot strip item currencies.
+  The currency picker and grouped-total UI are not implemented yet.
 - Any shopping date can be copied or shared as structured plain text. Users can
   export the current list, chosen lists, all lists, or a long-press selection;
   output includes pending/purchased states, quantities, notes, prices, and
@@ -130,14 +136,18 @@ These are release-blocking invariants. Do not weaken them for a quicker UI fix.
 - Firestore ownership is rooted at `users/<Firebase UID>`; sessions live at
   `users/<UID>/sessions/<YYYY-MM-DD>` and retry receipts at
   `users/<UID>/syncOperations/<operation UUID>`.
+- Currency-aware session envelopes use schema 2; readers still accept schema 1
+  as legacy BDT. Do not downgrade schema 2 writes or older clients may strip
+  per-item currency codes.
 - Use the Firebase UID as the ownership boundary. Never substitute email,
   display name, Google provider ID, or a locally remembered account.
 - Keep operation IDs idempotent, retain tombstones/receipts unless a separately
   designed migration safely prunes them, and do not treat cached snapshots as
   proof of a server save.
-- Preserve the three-way merge contract in `session_merge.dart`. Pricing fields
-  are one atomic group; list ID and position are another. Concurrent conflicting
-  edits must be retained for review, not resolved by last-write-wins guessing.
+- Preserve the three-way merge contract in `session_merge.dart`. Quantity,
+  price, pricing mode, unit/basis, and item currency are one atomic group; list
+  ID and position are another. Concurrent conflicting edits must be retained
+  for review, not resolved by last-write-wins guessing.
 - Moves within one shopping date preserve item IDs and all item details. A
   Future-to-Today transfer spans two dates and must remain atomic.
 - Move Undo restores only placement and preserves subsequent item edits. Refuse

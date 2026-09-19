@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../core/currency/currency_catalog.dart';
 import '../core/data/settings_repository.dart';
 import '../models/app_settings.dart';
 
@@ -48,7 +50,22 @@ class SettingsService extends ChangeNotifier {
   }
 
   Future<void> updateCurrency(String currency) async {
-    _settings = _settings.copyWith(currency: currency);
+    final normalized = CurrencyCatalog.normalizeDefaultCode(currency);
+    _settings = _settings.copyWith(
+      currency: normalized,
+      recentCurrencies: CurrencyCatalog.sanitizeRecentCodes(
+        _settings.recentCurrencies,
+        defaultCurrencyCode: normalized,
+      ),
+    );
+    await _repository.saveSettings(_settings);
+    notifyListeners();
+  }
+
+  Future<void> recordRecentCurrency(String currency) async {
+    final updated = _settings.recordRecentCurrency(currency);
+    if (identical(updated, _settings)) return;
+    _settings = updated;
     await _repository.saveSettings(_settings);
     notifyListeners();
   }

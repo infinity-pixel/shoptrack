@@ -99,6 +99,7 @@ void main() {
       final remote = FirestoreSyncRemote(db);
       final first = operation('first', null, record('Milk'));
       expect((await remote.apply('alice', first)).revision, 1);
+      expect(db.documents['users/alice/sessions/2026-09-15']!['schema'], 2);
       await remote.apply(
         'alice',
         operation('second', record('Milk'), record('Fresh Milk')),
@@ -206,5 +207,29 @@ void main() {
       db.documents['users/bob/sessions/2026-09-15']!['session']['items'][0]['name'],
       'Bob Milk',
     );
+  });
+
+  test('Schema 2 round-trip preserves item currency', () async {
+    final db = TestFirestore();
+    final remote = FirestoreSyncRemote(db);
+    final value = ShoppingSession(
+      id: 'currency',
+      date: DateTime(2026, 9, 15),
+      items: const [
+        ShoppingItem(
+          id: 'coffee',
+          name: 'Coffee',
+          priceValue: 5,
+          currencyCode: 'USD',
+        ),
+      ],
+    ).toJson();
+
+    final reply = await remote.apply(
+      'alice',
+      operation('currency', null, value),
+    );
+    expect(reply.value!['items'][0]['currencyCode'], 'USD');
+    expect(db.documents['users/alice/sessions/2026-09-15']!['schema'], 2);
   });
 }

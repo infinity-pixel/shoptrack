@@ -244,7 +244,10 @@ class ShoppingItemTile extends StatelessWidget {
                   children: [
                     if (pricing.totalPrice > 0)
                       Text(
-                        NumberFormatter.formatPrice(pricing.totalPrice),
+                        NumberFormatter.formatPrice(
+                          pricing.totalPrice,
+                          currencyCode: item.currencyCode,
+                        ),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -255,7 +258,7 @@ class ShoppingItemTile extends StatelessWidget {
                       ),
                     if (pricing.unitPrice > 0)
                       Text(
-                        '${NumberFormatter.formatPrice(pricing.unitPrice)}/${pricing.priceBasisSymbol}',
+                        '${NumberFormatter.formatPrice(pricing.unitPrice, currencyCode: item.currencyCode)}/${pricing.priceBasisSymbol}',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,

@@ -1,8 +1,10 @@
-import 'shopping_session.dart';
 import 'app_settings.dart';
+import 'shopping_session.dart';
 
 class AppBackup {
-  static const int currentVersion = 1;
+  // Version 2 adds per-item currency. Older builds reject this version instead
+  // of silently stripping currency codes from a restored multi-currency file.
+  static const int currentVersion = 2;
 
   final int backupVersion;
   final String appVersion;
@@ -33,7 +35,7 @@ class AppBackup {
     if (!json.containsKey('backupVersion')) {
       throw const FormatException('Missing backupVersion');
     }
-    
+
     final int version = json['backupVersion'] as int;
     if (version > currentVersion) {
       throw FormatException('Unsupported backup version: $version');

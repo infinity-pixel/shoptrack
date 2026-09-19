@@ -75,10 +75,30 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 18.4.3 — scoped list sharing and polished
-  plain-text exports**.
-- Its preceding revision is `da15069` —
-  `Sprint 18.4.2: Add list sharing and responsive UI refinements`.
+- Current local milestone: **Sprint 19 — multi-currency model foundation**.
+- Its baseline revision is `14b5bd4` —
+  `Polish contextual sharing and dark item presentation`.
+
+Sprint 19 foundation work includes:
+
+- a current, searchable ISO payment-currency catalogue backed by `money2`,
+  excluding deprecated, digital, metal, fund, test, and no-currency units;
+- one persisted `currencyCode` per item, with missing legacy values migrating
+  to BDT and valid unknown future codes preserved;
+- a default currency plus six bounded, unique recent choices in local settings;
+- fixed-minor-unit totals grouped into pending, purchased, session, and monthly
+  currency buckets, with no automatic conversion or cross-currency addition;
+- per-currency plain-text sharing, number formatting, backup round trips, and
+  atomic currency/price merge behavior for Firestore sync;
+- backup version 2 and Firestore session-envelope schema 2, so older builds
+  reject currency-aware data rather than silently stripping item codes; and
+- regression coverage for catalogue filtering, migration, settings, totals,
+  sharing, backup, and three-way merge behavior.
+
+The Profile currency selector, item-editor picker, animated multi-currency total
+rows, and compact History total layout remain the next UI increment. A newly
+opened editor must start with the Profile default; choosing another currency
+records it as recent but must not change the next editor's default.
 
 Sprint 18.4.2 work includes:
 
@@ -134,6 +154,12 @@ passed, 7 optional visual tests skipped; Android debug APK built. The compact
 list chooser passed at 320x640 and 640x360 with 1.3x text scale. The native
 share destination sheet and animation feel still require physical-device
 acceptance.
+
+19 September Sprint 19 foundation verification: analysis clean; full suite 295
+passed, 7 optional visual tests skipped; Android debug APK built. Currency
+catalogue, legacy migration, fixed-precision grouped totals, recent/default
+settings, backup, sharing, and atomic sync merge behavior have direct tests.
+The selector and grouped-total UI remain deliberately outside this commit.
 
 ## 4. Product Purpose and Design Principle
 
@@ -214,14 +240,15 @@ Implemented behavior includes:
 - local JSON export/restore;
 - Google Drive App Data backup/restore as a separate advanced system;
 - About and app-version UI;
-- a dedicated Appearance screen, plus currency and language placeholder
-  dialogs.
+- a dedicated Appearance screen, a currency placeholder dialog backed by the
+  Sprint 19 model foundation, and a language placeholder dialog.
 
 Important distinction: the ShopTrack display name/photo is local app profile
 data. It does not edit the user's Google account.
 
-Currency and language are currently preference placeholders, not complete
-internationalization or multi-currency systems.
+The visible currency picker/grouped-total UI and language selection remain
+placeholders. The underlying per-item currency, catalogue, grouped totals,
+settings, persistence, backup, sharing, and sync contracts are implemented.
 
 ## 6. Theme System and Approved Visual Identities
 
@@ -421,10 +448,13 @@ Approved product direction:
 - in History cards, separate compact currency totals with vertical dividers and
   wrap when space is insufficient.
 
-Current reality: `AppSettings.currency` is one global string and
-`ShoppingItem` has no currency field. Multi-currency is a model, persistence,
-pricing, backup, search, history, sync, merge, and migration change—not a small
-UI enhancement. Design the schema and compatibility tests before editing UI.
+Current reality: the data architecture is implemented. `ShoppingItem` owns a
+`currencyCode`; legacy items become BDT; `AppSettings` stores the default and a
+bounded recent list; fixed-precision totals, backup, sharing, and sync merge all
+remain currency-aware. The visible Profile picker, item-editor selection dialog,
+animated grouped totals, currency headings, and History-card wrapping are still
+pending. Until that UI lands, the current app cannot create mixed-currency data
+through ordinary interaction.
 
 ### Receipt-photo import / OCR
 
@@ -494,7 +524,7 @@ The safest path to a tester-ready build is:
 
 ### Phase D — larger post-pilot features
 
-1. Multi-currency architecture and migration.
+1. Multi-currency picker and grouped-total UI on the completed architecture.
 2. Receipt OCR with mandatory confirmation.
 3. Rating, feedback, and optional donation flow.
 4. iOS Firebase setup and Apple sign-in.
