@@ -62,9 +62,13 @@ that adds friction needs a clear user benefit.
   output includes pending/purchased states, quantities, notes, prices, and
   scoped totals. Native destination support still depends on installed apps.
 - Lists keeps Add Item permanently expanded and exposes the single optional
-  `Share Your List` action through its split FAB. The follow-up sheet uses a
-  compact one-or-more-list chooser without an export preview. History keeps a
+  `Share Your List` action through its split FAB. The action animates above the
+  FAB and closes on an outside tap, Back, or selection. The follow-up sheet uses
+  a compact one-or-more-list chooser without an export preview. History keeps a
   permanently expanded calendar-plus `New Date` action.
+- Item notes appear as one compact ellipsized line on shopping cards when
+  present. Item editors use a raised field surface across every dark theme so
+  controls remain distinct from their containing sheet.
 - Google sign-in is connected to Firebase Authentication on Android.
 - Shopping sessions synchronize through Cloud Firestore with offline queues and
   conflict review. Read `docs/sprint_17_2_sync.md` before changing this system.

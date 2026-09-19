@@ -419,7 +419,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: colors.surfaceContainerLow,
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).inputDecorationTheme.fillColor
+                      : colors.surfaceContainerLow,
                 ),
                 onChanged: (value) {
                   if (_errorText != null && value.trim().isNotEmpty) {

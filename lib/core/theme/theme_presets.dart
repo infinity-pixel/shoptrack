@@ -86,7 +86,11 @@ class ThemeDefinition {
       ),
       inputDecorationTheme: brightness == Brightness.dark
           ? InputDecorationTheme(
-              fillColor: palette.background,
+              filled: true,
+              fillColor: Color.alphaBlend(
+                palette.onSurface.withValues(alpha: .055),
+                palette.surface,
+              ),
               labelStyle: TextStyle(color: palette.textSecondary),
               hintStyle: TextStyle(color: palette.textSecondary),
               enabledBorder: OutlineInputBorder(

@@ -16,13 +16,13 @@ class ShopTrackNavigationBar extends StatelessWidget {
   static const _labels = ['Lists', 'History', 'Profile'];
   static const _outlinedIcons = [
     Icons.list_alt_outlined,
-    Icons.watch_later_outlined,
-    Icons.person_outlined,
+    Icons.history_outlined,
+    Icons.manage_accounts_outlined,
   ];
   static const _filledIcons = [
     Icons.list_alt_rounded,
-    Icons.watch_later_rounded,
-    Icons.person_rounded,
+    Icons.history,
+    Icons.manage_accounts,
   ];
 
   @override

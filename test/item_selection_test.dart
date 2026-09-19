@@ -142,6 +142,49 @@ void main() {
   });
   tearDown(() => LocalShoppingRepository.activeStore = null);
 
+  testWidgets('Item notes add one compact ellipsized line only when present', (
+    tester,
+  ) async {
+    const base = ShoppingItem(id: 'apple', name: 'Apple');
+    const longNote =
+        'I want green apple and please make sure every apple is still firm';
+
+    Widget app(ShoppingItem item) => MaterialApp(
+      theme: ThemePresets.darkPresets.values.first.toThemeData(),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: SizedBox(
+            width: 320,
+            child: ShoppingItemTile(
+              item: item,
+              index: 0,
+              onToggle: () {},
+              onTap: () {},
+              onDelete: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(app(base));
+    final compactHeight = tester
+        .getSize(find.byKey(const ValueKey('shopping-item-tile-apple')))
+        .height;
+    expect(find.text(longNote), findsNothing);
+
+    await tester.pumpWidget(app(base.copyWith(notes: longNote)));
+    await tester.pump();
+    final notedHeight = tester
+        .getSize(find.byKey(const ValueKey('shopping-item-tile-apple')))
+        .height;
+    final note = tester.widget<Text>(find.text(longNote));
+    expect(note.maxLines, 1);
+    expect(note.overflow, TextOverflow.ellipsis);
+    expect(notedHeight, greaterThan(compactHeight));
+    expect(tester.takeException(), isNull);
+  });
+
   test(
     'Move both ways preserves identity, pricing, purchase status, and date totals',
     () {

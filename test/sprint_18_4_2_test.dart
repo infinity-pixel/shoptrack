@@ -203,6 +203,27 @@ void main() {
       await tester.tap(find.byTooltip('More actions'));
       await tester.pumpAndSettle();
       expect(find.text('Share Your List'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('share-fab-action')).hitTestable(),
+        findsOneWidget,
+      );
+      await tester.tapAt(const Offset(8, 8));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('share-fab-action')).hitTestable(),
+        findsNothing,
+      );
+      await tester.tap(find.byTooltip('More actions'));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(HomePage), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('share-fab-action')).hitTestable(),
+        findsNothing,
+      );
+      await tester.tap(find.byTooltip('More actions'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Share Your List'));
       await tester.pumpAndSettle();
 

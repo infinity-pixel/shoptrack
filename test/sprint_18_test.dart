@@ -257,7 +257,7 @@ void main() {
     );
     expect(
       find.ancestor(
-        of: find.byIcon(Icons.watch_later_outlined),
+        of: find.byIcon(Icons.history_outlined),
         matching: find.byType(ShaderMask),
       ),
       findsNothing,
@@ -267,7 +267,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.ancestor(
-        of: find.byIcon(Icons.watch_later_rounded),
+        of: find.byIcon(Icons.history),
         matching: find.byType(ShaderMask),
       ),
       findsOneWidget,
@@ -658,6 +658,8 @@ void main() {
 
   for (final theme in [
     (name: 'Silent Midnight', definition: midnight),
+    (name: 'Ethereal Aurora', definition: aurora),
+    (name: 'Bleeding Moonlight', definition: bleedingMoonlight),
     (name: 'Ancient Forest', definition: ancientForest),
   ]) {
     for (final size in [
@@ -713,6 +715,15 @@ void main() {
       );
     }
   }
+
+  test('Every dark theme gives form fields a raised surface', () {
+    for (final definition in ThemePresets.darkPresets.values) {
+      final input = definition.toThemeData().inputDecorationTheme;
+      expect(input.filled, isTrue, reason: definition.name);
+      expect(input.fillColor, isNot(definition.palette.background));
+      expect(input.fillColor, isNot(definition.palette.surface));
+    }
+  });
 
   testWidgets(
     'Appearance screen stays alphabetical and switching preserves settings',

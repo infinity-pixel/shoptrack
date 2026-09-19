@@ -38,6 +38,10 @@ class ShoppingItemTile extends StatelessWidget {
     // Use resolved values from the pricing engine for display
     final displayQty = pricing.resolvedQuantity;
     final displayUnit = pricing.resolvedUnitSymbol;
+    final rawNote = item.notes?.trim();
+    final displayNote = rawNote == null || rawNote.isEmpty
+        ? null
+        : rawNote.replaceAll(RegExp(r'\s+'), ' ');
 
     return Dismissible(
       key: ValueKey(item.id),
@@ -58,6 +62,7 @@ class ShoppingItemTile extends StatelessWidget {
         ),
       ),
       child: Container(
+        key: ValueKey('shopping-item-tile-${item.id}'),
         margin: const EdgeInsets.symmetric(vertical: 2.0),
         decoration: BoxDecoration(
           color: selected
@@ -79,7 +84,7 @@ class ShoppingItemTile extends StatelessWidget {
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(2, 4, 14, 4),
+            padding: EdgeInsets.fromLTRB(2, 4, 14, displayNote == null ? 4 : 9),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -205,6 +210,23 @@ class ShoppingItemTile extends StatelessWidget {
                               fontWeight: FontWeight.w500,
                               color: palette.textSecondary,
                               height: 1.1,
+                            ),
+                          ),
+                        ),
+                      if (displayNote != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text(
+                            displayNote,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: palette.textSecondary.withValues(
+                                alpha: .88,
+                              ),
+                              height: 1.15,
                             ),
                           ),
                         ),

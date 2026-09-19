@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/theme_presets.dart';
+
 /// Lets the button finish widening before its label appears.
 class DelayedExtendedFab extends StatefulWidget {
   const DelayedExtendedFab({
@@ -126,31 +128,26 @@ class _DelayedExtendedFabState extends State<DelayedExtendedFab>
 
 /// A compact calendar glyph with an explicit add affordance.
 class CalendarAddIcon extends StatelessWidget {
-  const CalendarAddIcon({super.key, this.size = 24});
-
-  final double size;
+  const CalendarAddIcon({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: size,
+    final palette = ShopTrackThemeTokens.of(context).palette;
+    return SizedBox(
+      width: 26,
+      height: 26,
       child: Stack(
-        clipBehavior: Clip.none,
         children: [
-          Icon(Icons.calendar_today_outlined, size: size - 2),
+          const Icon(Icons.calendar_month_outlined, size: 24),
           Positioned(
-            right: -3,
-            bottom: -3,
+            right: 0,
+            bottom: 0,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: IconTheme.of(context).color,
+                color: palette.onPrimary,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.add,
-                size: size * .48,
-                color: Theme.of(context).colorScheme.surface,
-              ),
+              child: Icon(Icons.add, size: 12, color: palette.primary),
             ),
           ),
         ],
@@ -182,20 +179,35 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
     reverseDuration: const Duration(milliseconds: 170),
   );
 
-  bool get _open => _motion.value > .5;
+  bool _menuOpen = false;
 
   void _toggle() {
-    final show = !_open;
+    final show = !_menuOpen;
+    setState(() => _menuOpen = show);
     if (MediaQuery.disableAnimationsOf(context)) {
       _motion.value = show ? 1 : 0;
-      setState(() {});
     } else {
       show ? _motion.forward() : _motion.reverse();
     }
   }
 
+  void _close() {
+    if (!_menuOpen) return;
+    setState(() => _menuOpen = false);
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _motion.value = 0;
+    } else {
+      _motion.reverse();
+    }
+  }
+
+  void _add() {
+    _close();
+    widget.onAddPressed();
+  }
+
   void _share() {
-    _motion.value = 0;
+    _close();
     widget.onSharePressed();
   }
 
@@ -216,130 +228,167 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
         theme.floatingActionButtonTheme.foregroundColor ??
         colors.onPrimaryContainer;
     final curve = CurvedAnimation(parent: _motion, curve: Curves.easeOutCubic);
+    final slide = Tween<Offset>(
+      begin: const Offset(0, .22),
+      end: Offset.zero,
+    ).animate(curve);
+    final scale = Tween<double>(begin: .84, end: 1).animate(curve);
 
-    return RepaintBoundary(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          SizeTransition(
-            sizeFactor: curve,
-            alignment: Alignment.bottomCenter,
-            child: FadeTransition(
-              opacity: curve,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Semantics(
-                  button: true,
-                  label: 'Share Your List',
-                  child: Material(
-                    color: background,
-                    elevation: 5,
-                    borderRadius: BorderRadius.circular(24),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: _share,
+    // WillPopScope supports the app's Navigator-based shell as well as the
+    // lightweight MaterialApp harnesses used by widget tests.
+    // ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: () async {
+        if (!_menuOpen) return true;
+        _close();
+        return false;
+      },
+      child: TapRegion(
+        onTapOutside: (_) => _close(),
+        child: RepaintBoundary(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              SizeTransition(
+                sizeFactor: curve,
+                alignment: Alignment.bottomRight,
+                child: FadeTransition(
+                  opacity: curve,
+                  child: SlideTransition(
+                    position: slide,
+                    child: ScaleTransition(
+                      scale: scale,
+                      alignment: Alignment.bottomRight,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.ios_share_outlined,
-                              color: foreground,
-                              size: 20,
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Semantics(
+                          button: true,
+                          label: 'Share Your List',
+                          child: Material(
+                            key: const ValueKey('share-fab-action'),
+                            color: colors.surfaceContainerHigh,
+                            shadowColor: Colors.black,
+                            elevation: 8,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              side: BorderSide(color: colors.outlineVariant),
                             ),
-                            const SizedBox(width: 9),
-                            Flexible(
-                              child: Text(
-                                'Share Your List',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: foreground,
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: _share,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 11,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.ios_share_outlined,
+                                      color: colors.primary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        'Share Your List',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelLarge
+                                            ?.copyWith(
+                                              color: colors.onSurface,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-          Material(
-            color: background,
-            elevation: 6,
-            borderRadius: BorderRadius.circular(28),
-            clipBehavior: Clip.antiAlias,
-            child: IconTheme(
-              data: IconThemeData(color: foreground),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Tooltip(
-                    message: 'Add item',
-                    child: InkWell(
-                      onTap: widget.onAddPressed,
-                      child: SizedBox(
-                        height: 56,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 16, right: 12),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.add),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Add Item',
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: foreground,
+              Material(
+                color: background,
+                elevation: 6,
+                borderRadius: BorderRadius.circular(28),
+                clipBehavior: Clip.antiAlias,
+                child: IconTheme(
+                  data: IconThemeData(color: foreground),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Tooltip(
+                        message: 'Add item',
+                        child: InkWell(
+                          onTap: _add,
+                          child: SizedBox(
+                            height: 56,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                left: 16,
+                                right: 12,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.add),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Add Item',
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: foreground,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 32,
+                        child: VerticalDivider(
+                          width: 1,
+                          thickness: 1,
+                          color: foreground.withValues(alpha: .28),
+                        ),
+                      ),
+                      Tooltip(
+                        message: 'More actions',
+                        child: InkWell(
+                          onTap: _toggle,
+                          child: SizedBox(
+                            width: 46,
+                            height: 56,
+                            child: Center(
+                              child: AnimatedBuilder(
+                                animation: _motion,
+                                builder: (context, child) => Transform.rotate(
+                                  angle: _motion.value * 3.141592653589793,
+                                  child: child,
+                                ),
+                                child: const Icon(
+                                  Icons.keyboard_arrow_up_rounded,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 32,
-                    child: VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                      color: foreground.withValues(alpha: .28),
-                    ),
-                  ),
-                  Tooltip(
-                    message: 'More actions',
-                    child: InkWell(
-                      onTap: _toggle,
-                      child: SizedBox(
-                        width: 46,
-                        height: 56,
-                        child: Center(
-                          child: AnimatedBuilder(
-                            animation: _motion,
-                            builder: (context, child) => Transform.rotate(
-                              angle: _motion.value * 3.141592653589793,
-                              child: child,
                             ),
-                            child: const Icon(Icons.keyboard_arrow_up_rounded),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

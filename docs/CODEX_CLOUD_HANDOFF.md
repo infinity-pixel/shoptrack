@@ -104,10 +104,11 @@ Sprint 18.4.3 extends that work with:
 
 The following refinement removes the preview-heavy entry point: Lists now uses
 a permanently expanded split FAB with one optional `Share Your List` action.
-That action opens a compact checkbox chooser for one or more lists, while
-long-press selection keeps its direct selected-items flow. The list switcher no
+That action animates directly above the FAB and closes on an outside tap, Back,
+or selection before opening a compact checkbox chooser for one or more lists.
+Long-press selection keeps its direct selected-items flow. The list switcher no
 longer carries a share icon. History restores a permanently expanded
-calendar-plus `New Date` action.
+calendar-plus `New Date` action using the established calendar badge artwork.
 
 Latest verification performed for this work:
 
@@ -247,6 +248,8 @@ Theme rules:
 
 - every identity covers background, surfaces, item cards, borders, text,
   statuses, dialogs, sheets, fields, receipts, calendars, and navigation;
+- dark-theme item editors use a subtly raised field surface rather than
+  blending their controls into the sheet background;
 - important item tiles must remain easier to notice than atmospheric scenery;
 - dark themes keep approximately 96% of the central background quiet, with
   only subtle edge differentiation;
@@ -400,6 +403,10 @@ separators, item counts, pending/purchased sections, quantities, notes, prices,
 per-list totals, and an all-lists summary when relevant. The native share
 destination list depends on apps installed on the device; Instagram and other
 platforms may not accept arbitrary plain text.
+
+Shopping item cards show an optional note as one smaller, single-line,
+ellipsized detail. Cards without notes retain their compact height; cards with
+notes expand only enough to keep the detail readable.
 
 ### Multi-currency shopping
 
