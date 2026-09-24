@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
+import '../../../../core/widgets/compact_amount_text.dart';
+import '../../../../models/app_settings.dart';
 import '../../../../models/shopping_item.dart';
 
 class ShoppingItemTile extends StatelessWidget {
@@ -13,6 +15,7 @@ class ShoppingItemTile extends StatelessWidget {
   final VoidCallback? onLongPress;
   final bool selectionMode;
   final bool selected;
+  final NumberFormatPreference numberFormat;
 
   const ShoppingItemTile({
     super.key,
@@ -25,6 +28,7 @@ class ShoppingItemTile extends StatelessWidget {
     this.onLongPress,
     this.selectionMode = false,
     this.selected = false,
+    this.numberFormat = NumberFormatPreference.automatic,
   });
 
   @override
@@ -179,6 +183,7 @@ class ShoppingItemTile extends StatelessWidget {
 
                 // Item Info: Name + Qty
                 Expanded(
+                  flex: 6,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -205,6 +210,8 @@ class ShoppingItemTile extends StatelessWidget {
                           child: Text(
                             '${NumberFormatter.formatQuantity(displayQty ?? 0, enteredText: item.quantity)} ${displayUnit ?? ''}'
                                 .trim(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -238,34 +245,45 @@ class ShoppingItemTile extends StatelessWidget {
                   width: 12,
                 ), // Breathing room between qty and price
                 // RIGHT: Price Column
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (pricing.totalPrice > 0)
-                      Text(
-                        NumberFormatter.formatPrice(
-                          pricing.totalPrice,
+                Expanded(
+                  flex: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (pricing.totalPrice > 0)
+                        CompactAmountText(
+                          value: pricing.totalPrice,
                           currencyCode: item.currencyCode,
+                          preference: numberFormat,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isPurchased
+                                ? palette.purchased
+                                : palette.secondary,
+                          ),
                         ),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isPurchased
-                              ? palette.purchased
-                              : palette.secondary,
+                      if (pricing.unitPrice > 0)
+                        Tooltip(
+                          triggerMode: TooltipTriggerMode.tap,
+                          message:
+                              '${NumberFormatter.formatPrice(pricing.unitPrice, currencyCode: item.currencyCode, preference: numberFormat)}/${pricing.priceBasisSymbol}',
+                          child: Text(
+                            '${NumberFormatter.formatDisplayPrice(pricing.unitPrice, currencyCode: item.currencyCode, preference: numberFormat)}/${pricing.priceBasisSymbol}',
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: palette.textSecondary,
+                            ),
+                          ),
                         ),
-                      ),
-                    if (pricing.unitPrice > 0)
-                      Text(
-                        '${NumberFormatter.formatPrice(pricing.unitPrice, currencyCode: item.currencyCode)}/${pricing.priceBasisSymbol}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: palette.textSecondary,
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

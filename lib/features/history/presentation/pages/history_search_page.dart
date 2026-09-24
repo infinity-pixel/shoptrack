@@ -6,6 +6,7 @@ import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/widgets/shoptrack_navigation_bar.dart';
 import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_search_result.dart';
+import '../../../../services/settings_service.dart';
 import '../../../../services/frequent_items_service.dart';
 import '../../../../services/search_service.dart';
 import '../../../home/presentation/pages/home_page.dart';
@@ -13,8 +14,13 @@ import '../widgets/search_result_card.dart';
 import '../widgets/smart_date_range_picker.dart';
 
 class HistorySearchPage extends StatefulWidget {
-  const HistorySearchPage({super.key, this.onTabSelected});
+  const HistorySearchPage({
+    super.key,
+    this.onTabSelected,
+    this.settingsService,
+  });
   final ValueChanged<int>? onTabSelected;
+  final SettingsService? settingsService;
   @override
   State<HistorySearchPage> createState() => _HistorySearchPageState();
 }
@@ -124,6 +130,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
       MaterialPageRoute(
         builder: (routeContext) => HomePage(
           sessionDate: result.session.date,
+          settingsService: widget.settingsService,
           onBackToHistory: () => Navigator.pop(routeContext),
         ),
       ),

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoptrack/core/data/shopping_repository.dart';
-import 'package:shoptrack/core/animation/rolling_digit.dart';
 import 'package:shoptrack/core/theme/theme_presets.dart';
 import 'package:shoptrack/core/utils/number_formatter.dart';
 import 'package:shoptrack/features/history/presentation/widgets/session_card.dart';
@@ -149,11 +148,8 @@ void main() {
     );
     await tester.pump();
 
-    final amount = tester.widget<RollingDigitText>(
-      find.byType(RollingDigitText),
-    );
-    expect(amount.text, '৳50');
-    expect(amount.text, isNot('৳150'));
+    expect(find.text('৳50'), findsOneWidget);
+    expect(find.text('৳150'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

@@ -62,6 +62,12 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateNumberFormat(NumberFormatPreference preference) async {
+    _settings = _settings.copyWith(numberFormat: preference);
+    await _repository.saveSettings(_settings);
+    notifyListeners();
+  }
+
   Future<void> recordRecentCurrency(String currency) async {
     final updated = _settings.recordRecentCurrency(currency);
     if (identical(updated, _settings)) return;

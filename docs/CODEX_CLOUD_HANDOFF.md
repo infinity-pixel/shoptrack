@@ -75,7 +75,7 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 19 — multi-currency model foundation**.
+- Current local milestone: **Sprint 19 — multi-currency UI refinement**.
 - Its baseline revision is `14b5bd4` —
   `Polish contextual sharing and dark item presentation`.
 
@@ -95,10 +95,11 @@ Sprint 19 foundation work includes:
 - regression coverage for catalogue filtering, migration, settings, totals,
   sharing, backup, and three-way merge behavior.
 
-The Profile currency selector, item-editor picker, animated multi-currency total
-rows, and compact History total layout remain the next UI increment. A newly
-opened editor must start with the Profile default; choosing another currency
-records it as recent but must not change the next editor's default.
+The Profile currency selector and item-editor picker are implemented. A newly
+opened editor starts with the Profile default; choosing another currency
+records it as recent but must not change the next editor's default. Lists
+render independent per-currency reorder groups and vertical totals; History
+shows vertical totals with menu clearance.
 
 Sprint 18.4.2 work includes:
 
@@ -240,14 +241,14 @@ Implemented behavior includes:
 - local JSON export/restore;
 - Google Drive App Data backup/restore as a separate advanced system;
 - About and app-version UI;
-- a dedicated Appearance screen, a currency placeholder dialog backed by the
-  Sprint 19 model foundation, and a language placeholder dialog.
+- a dedicated Appearance screen, a searchable default-currency picker,
+  number-format selection, and a language placeholder dialog.
 
 Important distinction: the ShopTrack display name/photo is local app profile
 data. It does not edit the user's Google account.
 
-The visible currency picker/grouped-total UI and language selection remain
-placeholders. The underlying per-item currency, catalogue, grouped totals,
+Currency picking and grouped totals are visible. Language selection remains
+a placeholder. The underlying per-item currency, catalogue, grouped totals,
 settings, persistence, backup, sharing, and sync contracts are implemented.
 
 ## 6. Theme System and Approved Visual Identities
@@ -445,16 +446,21 @@ Approved product direction:
 - show currency section headings only when a session contains multiple
   currencies;
 - keep today's/purchased totals grouped by currency;
-- in History cards, separate compact currency totals with vertical dividers and
-  wrap when space is insufficient.
+- in History cards, show one currency per row, with Arabic-script amounts
+  right-aligned and the three-dot action kept clear.
 
-Current reality: the data architecture is implemented. `ShoppingItem` owns a
-`currencyCode`; legacy items become BDT; `AppSettings` stores the default and a
-bounded recent list; fixed-precision totals, backup, sharing, and sync merge all
-remain currency-aware. The visible Profile picker, item-editor selection dialog,
-animated grouped totals, currency headings, and History-card wrapping are still
-pending. Until that UI lands, the current app cannot create mixed-currency data
-through ordinary interaction.
+Current reality: the data architecture and primary user flow are implemented.
+`ShoppingItem` owns a `currencyCode`; legacy items become BDT; Profile offers a
+searchable default-currency picker; and Add/Edit Item starts from that default
+while allowing an item-specific choice. Recent non-default choices remain quick
+shortcuts without replacing the default. Fixed-precision totals, Lists and
+History grouped displays, backup, sharing, and sync merge remain currency-aware.
+Changing the default never rewrites an existing item's recorded currency.
+Reordering stays within each currency group. Profile offers Automatic,
+International, and South Asian number formats; South Asian compact amounts use
+Lakh/Crore. Amounts at or above 100,000 may be abbreviated in constrained UI,
+but a tap shows the full value. Item price entry is limited to two decimals;
+the current UI also caps impractically large inputs to protect layout.
 
 ### Receipt-photo import / OCR
 
@@ -524,11 +530,10 @@ The safest path to a tester-ready build is:
 
 ### Phase D — larger post-pilot features
 
-1. Multi-currency picker and grouped-total UI on the completed architecture.
-2. Receipt OCR with mandatory confirmation.
-3. Rating, feedback, and optional donation flow.
-4. iOS Firebase setup and Apple sign-in.
-5. Later evaluate Huawei/AppGallery and mainland-China infrastructure as a
+1. Receipt OCR with mandatory confirmation.
+2. Rating, feedback, and optional donation flow.
+3. iOS Firebase setup and Apple sign-in.
+4. Later evaluate Huawei/AppGallery and mainland-China infrastructure as a
    separate platform project; do not assume Google/Firebase behavior there.
 
 ## 12. Release Blockers Confirmed in Source

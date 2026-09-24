@@ -180,7 +180,7 @@ void main() {
   });
 
   group('Sprint 19 formatting and sharing', () {
-    test('keeps legacy BDT output and supports currency precision', () {
+    test('keeps legacy BDT output and limits displayed prices to cents', () {
       expect(NumberFormatter.formatPrice(12500), '৳12,500');
       final bhd = NumberFormatter.formatPrice(
         12.345,
@@ -188,7 +188,7 @@ void main() {
         includeCode: true,
       );
       expect(bhd, contains('BHD'));
-      expect(bhd, endsWith('12.345'));
+      expect(bhd, endsWith('12.35'));
       expect(NumberFormatter.formatPrice(4, currencyCode: 'ABC'), 'ABC 4');
     });
 

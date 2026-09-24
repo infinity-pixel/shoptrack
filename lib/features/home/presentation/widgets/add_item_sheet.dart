@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/currency/currency_catalog.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/utils/pricing_calculator.dart';
+import '../../../../core/widgets/currency_picker_dialog.dart';
 import '../../../../models/frequent_item_suggestion.dart';
 import '../../../../models/shopping_item.dart';
 
@@ -18,6 +20,8 @@ class AddItemSheet extends StatefulWidget {
   final List<FrequentItemSuggestion> frequentSuggestions;
   final FrequentItemSuggestion? initialSuggestion;
   final ValueChanged<FrequentItemSuggestion>? onRemoveFrequentSuggestion;
+  final String defaultCurrencyCode;
+  final List<String> recentCurrencyCodes;
 
   const AddItemSheet({
     super.key,
@@ -26,6 +30,8 @@ class AddItemSheet extends StatefulWidget {
     this.frequentSuggestions = const [],
     this.initialSuggestion,
     this.onRemoveFrequentSuggestion,
+    this.defaultCurrencyCode = CurrencyCatalog.defaultCode,
+    this.recentCurrencyCodes = const [],
   });
 
   @override
@@ -44,10 +50,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
   bool _showMoreOptions = false;
   String? _errorText;
   String? _priceErrorText;
+  String? _quantityErrorText;
   String? _priceReferenceText;
   late PricingMode _pricingMode;
   late ShoppingUnit? _selectedUnit;
   late ShoppingUnit? _selectedPriceBasis;
+  late String _selectedCurrencyCode;
   PricingResult _calcResult = PricingResult.zero;
   bool _isUnitMenuOpen = false;
   bool _openUnitMenuOnFocus = false;
@@ -87,6 +95,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
     _pricingMode = item?.pricingMode ?? PricingMode.total;
     _selectedUnit = item?.shoppingUnit;
     _selectedPriceBasis = item?.priceBasis;
+    _selectedCurrencyCode =
+        item?.currencyCode ??
+        CurrencyCatalog.normalizeDefaultCode(widget.defaultCurrencyCode);
 
     if (item != null &&
         (item.notes != null ||
@@ -167,7 +178,33 @@ class _AddItemSheetState extends State<AddItemSheet> {
       return;
     }
 
-    final price = double.tryParse(_priceController.text);
+    final quantityText = _quantityController.text.trim();
+    final quantity = double.tryParse(quantityText);
+    if (quantityText.isNotEmpty &&
+        (quantity == null ||
+            !quantity.isFinite ||
+            quantity < 0 ||
+            quantity > 999999.99)) {
+      setState(() => _quantityErrorText = 'Enter a quantity below 1,000,000');
+      return;
+    }
+    final priceText = _priceController.text.trim();
+    final price = double.tryParse(priceText);
+    if (priceText.isNotEmpty &&
+        (price == null ||
+            !price.isFinite ||
+            price > 99999999.99 ||
+            !RegExp(r'^\d+(?:\.\d{1,2})?$').hasMatch(priceText))) {
+      setState(
+        () => _priceErrorText =
+            'Enter a price below 100 million with up to 2 decimals',
+      );
+      return;
+    }
+    if (_calcResult.totalPrice > 999999999999.99) {
+      setState(() => _priceErrorText = 'The calculated total is too large');
+      return;
+    }
     if (_pricingMode == PricingMode.unit &&
         price != null &&
         _selectedUnit == null) {
@@ -183,10 +220,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
       quantity: _quantityController.text.trim().isEmpty
           ? null
           : _quantityController.text.trim(),
-      quantityValue: double.tryParse(_quantityController.text),
+      quantityValue: quantity,
       priceValue: price,
-      currencyCode:
-          widget.initialItem?.currencyCode ?? CurrencyCatalog.defaultCode,
+      currencyCode: _selectedCurrencyCode,
       pricingMode: _pricingMode,
       shoppingUnit: _selectedUnit,
       priceBasis: _selectedPriceBasis,
@@ -197,6 +233,34 @@ class _AddItemSheetState extends State<AddItemSheet> {
     );
 
     Navigator.pop(context, item);
+  }
+
+  Widget _buildPreviewAmount(
+    String label,
+    String amount, {
+    bool emphasized = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 14)),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          reverse: true,
+          child: Text(
+            amount,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              fontWeight: emphasized ? FontWeight.bold : FontWeight.w500,
+              color: emphasized
+                  ? Theme.of(context).colorScheme.onSurface
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   void _applySuggestion(FrequentItemSuggestion suggestion) {
@@ -218,6 +282,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
       _pricingMode = item.pricingMode;
       _selectedUnit = item.shoppingUnit;
       _selectedPriceBasis = item.priceBasis;
+      _selectedCurrencyCode = item.currencyCode;
       _showMoreOptions =
           item.quantityValue != null ||
           item.priceValue != null ||
@@ -231,6 +296,20 @@ class _AddItemSheetState extends State<AddItemSheet> {
       }
     });
     _updateCalculation();
+  }
+
+  Future<void> _chooseCurrency() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final selected = await showCurrencyPickerDialog(
+      context,
+      selectedCurrencyCode: _selectedCurrencyCode,
+      defaultCurrencyCode: widget.defaultCurrencyCode,
+      recentCurrencyCodes: widget.recentCurrencyCodes,
+    );
+    if (!mounted || selected == null || selected == _selectedCurrencyCode) {
+      return;
+    }
+    setState(() => _selectedCurrencyCode = selected);
   }
 
   Future<void> _showSuggestionMenu(
@@ -449,10 +528,16 @@ class _AddItemSheetState extends State<AddItemSheet> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: 'Quantity',
+                        errorText: _quantityErrorText,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
+                      onChanged: (_) {
+                        if (_quantityErrorText != null) {
+                          setState(() => _quantityErrorText = null);
+                        }
+                      },
                       onSubmitted: (_) => _moveToUnitPicker(),
                     ),
                   ),
@@ -610,24 +695,80 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                TextField(
-                  controller: _priceController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: _getPriceLabel(),
-                    prefixText: '৳ ',
-                    errorText: _priceErrorText,
-                    helperText: _priceReferenceText,
-                    helperStyle: TextStyle(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w500,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 116,
+                      child: Semantics(
+                        button: true,
+                        label: 'Currency, $_selectedCurrencyCode',
+                        hint: 'Double tap to change currency',
+                        child: InkWell(
+                          key: const ValueKey('item_currency_button'),
+                          onTap: _chooseCurrency,
+                          borderRadius: BorderRadius.circular(12),
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: 'Currency',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    _currencyLabel(_selectedCurrencyCode),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                const Icon(Icons.arrow_drop_down, size: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        key: const ValueKey('item_price_field'),
+                        controller: _priceController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          TextInputFormatter.withFunction(
+                            (oldValue, newValue) =>
+                                RegExp(
+                                  r'^\d*(?:\.\d{0,2})?$',
+                                ).hasMatch(newValue.text)
+                                ? newValue
+                                : oldValue,
+                          ),
+                        ],
+                        decoration: InputDecoration(
+                          labelText: _getPriceLabel(),
+                          errorText: _priceErrorText,
+                          helperText: _priceReferenceText,
+                          helperStyle: TextStyle(
+                            color: colors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 if (_calcResult != PricingResult.zero)
                   Container(
@@ -639,43 +780,20 @@ class _AddItemSheetState extends State<AddItemSheet> {
                     ),
                     child: Column(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Total', style: TextStyle(fontSize: 14)),
-                            Text(
-                              NumberFormatter.formatPrice(
-                                _calcResult.totalPrice,
-                              ),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        _buildPreviewAmount(
+                          'Total',
+                          NumberFormatter.formatPrice(
+                            _calcResult.totalPrice,
+                            currencyCode: _selectedCurrencyCode,
+                          ),
+                          emphasized: true,
                         ),
                         const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _pricingMode == PricingMode.total
-                                    ? 'Price per unit'
-                                    : 'Price per ${_calcResult.priceBasisSymbol}',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                '${NumberFormatter.formatPrice(_calcResult.unitPrice)}/${_calcResult.priceBasisSymbol}',
-                                textAlign: TextAlign.end,
-                                style: TextStyle(
-                                  color: colors.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ],
+                        _buildPreviewAmount(
+                          _pricingMode == PricingMode.total
+                              ? 'Price per unit'
+                              : 'Price per ${_calcResult.priceBasisSymbol}',
+                          '${NumberFormatter.formatPrice(_calcResult.unitPrice, currencyCode: _selectedCurrencyCode)}/${_calcResult.priceBasisSymbol}',
                         ),
                       ],
                     ),
@@ -760,6 +878,13 @@ class _AddItemSheetState extends State<AddItemSheet> {
       return 'Price per ${basis.symbol}';
     }
     return 'Price per Unit';
+  }
+
+  String _currencyLabel(String code) {
+    final currency = CurrencyCatalog.resolve(code);
+    return currency.symbol.isEmpty
+        ? currency.code
+        : '${currency.code}  ${currency.symbol}';
   }
 }
 

@@ -7,7 +7,9 @@ import '../../../../core/utils/session_date_manager.dart';
 import '../../../../core/widgets/scroll_aware_fab.dart';
 import '../../../../core/widgets/shopping_list_share_sheet.dart';
 import '../../../../core/widgets/shoptrack_modal.dart';
+import '../../../../models/app_settings.dart';
 import '../../../../models/shopping_session.dart';
+import '../../../../services/settings_service.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../widgets/session_card.dart';
 import 'history_search_page.dart';
@@ -17,10 +19,12 @@ class HistoryPage extends StatefulWidget {
     super.key,
     required this.onSessionSelected,
     this.onTabSelected,
+    this.settingsService,
   });
 
   final ValueChanged<DateTime> onSessionSelected;
   final ValueChanged<int>? onTabSelected;
+  final SettingsService? settingsService;
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
@@ -172,8 +176,10 @@ class _HistoryPageState extends State<HistoryPage>
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    HistorySearchPage(onTabSelected: widget.onTabSelected),
+                builder: (_) => HistorySearchPage(
+                  onTabSelected: widget.onTabSelected,
+                  settingsService: widget.settingsService,
+                ),
               ),
             );
             _loadSessions();
@@ -245,6 +251,9 @@ class _HistoryPageState extends State<HistoryPage>
       key: ValueKey(session.id),
       session: session,
       glowAnimation: _headingGlow,
+      numberFormat:
+          widget.settingsService?.settings.numberFormat ??
+          NumberFormatPreference.automatic,
       onTap: () => _openSession(session.date),
       onShare: () => showShoppingListShareSheet(context, session),
       onEdit: () => _editSessionDate(session),
@@ -277,6 +286,7 @@ class _HistoryPageState extends State<HistoryPage>
       MaterialPageRoute(
         builder: (_) => HomePage(
           sessionDate: date,
+          settingsService: widget.settingsService,
           onBackToHistory: () => Navigator.pop(context, true),
           onMoveToToday: () {
             Navigator.pop(context, true);

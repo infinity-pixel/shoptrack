@@ -61,6 +61,7 @@ class _MainPageState extends State<MainPage> {
   Widget _buildHomeTab() {
     return HomePage(
       key: ValueKey(_selectedHistoricalDate?.toIso8601String() ?? 'today'),
+      settingsService: ShopTrackApp.of(context),
       sessionDate: _selectedHistoricalDate,
       refreshRevision: _homeRefreshRevision,
       onBackToHistory: _selectedHistoricalDate != null
@@ -77,6 +78,7 @@ class _MainPageState extends State<MainPage> {
 
   Widget _buildHistoryTab() {
     return HistoryPage(
+      settingsService: ShopTrackApp.of(context),
       onTabSelected: (index) => setState(() {
         _currentIndex = index;
         _selectedHistoricalDate = null;

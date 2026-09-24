@@ -57,12 +57,18 @@ that adds friction needs a clear user benefit.
   deletions offer Undo. Swipe deletion remains immediate with Undo.
 - Shopping sessions support named lists, pricing, purchase state, ordering,
   multi-select move/delete, history search, and custom date-range selection.
-- Sprint 19 adds the multi-currency data foundation: every priced item owns an
-  ISO currency code, legacy items migrate to BDT, settings retain a default and
-  bounded recent choices, totals group by currency with no implicit conversion,
-  and currency travels through local storage, backup, sharing, merge, and sync.
+- Sprint 19 adds multi-currency shopping: every priced item owns an ISO currency
+  code, legacy items migrate to BDT, Profile controls the default, and Add/Edit
+  Item provides a searchable picker with default and recent shortcuts. Lists and
+  History display different currencies separately with no implicit conversion;
+  currency also travels through local storage, backup, sharing, merge, and sync.
   New exports use backup schema 2 so older builds cannot strip item currencies.
-  The currency picker and grouped-total UI are not implemented yet.
+- Lists render independent currency groups within To Buy and Purchased; drag
+  reordering must stay inside its own currency group. Profile controls the
+  display-number format (Automatic, International, or South Asian). Large
+  amounts may be abbreviated visually, but tapping them must reveal the full
+  amount; stored item prices and per-currency totals are never abbreviated.
+  The item editor accepts at most two decimal places for prices.
 - Any shopping date can be copied or shared as structured plain text. Users can
   export the current list, chosen lists, all lists, or a long-press selection;
   output includes pending/purchased states, quantities, notes, prices, and

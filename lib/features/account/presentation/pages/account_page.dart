@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../app.dart';
+import '../../../../core/currency/currency_catalog.dart';
 import '../../../../core/theme/theme_presets.dart';
+import '../../../../core/widgets/currency_picker_dialog.dart';
+import '../../../../models/app_settings.dart';
 import '../../../../models/auth_state.dart';
 import '../../../../services/auth_service.dart';
+import '../../../../services/settings_service.dart';
 import 'about_page.dart';
 import 'appearance_page.dart';
 import 'edit_profile_page.dart';
@@ -80,8 +84,19 @@ class AccountPage extends StatelessWidget {
                             context,
                             icon: Icons.payments_outlined,
                             title: 'Currency',
-                            subtitle: settings.currency,
-                            onTap: () => _showCurrencyDialog(context),
+                            subtitle: _currencySubtitle(settings.currency),
+                            onTap: () =>
+                                _showCurrencyDialog(context, settingsService),
+                          ),
+                          _buildSettingsTile(
+                            context,
+                            icon: Icons.pin_outlined,
+                            title: 'Number Format',
+                            subtitle: settings.numberFormat.displayName,
+                            onTap: () => _showNumberFormatDialog(
+                              context,
+                              settingsService,
+                            ),
                           ),
                           _buildSettingsTile(
                             context,
@@ -428,22 +443,44 @@ class AccountPage extends StatelessWidget {
     );
   }
 
-  void _showCurrencyDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Currency Preference'),
-        content: const Text(
-          'Bangladeshi Taka (৳) is the default currency. Additional currency options will be added in a future update.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+  String _currencySubtitle(String code) {
+    final currency = CurrencyCatalog.resolve(code);
+    return '${currency.code} · ${currency.name}';
+  }
+
+  Future<void> _showCurrencyDialog(
+    BuildContext context,
+    SettingsService settingsService,
+  ) async {
+    final settings = settingsService.settings;
+    final selected = await showCurrencyPickerDialog(
+      context,
+      title: 'Default Currency',
+      selectedCurrencyCode: settings.currency,
+      defaultCurrencyCode: settings.currency,
+      recentCurrencyCodes: settings.recentCurrencies,
     );
+    if (!context.mounted || selected == null || selected == settings.currency) {
+      return;
+    }
+    try {
+      await settingsService.updateCurrency(selected);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Default currency changed to $selected. Existing items were not changed.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save the currency preference.'),
+        ),
+      );
+    }
   }
 
   void _showLanguageDialog(BuildContext context) {
@@ -462,5 +499,47 @@ class AccountPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showNumberFormatDialog(
+    BuildContext context,
+    SettingsService settingsService,
+  ) async {
+    final selected = await showDialog<NumberFormatPreference>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Number Format'),
+        children: [
+          for (final preference in NumberFormatPreference.values)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, preference),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(preference.displayName),
+                        Text(switch (preference) {
+                          NumberFormatPreference.automatic =>
+                            'Follow your device region',
+                          NumberFormatPreference.international =>
+                            '1,234,567 · 1.23M',
+                          NumberFormatPreference.southAsian =>
+                            '12,34,567 · 12.34 Lakh',
+                        }, style: Theme.of(dialogContext).textTheme.bodySmall),
+                      ],
+                    ),
+                  ),
+                  if (settingsService.settings.numberFormat == preference)
+                    const Icon(Icons.check),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (selected == null || !context.mounted) return;
+    await settingsService.updateNumberFormat(selected);
   }
 }

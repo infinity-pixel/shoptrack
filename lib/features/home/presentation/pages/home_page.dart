@@ -3,20 +3,24 @@ import 'package:flutter/services.dart';
 import '../widgets/record_hero.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../../../core/animation/rolling_digit.dart';
+import '../../../../core/currency/currency_catalog.dart';
+import '../../../../core/currency/currency_item_groups.dart';
+import '../../../../core/currency/currency_totals.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/theme/atmospheric_background.dart';
-import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/utils/shopping_session_actions.dart';
 import '../../../../core/widgets/scroll_aware_fab.dart';
+import '../../../../core/widgets/compact_amount_text.dart';
 import '../../../../core/widgets/shopping_list_share_sheet.dart';
 import '../../../../core/widgets/shoptrack_modal.dart';
 import '../../../../models/frequent_item_suggestion.dart';
+import '../../../../models/app_settings.dart';
 import '../../../../models/shopping_item.dart';
 import '../../../../models/shopping_list_group.dart';
 import '../../../../models/shopping_session.dart';
 import '../../../../services/frequent_items_service.dart';
+import '../../../../services/settings_service.dart';
 import '../widgets/add_item_sheet.dart';
 import '../widgets/shopping_item_tile.dart';
 import '../widgets/shopping_list_name_dialog.dart';
@@ -29,6 +33,7 @@ class HomePage extends StatefulWidget {
   final VoidCallback? onBackToHistory;
   final VoidCallback? onMoveToToday;
   final FrequentItemSuggestion? initialNewItemSuggestion;
+  final SettingsService? settingsService;
 
   const HomePage({
     super.key,
@@ -37,6 +42,7 @@ class HomePage extends StatefulWidget {
     this.onBackToHistory,
     this.onMoveToToday,
     this.initialNewItemSuggestion,
+    this.settingsService,
   });
 
   @override
@@ -530,10 +536,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     onToggle: () => _selectionMode ? _selectItem(item) : _toggleItem(item),
     onTap: () => _selectionMode ? _selectItem(item) : _openEditSheet(item),
     onDelete: () => _deleteItem(item),
+    numberFormat:
+        widget.settingsService?.settings.numberFormat ??
+        NumberFormatPreference.automatic,
   );
 
   Future<void> _openAddSheet({FrequentItemSuggestion? suggestion}) =>
       _withStableEditor(() async {
+        final settings = widget.settingsService?.settings;
         final newItem = await showModalBottomSheet<dynamic>(
           context: context,
           isScrollControlled: true,
@@ -548,13 +558,34 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             frequentSuggestions: _frequentSuggestions,
             initialSuggestion: suggestion,
             onRemoveFrequentSuggestion: _dismissFrequentSuggestion,
+            defaultCurrencyCode:
+                settings?.currency ?? CurrencyCatalog.defaultCode,
+            recentCurrencyCodes: settings?.recentCurrencies ?? const [],
           ),
         );
 
         if (mounted && newItem is ShoppingItem) {
           await _addItem(newItem);
+          await _rememberCurrency(newItem.currencyCode);
         }
       });
+
+  Future<void> _rememberCurrency(String currencyCode) async {
+    final service = widget.settingsService;
+    if (service == null) return;
+    try {
+      await service.recordRecentCurrency(currencyCode);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Item saved, but the recent currency shortcut could not be updated.',
+          ),
+        ),
+      );
+    }
+  }
 
   Future<void> _refreshFrequentSuggestions() async {
     final suggestions = await _frequentItemsService.getSuggestions(
@@ -607,17 +638,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _loadSession();
   }
 
-  double get _totalAmount {
-    return _activeItems
-        .where((i) => !i.isPurchased)
-        .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
-  }
+  String get _preferredCurrencyCode =>
+      widget.settingsService?.settings.currency ?? CurrencyCatalog.defaultCode;
 
-  double get _purchasedAmount {
-    return _activeItems
-        .where((i) => i.isPurchased)
-        .fold(0.0, (sum, item) => sum + item.pricing.totalPrice);
-  }
+  CurrencyTotals get _pendingTotals => CurrencyTotals.fromItems(
+    _activeItems,
+    where: (item) => !item.isPurchased,
+  );
+
+  CurrencyTotals get _purchasedTotals =>
+      CurrencyTotals.fromItems(_activeItems, where: (item) => item.isPurchased);
 
   Future<void> _addItem(ShoppingItem item) async {
     setState(() {
@@ -852,31 +882,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 activeItems.length,
                               ),
                               const SizedBox(height: 8),
-                              ReorderableListView.builder(
-                                buildDefaultDragHandles: false,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: activeItems.length,
-                                proxyDecorator: _buildReorderProxy,
-                                // ignore: deprecated_member_use
-                                onReorder: (oldIndex, newIndex) =>
-                                    _onReorder(activeItems, oldIndex, newIndex),
-                                itemBuilder: (context, index) {
-                                  final item = activeItems[index];
-                                  return KeyedSubtree(
-                                    key: _itemKey(item.id),
-                                    child: Opacity(
-                                      opacity:
-                                          _transitioningItemIds.contains(
-                                            item.id,
-                                          )
-                                          ? 0
-                                          : 1,
-                                      child: _shoppingTile(item, index),
-                                    ),
-                                  );
-                                },
-                              ),
+                              _buildCurrencyItemGroups(activeItems),
                               const SizedBox(height: 12),
                               _buildTotalAmountRow(),
                               const SizedBox(height: 28),
@@ -890,34 +896,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 purchasedItems.length,
                               ),
                               const SizedBox(height: 8),
-                              ReorderableListView.builder(
-                                buildDefaultDragHandles: false,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: purchasedItems.length,
-                                proxyDecorator: _buildReorderProxy,
-                                // ignore: deprecated_member_use
-                                onReorder: (oldIndex, newIndex) => _onReorder(
-                                  purchasedItems,
-                                  oldIndex,
-                                  newIndex,
-                                ),
-                                itemBuilder: (context, index) {
-                                  final item = purchasedItems[index];
-                                  return KeyedSubtree(
-                                    key: _itemKey(item.id),
-                                    child: Opacity(
-                                      opacity:
-                                          _transitioningItemIds.contains(
-                                            item.id,
-                                          )
-                                          ? 0
-                                          : 1,
-                                      child: _shoppingTile(item, index),
-                                    ),
-                                  );
-                                },
-                              ),
+                              _buildCurrencyItemGroups(purchasedItems),
                               const SizedBox(height: 20),
                               _buildPurchasedAmountCard(),
                             ],
@@ -1151,7 +1130,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            '$count ${count == 1 ? 'item' : 'items'}',
+            '$count ${count == 1 ? 'Item' : 'Items'}',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -1160,6 +1139,65 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCurrencyItemGroups(List<ShoppingItem> items) {
+    final groups = groupItemsByCurrency(
+      items,
+      preferredCurrencyCode: _preferredCurrencyCode,
+    );
+    final palette = ShopTrackThemeTokens.of(context).palette;
+    final showHeadings = groups.length > 1;
+    return AnimatedSize(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
+      alignment: Alignment.topCenter,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final entry in groups.entries) ...[
+            if (showHeadings)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(3, 12, 3, 6),
+                child: Text(
+                  '${entry.key} · ${CurrencyCatalog.resolve(entry.key).name}',
+                  key: ValueKey(
+                    'currency_heading_${entry.key}_${items.first.isPurchased}',
+                  ),
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ReorderableListView.builder(
+              key: ValueKey(
+                'currency_group_${entry.key}_${items.first.isPurchased}',
+              ),
+              buildDefaultDragHandles: false,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: entry.value.length,
+              proxyDecorator: _buildReorderProxy,
+              onReorderItem: (oldIndex, newIndex) =>
+                  _onReorder(entry.value, oldIndex, newIndex),
+              itemBuilder: (context, index) {
+                final item = entry.value[index];
+                return KeyedSubtree(
+                  key: _itemKey(item.id),
+                  child: Opacity(
+                    opacity: _transitioningItemIds.contains(item.id) ? 0 : 1,
+                    child: _shoppingTile(item, index),
+                  ),
+                );
+              },
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1393,6 +1431,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _openEditSheet(ShoppingItem item) => _withStableEditor(() async {
+    final settings = widget.settingsService?.settings;
     final result = await showModalBottomSheet<dynamic>(
       context: context,
       isScrollControlled: true,
@@ -1400,6 +1439,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       builder: (context) => AddItemSheet(
         nextPosition: _currentSession.items.length,
         initialItem: item,
+        defaultCurrencyCode: settings?.currency ?? CurrencyCatalog.defaultCode,
+        recentCurrencyCodes: settings?.recentCurrencies ?? const [],
       ),
     );
 
@@ -1408,19 +1449,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       await _deleteItem(item);
     } else if (result is ShoppingItem) {
       await _updateItem(result);
+      if (result.currencyCode != item.currencyCode) {
+        await _rememberCurrency(result.currencyCode);
+      }
     }
   });
 
   void _onReorder(List<ShoppingItem> sectionList, int oldIndex, int newIndex) {
     if (_selectionMode) return;
     setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
+      final positions = sectionList.map((item) => item.position).toList()
+        ..sort();
       final item = sectionList.removeAt(oldIndex);
       sectionList.insert(newIndex, item);
 
-      // Update positions for the entire section to persist the order
+      // Reassign only this currency group's position slots. Other currencies
+      // retain their order even when their cards are rendered nearby.
       for (int i = 0; i < sectionList.length; i++) {
         final originalIndex = _currentSession.items.indexWhere(
           (it) => it.id == sectionList[i].id,
@@ -1428,7 +1472,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         if (originalIndex != -1) {
           _currentSession.items[originalIndex] = _currentSession
               .items[originalIndex]
-              .copyWith(position: i);
+              .copyWith(position: positions[i]);
         }
       }
     });
@@ -1702,38 +1746,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _buildTotalAmountRow() {
     final palette = ShopTrackThemeTokens.of(context).palette;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Divider(color: palette.border, thickness: 1),
         const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                'Total Amount',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: palette.onBackground,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: RollingDigitText(
-                  text: NumberFormatter.formatPrice(_totalAmount),
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: palette.onBackground,
-                  ),
-                ),
-              ),
-            ),
-          ],
+        Text(
+          'Total Amount',
+          style: TextStyle(
+            fontSize: 16,
+            color: palette.onBackground,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        _buildCurrencyTotalValues(
+          _pendingTotals,
+          color: palette.onBackground,
+          fontSize: 16,
         ),
       ],
     );
@@ -1756,45 +1785,39 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 colors: [palette.surfaceReceipt, palette.receiptEdge],
               ),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: palette.purchased,
-                  size: 26,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                Row(
+                  children: [
+                    Icon(
+                      Icons.wallet_outlined,
+                      color: palette.purchased,
+                      size: 26,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
                         'Purchased Amount',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: palette.onBackground,
                         ),
                       ),
-                      Text(
-                        'Total of all purchased items',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: palette.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                RollingDigitText(
-                  text: NumberFormatter.formatPrice(_purchasedAmount),
-                  style: TextStyle(
-                    fontFamily: 'LibreBaskerville',
-                    fontSize: 21,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.35,
+                const SizedBox(height: 7),
+                Padding(
+                  padding: const EdgeInsets.only(left: 36),
+                  child: _buildCurrencyTotalValues(
+                    _purchasedTotals,
                     color: palette.purchased,
+                    fontSize: 17,
+                    fontFamily: 'LibreBaskerville',
                   ),
                 ),
               ],
@@ -1802,6 +1825,72 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCurrencyTotalValues(
+    CurrencyTotals totals, {
+    required Color color,
+    required double fontSize,
+    String? fontFamily,
+  }) {
+    final values = totals.ordered(
+      preferredCurrencyCode: _preferredCurrencyCode,
+    );
+    final amounts = values.isEmpty
+        ? <(String, double)>[(_preferredCurrencyCode, 0)]
+        : values
+              .map((total) => (total.currencyCode, total.value))
+              .toList(growable: false);
+    final content = Column(
+      key: ValueKey(amounts.join('|')),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (code, value) in amounts)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              children: [
+                Text(
+                  code,
+                  style: TextStyle(
+                    fontSize: fontSize - 2,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: CompactAmountText(
+                    value: value,
+                    currencyCode: code,
+                    preference:
+                        widget.settingsService?.settings.numberFormat ??
+                        NumberFormatPreference.automatic,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+    if (MediaQuery.disableAnimationsOf(context)) return content;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SizeTransition(sizeFactor: animation, child: child),
+      ),
+      child: content,
     );
   }
 }

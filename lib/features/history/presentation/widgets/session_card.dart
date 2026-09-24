@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/animation/rolling_digit.dart';
+import '../../../../core/currency/currency_catalog.dart';
 import '../../../../core/theme/theme_presets.dart';
-import '../../../../core/utils/number_formatter.dart';
+import '../../../../core/widgets/compact_amount_text.dart';
+import '../../../../models/app_settings.dart';
 import '../../../../models/shopping_session.dart';
 import 'history_date_badge.dart';
 
@@ -16,6 +17,7 @@ class SessionCard extends StatelessWidget {
     this.onEdit,
     this.onShare,
     this.glowAnimation,
+    this.numberFormat = NumberFormatPreference.automatic,
   });
 
   final ShoppingSession session;
@@ -24,6 +26,7 @@ class SessionCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onShare;
   final Animation<double>? glowAnimation;
+  final NumberFormatPreference numberFormat;
 
   @override
   Widget build(BuildContext context) {
@@ -34,27 +37,32 @@ class SessionCard extends StatelessWidget {
         : glowAnimation ?? const AlwaysStoppedAnimation(0.35);
 
     return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact =
-            constraints.maxWidth < 380 ||
-            MediaQuery.textScalerOf(context).scale(15) > 18;
+      builder: (context, _) {
+        final purchasedTotals = session.purchasedTotalsByCurrency;
+        final totals = purchasedTotals.ordered();
         final amount = Column(
-          crossAxisAlignment: compact
-              ? CrossAxisAlignment.start
-              : CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            RollingDigitText(
-              text: NumberFormatter.formatPrice(session.totalPurchasedAmount),
-              style: TextStyle(
-                color: palette.purchased,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-              ),
-            ),
             Text(
               'Total Purchased',
               style: TextStyle(color: palette.textSecondary, fontSize: 10),
             ),
+            const SizedBox(height: 2),
+            if (totals.isEmpty)
+              _HistoryAmount(
+                currencyCode: CurrencyCatalog.defaultCode,
+                value: 0,
+                color: palette.purchased,
+                numberFormat: numberFormat,
+              )
+            else
+              for (final total in totals)
+                _HistoryAmount(
+                  currencyCode: total.currencyCode,
+                  value: total.value,
+                  color: palette.purchased,
+                  numberFormat: numberFormat,
+                ),
           ],
         );
         return Card(
@@ -105,18 +113,13 @@ class SessionCard extends StatelessWidget {
                           runSpacing: 2,
                           children: _buildStatuses(context, animation),
                         ),
-                        if (compact && !session.isFuture) ...[
+                        if (!session.isFuture) ...[
                           const SizedBox(height: 6),
                           amount,
                         ],
                       ],
                     ),
                   ),
-                  if (!session.isFuture && !compact)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: amount,
-                    ),
                   _buildMenu(context),
                 ],
               ),
@@ -208,6 +211,54 @@ class SessionCard extends StatelessWidget {
           ),
       ],
       icon: Icon(Icons.more_vert, size: 20, color: palette.textSecondary),
+    );
+  }
+}
+
+class _HistoryAmount extends StatelessWidget {
+  const _HistoryAmount({
+    required this.currencyCode,
+    required this.value,
+    required this.color,
+    required this.numberFormat,
+  });
+
+  final String currencyCode;
+  final double value;
+  final Color color;
+  final NumberFormatPreference numberFormat;
+
+  @override
+  Widget build(BuildContext context) {
+    final isArabic = RegExp(
+      r'[\u0600-\u06ff]',
+    ).hasMatch(CurrencyCatalog.resolve(currencyCode).symbol);
+    return Row(
+      key: ValueKey('history_currency_$currencyCode'),
+      children: [
+        Text(
+          currencyCode,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+        if (isArabic) const Spacer() else const SizedBox(width: 5),
+        Flexible(
+          child: CompactAmountText(
+            value: value,
+            currencyCode: currencyCode,
+            preference: numberFormat,
+            textAlign: isArabic ? TextAlign.end : TextAlign.start,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,5 +1,17 @@
 import '../core/currency/currency_catalog.dart';
 
+enum NumberFormatPreference {
+  automatic,
+  international,
+  southAsian;
+
+  String get displayName => switch (this) {
+    NumberFormatPreference.automatic => 'Automatic',
+    NumberFormatPreference.international => 'International',
+    NumberFormatPreference.southAsian => 'South Asian',
+  };
+}
+
 enum AppTheme {
   system,
   light,
@@ -63,6 +75,7 @@ class AppSettings {
   final DarkPreset darkPreset;
   final String currency;
   final List<String> recentCurrencies;
+  final NumberFormatPreference numberFormat;
   final String language;
 
   const AppSettings({
@@ -71,6 +84,7 @@ class AppSettings {
     this.darkPreset = DarkPreset.midnight,
     this.currency = CurrencyCatalog.defaultCode,
     this.recentCurrencies = const [],
+    this.numberFormat = NumberFormatPreference.automatic,
     this.language = 'English',
   });
 
@@ -80,6 +94,7 @@ class AppSettings {
     DarkPreset? darkPreset,
     String? currency,
     List<String>? recentCurrencies,
+    NumberFormatPreference? numberFormat,
     String? language,
   }) {
     return AppSettings(
@@ -88,6 +103,7 @@ class AppSettings {
       darkPreset: darkPreset ?? this.darkPreset,
       currency: currency ?? this.currency,
       recentCurrencies: recentCurrencies ?? this.recentCurrencies,
+      numberFormat: numberFormat ?? this.numberFormat,
       language: language ?? this.language,
     );
   }
@@ -99,6 +115,7 @@ class AppSettings {
       'darkPreset': darkPreset.name,
       'currency': currency,
       'recentCurrencies': recentCurrencies,
+      'numberFormat': numberFormat.name,
       'language': language,
     };
   }
@@ -123,6 +140,10 @@ class AppSettings {
       recentCurrencies: CurrencyCatalog.sanitizeRecentCodes(
         recentJson is List ? recentJson : const [],
         defaultCurrencyCode: currency,
+      ),
+      numberFormat: NumberFormatPreference.values.firstWhere(
+        (value) => value.name == json['numberFormat'],
+        orElse: () => NumberFormatPreference.automatic,
       ),
       language: json['language'] as String? ?? 'English',
     );
