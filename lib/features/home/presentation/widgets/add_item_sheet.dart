@@ -699,7 +699,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: 116,
+                      width: _currencyButtonWidth(context),
                       child: Semantics(
                         button: true,
                         label: 'Currency, $_selectedCurrencyCode',
@@ -711,6 +711,10 @@ class _AddItemSheetState extends State<AddItemSheet> {
                           child: InputDecorator(
                             decoration: InputDecoration(
                               labelText: 'Currency',
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 17,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -728,7 +732,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 2),
+                                const SizedBox(width: 1),
                                 const Icon(Icons.arrow_drop_down, size: 20),
                               ],
                             ),
@@ -884,7 +888,23 @@ class _AddItemSheetState extends State<AddItemSheet> {
     final currency = CurrencyCatalog.resolve(code);
     return currency.symbol.isEmpty
         ? currency.code
-        : '${currency.code}  ${currency.symbol}';
+        : '${currency.code} ${currency.symbol}';
+  }
+
+  double _currencyButtonWidth(BuildContext context) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: _currencyLabel(_selectedCurrencyCode),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout(maxWidth: double.infinity);
+    final desired = painter.width + 20 + 1 + 20;
+    painter.dispose();
+    final available = MediaQuery.sizeOf(context).width - 64;
+    return desired.clamp(96.0, available * .46).toDouble();
   }
 }
 

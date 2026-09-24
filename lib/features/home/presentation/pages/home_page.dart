@@ -10,6 +10,7 @@ import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/theme/atmospheric_background.dart';
 import '../../../../core/utils/shopping_session_actions.dart';
+import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/widgets/scroll_aware_fab.dart';
 import '../../../../core/widgets/compact_amount_text.dart';
 import '../../../../core/widgets/shopping_list_share_sheet.dart';
@@ -1746,14 +1747,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _buildTotalAmountRow() {
     final palette = ShopTrackThemeTokens.of(context).palette;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Divider(color: palette.border, thickness: 1),
         const SizedBox(height: 10),
         Text(
           'Total Amount',
+          textAlign: TextAlign.end,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 17,
             color: palette.onBackground,
             fontWeight: FontWeight.w600,
           ),
@@ -1762,7 +1764,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         _buildCurrencyTotalValues(
           _pendingTotals,
           color: palette.onBackground,
-          fontSize: 16,
+          fontSize: 18,
+          fontFamily: 'LibreBaskerville',
+          rightAligned: true,
         ),
       ],
     );
@@ -1777,6 +1781,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         child: ClipPath(
           clipper: _ReceiptEdgeClipper(),
           child: Container(
+            key: const ValueKey('purchased_amount_receipt'),
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -1788,37 +1793,43 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.wallet_outlined,
-                      color: palette.purchased,
-                      size: 26,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Purchased Amount',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: palette.onBackground,
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.wallet_outlined,
+                        color: palette.purchased,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Purchased Amount',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: palette.onBackground,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 7),
-                Padding(
-                  padding: const EdgeInsets.only(left: 36),
-                  child: _buildCurrencyTotalValues(
-                    _purchasedTotals,
-                    color: palette.purchased,
-                    fontSize: 17,
-                    fontFamily: 'LibreBaskerville',
+                    ],
                   ),
+                ),
+                const SizedBox(height: 8),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: palette.border.withValues(alpha: .8),
+                ),
+                const SizedBox(height: 8),
+                _buildCurrencyTotalValues(
+                  _purchasedTotals,
+                  color: palette.purchased,
+                  fontSize: 17,
+                  fontFamily: 'LibreBaskerville',
                 ),
               ],
             ),
@@ -1833,6 +1844,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     required Color color,
     required double fontSize,
     String? fontFamily,
+    bool rightAligned = false,
   }) {
     final values = totals.ordered(
       preferredCurrencyCode: _preferredCurrencyCode,
@@ -1844,39 +1856,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               .toList(growable: false);
     final content = Column(
       key: ValueKey(amounts.join('|')),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: rightAligned
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         for (final (code, value) in amounts)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Row(
-              children: [
-                Text(
-                  code,
-                  style: TextStyle(
-                    fontSize: fontSize - 2,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: CompactAmountText(
-                    value: value,
-                    currencyCode: code,
-                    preference:
-                        widget.settingsService?.settings.numberFormat ??
-                        NumberFormatPreference.automatic,
-                    textAlign: TextAlign.start,
-                    style: TextStyle(
-                      fontFamily: fontFamily,
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ],
+            child: _buildCurrencyTotalLine(
+              code,
+              value,
+              color: color,
+              fontSize: fontSize,
+              fontFamily: fontFamily,
+              rightAligned: rightAligned,
             ),
           ),
       ],
@@ -1891,6 +1884,79 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         child: SizeTransition(sizeFactor: animation, child: child),
       ),
       child: content,
+    );
+  }
+
+  Widget _buildCurrencyTotalLine(
+    String code,
+    double value, {
+    required Color color,
+    required double fontSize,
+    required String? fontFamily,
+    required bool rightAligned,
+  }) {
+    final codeStyle = TextStyle(
+      fontSize: fontSize - 2,
+      fontWeight: FontWeight.w600,
+      color: color,
+    );
+    final amountStyle = TextStyle(
+      fontFamily: fontFamily,
+      fontSize: fontSize,
+      fontWeight: FontWeight.w700,
+      color: color,
+    );
+    final preference =
+        widget.settingsService?.settings.numberFormat ??
+        NumberFormatPreference.automatic;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final full = NumberFormatter.formatPrice(
+          value,
+          currencyCode: code,
+          preference: preference,
+          deviceLocale: Localizations.localeOf(context).toString(),
+        );
+        final direction = Directionality.of(context);
+        final scaler = MediaQuery.textScalerOf(context);
+        double widthOf(String text, TextStyle style) {
+          final painter = TextPainter(
+            text: TextSpan(text: text, style: style),
+            textDirection: direction,
+            textScaler: scaler,
+            maxLines: 1,
+          )..layout(maxWidth: double.infinity);
+          final width = painter.width;
+          painter.dispose();
+          return width;
+        }
+
+        final desiredWidth =
+            widthOf(code, codeStyle) + 6 + widthOf(full, amountStyle);
+        final row = SizedBox(
+          width: rightAligned
+              ? desiredWidth.clamp(0.0, constraints.maxWidth)
+              : constraints.maxWidth,
+          child: Row(
+            children: [
+              Text(code, style: codeStyle),
+              const SizedBox(width: 6),
+              Expanded(
+                child: CompactAmountText(
+                  value: value,
+                  currencyCode: code,
+                  preference: preference,
+                  textAlign: rightAligned ? TextAlign.end : TextAlign.start,
+                  style: amountStyle,
+                ),
+              ),
+            ],
+          ),
+        );
+        return rightAligned
+            ? Align(alignment: Alignment.centerRight, child: row)
+            : row;
+      },
     );
   }
 }

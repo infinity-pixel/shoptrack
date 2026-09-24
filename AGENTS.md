@@ -66,8 +66,10 @@ that adds friction needs a clear user benefit.
 - Lists render independent currency groups within To Buy and Purchased; drag
   reordering must stay inside its own currency group. Profile controls the
   display-number format (Automatic, International, or South Asian). Large
-  amounts may be abbreviated visually, but tapping them must reveal the full
-  amount; stored item prices and per-currency totals are never abbreviated.
+  amounts are abbreviated visually only when their full text does not fit the
+  available row width; tapping them reveals the full amount. Automatic uses
+  a consistent locale for each currency, while the other choices override it.
+  Stored item prices and per-currency totals are never abbreviated.
   The item editor accepts at most two decimal places for prices.
 - Any shopping date can be copied or shared as structured plain text. Users can
   export the current list, chosen lists, all lists, or a long-press selection;

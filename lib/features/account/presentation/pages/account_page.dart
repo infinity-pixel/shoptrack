@@ -522,7 +522,7 @@ class AccountPage extends StatelessWidget {
                         Text(preference.displayName),
                         Text(switch (preference) {
                           NumberFormatPreference.automatic =>
-                            'Follow your device region',
+                            'Match each currency’s region',
                           NumberFormatPreference.international =>
                             '1,234,567 · 1.23M',
                           NumberFormatPreference.southAsian =>

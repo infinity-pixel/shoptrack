@@ -1,6 +1,6 @@
 # ShopTrack — Codex Cloud and Local Development Handover
 
-Last reviewed against the local checkout: **19 September 2026**.
+Last reviewed against the local checkout: **24 September 2026**.
 
 This is the canonical continuity document for moving ShopTrack work between
 Codex Cloud and local Codex tasks. It records the product intent, implemented
@@ -75,9 +75,9 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 19 — multi-currency UI refinement**.
-- Its baseline revision is `14b5bd4` —
-  `Polish contextual sharing and dark item presentation`.
+- Current local milestone: **Sprint 19.2 — responsive multi-currency display**.
+- Sprint 19.2 started from revision `3abc638`; check `git log` for the latest
+  commit and `git status` for any uncommitted work.
 
 Sprint 19 foundation work includes:
 
@@ -457,9 +457,15 @@ shortcuts without replacing the default. Fixed-precision totals, Lists and
 History grouped displays, backup, sharing, and sync merge remain currency-aware.
 Changing the default never rewrites an existing item's recorded currency.
 Reordering stays within each currency group. Profile offers Automatic,
-International, and South Asian number formats; South Asian compact amounts use
-Lakh/Crore. Amounts at or above 100,000 may be abbreviated in constrained UI,
-but a tap shows the full value. Item price entry is limited to two decimals;
+International, and South Asian number formats. Automatic selects a stable
+currency-specific locale from available CLDR data; the two explicit choices
+override it. South Asian compact amounts use Lakh/Crore. Item tiles, Lists
+totals, and History totals display the full formatted amount whenever it fits
+the actual row width, abbreviating only when needed; a tap shows the full value.
+Lists totals sit below a right-aligned Total Amount heading, and the Purchased
+Amount receipt centers its wallet-and-title heading above a thin divider and
+vertical currency rows. Swipe-delete backgrounds are clipped to tile corners.
+Item price entry is limited to two decimals;
 the current UI also caps impractically large inputs to protect layout.
 
 ### Receipt-photo import / OCR
