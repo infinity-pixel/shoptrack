@@ -199,7 +199,6 @@ void main() {
   testWidgets('History displays mixed purchased totals separately', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 700));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final now = DateTime.now();
     final session = ShoppingSession(
@@ -222,42 +221,78 @@ void main() {
           isPurchased: true,
           position: 1,
         ),
+        ShoppingItem(
+          id: 'sar',
+          name: 'Dates',
+          currencyCode: 'SAR',
+          priceValue: 8403300,
+          isPurchased: true,
+          position: 2,
+        ),
       ],
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemePresets.lightPresets[LightPreset.summer]!.toThemeData(),
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: const TextScaler.linear(1.3)),
-          child: child!,
-        ),
-        home: Scaffold(
-          body: SizedBox(
-            width: 500,
-            child: SessionCard(session: session, onTap: () {}, onEdit: () {}),
+    for (final (width, textScale) in [
+      (320.0, 1.3),
+      (360.0, 1.0),
+      (500.0, 1.3),
+    ]) {
+      await tester.binding.setSurfaceSize(Size(width, 700));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemePresets.lightPresets[LightPreset.summer]!.toThemeData(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SizedBox(
+              width: width,
+              child: SessionCard(session: session, onTap: () {}, onEdit: () {}),
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 500));
+      );
+      await tester.pump(const Duration(milliseconds: 500));
 
-    final bdtLabel = NumberFormatter.formatPrice(300, currencyCode: 'BDT');
-    final usdLabel = NumberFormatter.formatPrice(5, currencyCode: 'USD');
-    expect(find.text('BDT'), findsOneWidget);
-    expect(find.text('USD'), findsOneWidget);
-    expect(find.text(bdtLabel), findsOneWidget);
-    expect(find.text(usdLabel), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('Total Purchased')).dy,
-      lessThan(tester.getTopLeft(find.text(bdtLabel)).dy),
-    );
-    expect(
-      tester.getTopLeft(find.text(usdLabel)).dx,
-      lessThan(tester.getTopLeft(find.byIcon(Icons.more_vert)).dx),
-    );
+      final bdtLabel = NumberFormatter.formatPrice(300, currencyCode: 'BDT');
+      final usdLabel = NumberFormatter.formatPrice(5, currencyCode: 'USD');
+      expect(find.text('BDT'), findsOneWidget);
+      expect(find.text('USD'), findsOneWidget);
+      expect(find.text('SAR'), findsOneWidget);
+      expect(find.text(bdtLabel), findsOneWidget);
+      expect(find.text(usdLabel), findsOneWidget);
+      final sarLabel = NumberFormatter.formatPrice(
+        8403300,
+        currencyCode: 'SAR',
+      );
+      if (width > 320) expect(find.text(sarLabel), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Total Purchased')).dy,
+        lessThan(tester.getTopLeft(find.text(bdtLabel)).dy),
+      );
+      expect(
+        tester.getRect(find.text(bdtLabel)).left,
+        closeTo(
+          tester
+                  .getRect(
+                    find.byKey(const ValueKey('history_currency_code_BDT')),
+                  )
+                  .right +
+              8,
+          2,
+        ),
+      );
+      if (width > 320) {
+        expect(
+          tester.getRect(find.text(sarLabel)).right,
+          lessThan(tester.getRect(find.byIcon(Icons.more_vert)).left),
+        );
+      }
+      expect(tester.takeException(), isNull);
+    }
   });
 
   test('catalogue still offers a broad set of payment currencies', () {
@@ -464,6 +499,34 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(find.text('৳9.99 Crore'), findsOneWidget);
+    final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+    expect(dismissible.background, isA<ClipRRect>());
+    final swipeBackground = dismissible.background as ClipRRect;
+    expect(swipeBackground.borderRadius, BorderRadius.circular(16));
+    final tileRect = tester.getRect(find.byType(ShoppingItemTile));
+    final drag = await tester.startGesture(
+      Offset(tileRect.right - 30, tileRect.center.dy),
+    );
+    await drag.moveBy(const Offset(-35, 0));
+    await tester.pump();
+    await drag.moveBy(const Offset(-75, 0));
+    await tester.pump(const Duration(milliseconds: 200));
+    final swipedCard = tester.widget<Container>(
+      find.byKey(const ValueKey('shopping-item-tile-large')),
+    );
+    expect(
+      (swipedCard.decoration! as BoxDecoration).borderRadius,
+      const BorderRadius.horizontal(left: Radius.circular(16)),
+    );
+    await drag.up();
+    await tester.pumpAndSettle();
+    final restoredCard = tester.widget<Container>(
+      find.byKey(const ValueKey('shopping-item-tile-large')),
+    );
+    expect(
+      (restoredCard.decoration! as BoxDecoration).borderRadius,
+      BorderRadius.circular(16),
+    );
   });
 
   testWidgets('Lists gives each currency its own reorder boundary and totals', (
@@ -480,7 +543,7 @@ void main() {
           id: 'bdt-1',
           name: 'Rice',
           currencyCode: 'BDT',
-          priceValue: 90,
+          priceValue: 6900000,
           position: 0,
         ),
         ShoppingItem(
@@ -537,7 +600,16 @@ void main() {
     expect(find.text('BDT · Taka'), findsNWidgets(2));
     expect(find.text('EUR · Euro'), findsNWidgets(2));
     expect(find.text('Purchased Amount'), findsOneWidget);
-    expect(find.text('৳110'), findsOneWidget);
+    final pendingBdtTotal = NumberFormatter.formatPrice(
+      6900020,
+      currencyCode: 'BDT',
+    );
+    expect(find.text(pendingBdtTotal), findsOneWidget);
+    final pendingCode = tester.getRect(
+      find.byKey(const ValueKey('currency_total_code_BDT_true')),
+    );
+    final pendingPrice = tester.getRect(find.text(pendingBdtTotal));
+    expect(pendingCode.right, lessThan(pendingPrice.left));
     final receiptHeading = tester.getRect(find.text('Purchased Amount'));
     final receiptWallet = tester.getRect(find.byIcon(Icons.wallet_outlined));
     final receipt = tester.getRect(
@@ -547,6 +619,20 @@ void main() {
     expect(groupCenter, closeTo(receipt.center.dx, 2));
     final totalHeading = tester.getRect(find.text('Total Amount'));
     expect(totalHeading.right, closeTo(receipt.right, 24));
+    final purchasedCode = tester.getRect(
+      find.byKey(const ValueKey('currency_total_code_BDT_false')),
+    );
+    final receiptPrice = find.descendant(
+      of: find.byKey(const ValueKey('purchased_amount_receipt')),
+      matching: find.text('৳30'),
+    );
+    final purchasedPrice = tester.getRect(receiptPrice);
+    expect(purchasedCode.left, lessThan(purchasedPrice.left));
+    expect(purchasedPrice.right, closeTo(receipt.right - 18, 2));
+    expect(
+      tester.widget<Text>(receiptPrice).style?.fontFamily,
+      'LibreBaskerville',
+    );
     final bdtPending = tester.widget<ReorderableListView>(
       find.byKey(const ValueKey('currency_group_BDT_false')),
     );
@@ -627,7 +713,11 @@ void main() {
           )
           .first,
     );
-    for (var i = 0; i < 8 && find.text('Purchased Amount').evaluate().isEmpty; i++) {
+    for (
+      var i = 0;
+      i < 8 && find.text('Purchased Amount').evaluate().isEmpty;
+      i++
+    ) {
       scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
       await tester.pumpAndSettle();
     }

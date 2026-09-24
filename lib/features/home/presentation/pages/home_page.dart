@@ -1746,29 +1746,35 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget _buildTotalAmountRow() {
     final palette = ShopTrackThemeTokens.of(context).palette;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Divider(color: palette.border, thickness: 1),
-        const SizedBox(height: 10),
-        Text(
-          'Total Amount',
-          textAlign: TextAlign.end,
-          style: TextStyle(
-            fontSize: 17,
-            color: palette.onBackground,
-            fontWeight: FontWeight.w600,
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Divider(color: palette.border, thickness: 1),
+          const SizedBox(height: 10),
+          Text(
+            'Total Amount',
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: 17,
+              color: palette.onBackground,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        _buildCurrencyTotalValues(
-          _pendingTotals,
-          color: palette.onBackground,
-          fontSize: 18,
-          fontFamily: 'LibreBaskerville',
-          rightAligned: true,
-        ),
-      ],
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: _buildCurrencyTotalValues(
+              _pendingTotals,
+              color: palette.onBackground,
+              fontSize: 18,
+              fontFamily: 'LibreBaskerville',
+              rightAligned: true,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1830,6 +1836,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   color: palette.purchased,
                   fontSize: 17,
                   fontFamily: 'LibreBaskerville',
+                  amountAlignEnd: true,
                 ),
               ],
             ),
@@ -1845,6 +1852,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     required double fontSize,
     String? fontFamily,
     bool rightAligned = false,
+    bool amountAlignEnd = false,
   }) {
     final values = totals.ordered(
       preferredCurrencyCode: _preferredCurrencyCode,
@@ -1856,9 +1864,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               .toList(growable: false);
     final content = Column(
       key: ValueKey(amounts.join('|')),
-      crossAxisAlignment: rightAligned
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final (code, value) in amounts)
           Padding(
@@ -1870,6 +1876,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               fontSize: fontSize,
               fontFamily: fontFamily,
               rightAligned: rightAligned,
+              amountAlignEnd: amountAlignEnd,
             ),
           ),
       ],
@@ -1894,6 +1901,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     required double fontSize,
     required String? fontFamily,
     required bool rightAligned,
+    required bool amountAlignEnd,
   }) {
     final codeStyle = TextStyle(
       fontSize: fontSize - 2,
@@ -1915,13 +1923,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           value,
           currencyCode: code,
           preference: preference,
-          deviceLocale: Localizations.localeOf(context).toString(),
+          deviceLocale: WidgetsBinding.instance.platformDispatcher.locale
+              .toString(),
         );
         final direction = Directionality.of(context);
         final scaler = MediaQuery.textScalerOf(context);
         double widthOf(String text, TextStyle style) {
           final painter = TextPainter(
-            text: TextSpan(text: text, style: style),
+            text: TextSpan(
+              text: text,
+              style: DefaultTextStyle.of(context).style.merge(style),
+            ),
             textDirection: direction,
             textScaler: scaler,
             maxLines: 1,
@@ -1932,21 +1944,29 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         }
 
         final desiredWidth =
-            widthOf(code, codeStyle) + 6 + widthOf(full, amountStyle);
+            (widthOf(code, codeStyle) + 6 + widthOf(full, amountStyle))
+                .ceilToDouble() +
+            1;
         final row = SizedBox(
           width: rightAligned
               ? desiredWidth.clamp(0.0, constraints.maxWidth)
               : constraints.maxWidth,
           child: Row(
             children: [
-              Text(code, style: codeStyle),
+              Text(
+                code,
+                key: ValueKey('currency_total_code_${code}_$rightAligned'),
+                style: codeStyle,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: CompactAmountText(
                   value: value,
                   currencyCode: code,
                   preference: preference,
-                  textAlign: rightAligned ? TextAlign.end : TextAlign.start,
+                  textAlign: amountAlignEnd || rightAligned
+                      ? TextAlign.end
+                      : TextAlign.start,
                   style: amountStyle,
                 ),
               ),

@@ -41,7 +41,7 @@ class SessionCard extends StatelessWidget {
         final purchasedTotals = session.purchasedTotalsByCurrency;
         final totals = purchasedTotals.ordered();
         final amount = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               'Total Purchased',
@@ -238,14 +238,15 @@ class _HistoryAmount extends StatelessWidget {
       children: [
         Text(
           currencyCode,
+          key: ValueKey('history_currency_code_$currencyCode'),
           style: TextStyle(
             color: color,
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),
         ),
-        if (isArabic) const Spacer() else const SizedBox(width: 5),
-        Flexible(
+        const SizedBox(width: 8),
+        Expanded(
           child: CompactAmountText(
             value: value,
             currencyCode: currencyCode,

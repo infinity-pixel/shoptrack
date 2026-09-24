@@ -5,6 +5,8 @@ import '../../../../core/widgets/compact_amount_text.dart';
 import '../../../../models/app_settings.dart';
 import '../../../../models/shopping_item.dart';
 
+const _itemCardRadius = 16.0;
+
 class ShoppingItemTile extends StatelessWidget {
   final ShoppingItem item;
   final VoidCallback onToggle;
@@ -49,258 +51,309 @@ class ShoppingItemTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Dismissible(
-          key: ValueKey(item.id),
-          direction: selectionMode
-              ? DismissDirection.none
-              : DismissDirection.endToStart,
-          onDismissed: (_) => onDelete(),
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 24.0),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.error,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              Icons.delete_outline,
-              color: Theme.of(context).colorScheme.onError,
+      child: _SwipeDismissFrame(
+        itemId: item.id,
+        selectionMode: selectionMode,
+        onDelete: onDelete,
+        childBuilder: (cardRadius) => Container(
+          key: ValueKey('shopping-item-tile-${item.id}'),
+          decoration: BoxDecoration(
+            color: selected
+                ? Color.alphaBlend(
+                    palette.primary.withValues(alpha: .12),
+                    isPurchased
+                        ? palette.surfacePurchased
+                        : palette.surfaceToBuy,
+                  )
+                : isPurchased
+                ? palette.surfacePurchased
+                : palette.surfaceToBuy,
+            borderRadius: cardRadius,
+            border: Border.all(
+              color: selected ? palette.primary : palette.border,
+              width: selected ? 2 : 1,
             ),
           ),
-          child: Container(
-            key: ValueKey('shopping-item-tile-${item.id}'),
-            decoration: BoxDecoration(
-              color: selected
-                  ? Color.alphaBlend(
-                      palette.primary.withValues(alpha: .12),
-                      isPurchased
-                          ? palette.surfacePurchased
-                          : palette.surfaceToBuy,
-                    )
-                  : isPurchased
-                  ? palette.surfacePurchased
-                  : palette.surfaceToBuy,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: selected ? palette.primary : palette.border,
-                width: selected ? 2 : 1,
+          child: InkWell(
+            onTap: onTap,
+            onLongPress: onLongPress,
+            borderRadius: cardRadius,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                2,
+                4,
+                14,
+                displayNote == null ? 4 : 9,
               ),
-            ),
-            child: InkWell(
-              onTap: onTap,
-              onLongPress: onLongPress,
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  2,
-                  4,
-                  14,
-                  displayNote == null ? 4 : 9,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Drag Handle
-                    SizedBox(
-                      width: 30,
-                      child: selectionMode
-                          ? null
-                          : ReorderableDragStartListener(
-                              index: index,
-                              // Hit-test the whole padded handle, not just the icon glyph.
-                              child: ColoredBox(
-                                color: Colors.transparent,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 6,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Drag Handle
+                  SizedBox(
+                    width: 30,
+                    child: selectionMode
+                        ? null
+                        : ReorderableDragStartListener(
+                            index: index,
+                            // Hit-test the whole padded handle, not just the icon glyph.
+                            child: ColoredBox(
+                              color: Colors.transparent,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                ),
+                                child: Icon(
+                                  Icons.drag_indicator,
+                                  color: palette.textSecondary.withValues(
+                                    alpha: 0.55,
                                   ),
-                                  child: Icon(
-                                    Icons.drag_indicator,
-                                    color: palette.textSecondary.withValues(
-                                      alpha: 0.55,
-                                    ),
-                                    size: 20,
-                                  ),
+                                  size: 20,
                                 ),
                               ),
                             ),
-                    ),
+                          ),
+                  ),
 
-                    // Checkbox
-                    Semantics(
-                      label: selectionMode
-                          ? 'Select ${item.name}'
-                          : 'Mark ${item.name} Purchased',
-                      checked: checked,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: onToggle,
-                        child: SizedBox(
-                          width: 40,
-                          height: 48,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 280),
-                                width: 26,
-                                height: 26,
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: checked
-                                        ? checkColor
-                                        : Theme.of(context).brightness ==
-                                              Brightness.dark
-                                        ? palette.textSecondary
-                                        : palette.border,
-                                    width: 2,
-                                  ),
-                                  borderRadius: BorderRadius.circular(
-                                    selectionMode ? 20 : 8,
-                                  ),
+                  // Checkbox
+                  Semantics(
+                    label: selectionMode
+                        ? 'Select ${item.name}'
+                        : 'Mark ${item.name} Purchased',
+                    checked: checked,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onToggle,
+                      child: SizedBox(
+                        width: 40,
+                        height: 48,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 280),
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                border: Border.all(
                                   color: checked
                                       ? checkColor
-                                      : Colors.transparent,
+                                      : Theme.of(context).brightness ==
+                                            Brightness.dark
+                                      ? palette.textSecondary
+                                      : palette.border,
+                                  width: 2,
                                 ),
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 240),
-                                  transitionBuilder: (child, animation) {
-                                    return ScaleTransition(
-                                      scale: animation,
-                                      child: FadeTransition(
-                                        opacity: animation,
-                                        child: child,
+                                borderRadius: BorderRadius.circular(
+                                  selectionMode ? 20 : 8,
+                                ),
+                                color: checked
+                                    ? checkColor
+                                    : Colors.transparent,
+                              ),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 240),
+                                transitionBuilder: (child, animation) {
+                                  return ScaleTransition(
+                                    scale: animation,
+                                    child: FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: checked
+                                    ? Icon(
+                                        Icons.check,
+                                        key: const ValueKey('checked'),
+                                        size: 18,
+                                        color: selectionMode
+                                            ? palette.onPrimary
+                                            : palette.onStatus,
+                                      )
+                                    : const SizedBox(
+                                        key: ValueKey('unchecked'),
                                       ),
-                                    );
-                                  },
-                                  child: checked
-                                      ? Icon(
-                                          Icons.check,
-                                          key: const ValueKey('checked'),
-                                          size: 18,
-                                          color: selectionMode
-                                              ? palette.onPrimary
-                                              : palette.onStatus,
-                                        )
-                                      : const SizedBox(
-                                          key: ValueKey('unchecked'),
-                                        ),
-                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 2),
+                  ),
+                  const SizedBox(width: 2),
 
-                    // Item Info: Name + Qty
-                    Expanded(
-                      flex: 6,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: isPurchased
-                                  ? FontWeight.w600
-                                  : FontWeight.w700,
-                              color: isPurchased
-                                  ? palette.textSecondary
-                                  : palette.onSurface,
-                              decoration: isPurchased
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
+                  // Item Info: Name + Qty
+                  Expanded(
+                    flex: 6,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: isPurchased
+                                ? FontWeight.w600
+                                : FontWeight.w700,
+                            color: isPurchased
+                                ? palette.textSecondary
+                                : palette.onSurface,
+                            decoration: isPurchased
+                                ? TextDecoration.lineThrough
+                                : null,
                           ),
-                          if (displayQty != null || displayUnit != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 0),
-                              child: Text(
-                                '${NumberFormatter.formatQuantity(displayQty ?? 0, enteredText: item.quantity)} ${displayUnit ?? ''}'
-                                    .trim(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: palette.textSecondary,
-                                  height: 1.1,
-                                ),
-                              ),
-                            ),
-                          if (displayNote != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 3),
-                              child: Text(
-                                displayNote,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  color: palette.textSecondary.withValues(
-                                    alpha: .88,
-                                  ),
-                                  height: 1.15,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(
-                      width: 12,
-                    ), // Breathing room between qty and price
-                    // RIGHT: Price Column
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (pricing.totalPrice > 0)
-                            CompactAmountText(
-                              value: pricing.totalPrice,
-                              currencyCode: item.currencyCode,
-                              preference: numberFormat,
+                        ),
+                        if (displayQty != null || displayUnit != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 0),
+                            child: Text(
+                              '${NumberFormatter.formatQuantity(displayQty ?? 0, enteredText: item.quantity)} ${displayUnit ?? ''}'
+                                  .trim(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isPurchased
-                                    ? palette.purchased
-                                    : palette.secondary,
-                              ),
-                            ),
-                          if (pricing.unitPrice > 0)
-                            CompactAmountText(
-                              value: pricing.unitPrice,
-                              currencyCode: item.currencyCode,
-                              preference: numberFormat,
-                              suffix: '/${pricing.priceBasisSymbol}',
-                              style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w500,
                                 color: palette.textSecondary,
+                                height: 1.1,
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                        if (displayNote != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              displayNote,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: palette.textSecondary.withValues(
+                                  alpha: .88,
+                                ),
+                                height: 1.15,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+
+                  const SizedBox(
+                    width: 12,
+                  ), // Breathing room between qty and price
+                  // RIGHT: Price Column
+                  Expanded(
+                    flex: 4,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (pricing.totalPrice > 0)
+                          CompactAmountText(
+                            value: pricing.totalPrice,
+                            currencyCode: item.currencyCode,
+                            preference: numberFormat,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: isPurchased
+                                  ? palette.purchased
+                                  : palette.secondary,
+                            ),
+                          ),
+                        if (pricing.unitPrice > 0)
+                          CompactAmountText(
+                            value: pricing.unitPrice,
+                            currencyCode: item.currencyCode,
+                            preference: numberFormat,
+                            suffix: '/${pricing.priceBasisSymbol}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: palette.textSecondary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SwipeDismissFrame extends StatefulWidget {
+  const _SwipeDismissFrame({
+    required this.itemId,
+    required this.selectionMode,
+    required this.onDelete,
+    required this.childBuilder,
+  });
+
+  final String itemId;
+  final bool selectionMode;
+  final VoidCallback onDelete;
+  final Widget Function(BorderRadius) childBuilder;
+
+  @override
+  State<_SwipeDismissFrame> createState() => _SwipeDismissFrameState();
+}
+
+class _SwipeDismissFrameState extends State<_SwipeDismissFrame> {
+  bool _revealing = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final outerRadius = BorderRadius.circular(_itemCardRadius);
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final cardRadius = _revealing
+        ? BorderRadius.horizontal(
+            left: Radius.circular(isRtl ? 0 : _itemCardRadius),
+            right: Radius.circular(isRtl ? _itemCardRadius : 0),
+          )
+        : outerRadius;
+    return ClipRRect(
+      borderRadius: outerRadius,
+      child: Dismissible(
+        key: ValueKey(widget.itemId),
+        direction: widget.selectionMode
+            ? DismissDirection.none
+            : DismissDirection.endToStart,
+        onUpdate: (details) {
+          final revealing = details.progress > 0;
+          if (revealing != _revealing) {
+            setState(() => _revealing = revealing);
+          }
+        },
+        onDismissed: (_) => widget.onDelete(),
+        background: ClipRRect(
+          borderRadius: outerRadius,
+          child: Material(
+            color: Theme.of(context).colorScheme.error,
+            clipBehavior: Clip.antiAlias,
+            child: Container(
+              alignment: isRtl ? Alignment.centerLeft : Alignment.centerRight,
+              padding: EdgeInsets.only(
+                left: isRtl ? 24 : 0,
+                right: isRtl ? 0 : 24,
+              ),
+              child: Icon(
+                Icons.delete_outline,
+                color: Theme.of(context).colorScheme.onError,
+              ),
+            ),
+          ),
+        ),
+        child: widget.childBuilder(cardRadius),
       ),
     );
   }
