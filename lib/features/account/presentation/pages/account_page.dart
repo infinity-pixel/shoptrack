@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import '../../../../app.dart';
 import '../../../../core/currency/currency_catalog.dart';
 import '../../../../core/theme/theme_presets.dart';
@@ -39,7 +40,7 @@ class AccountPage extends StatelessWidget {
         return Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: Text(
+            title: ShopText(
               'Profile',
               style: Theme.of(
                 context,
@@ -84,7 +85,10 @@ class AccountPage extends StatelessWidget {
                             context,
                             icon: Icons.payments_outlined,
                             title: 'Currency',
-                            subtitle: _currencySubtitle(settings.currency),
+                            subtitle: _currencySubtitle(
+                              context,
+                              settings.currency,
+                            ),
                             onTap: () =>
                                 _showCurrencyDialog(context, settingsService),
                           ),
@@ -103,7 +107,8 @@ class AccountPage extends StatelessWidget {
                             icon: Icons.translate_outlined,
                             title: 'Language',
                             subtitle: settings.language,
-                            onTap: () => _showLanguageDialog(context),
+                            onTap: () =>
+                                _showLanguageDialog(context, settingsService),
                           ),
                         ],
                       ),
@@ -227,7 +232,7 @@ class AccountPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
       child: Row(
         children: [
-          Text(
+          ShopText(
             title,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
@@ -314,7 +319,7 @@ class AccountPage extends StatelessWidget {
                   ),
                 if (profiles.loadError != null) ...[
                   const SizedBox(height: 6),
-                  Text(
+                  ShopText(
                     'Your saved profile could not be loaded. Please restart the app.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: p.error),
@@ -362,7 +367,7 @@ class AccountPage extends StatelessWidget {
                           );
                         },
                   icon: const Icon(Icons.edit_outlined, size: 17),
-                  label: const Text('Edit'),
+                  label: const ShopText('Edit'),
                 ),
               ),
           ],
@@ -378,21 +383,21 @@ class AccountPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sign In Required'),
-        content: const Text(
+        title: const ShopText('Sign In Required'),
+        content: const ShopText(
           'You need to sign in with your Google account to use cloud backup and synchronization features.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const ShopText('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               authService.signIn();
             },
-            child: const Text('Sign In'),
+            child: const ShopText('Sign In'),
           ),
         ],
       ),
@@ -421,7 +426,7 @@ class AccountPage extends StatelessWidget {
         ),
         child: Icon(icon, size: 21, color: p.onSurface),
       ),
-      title: Text(
+      title: ShopText(
         title,
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
           color: p.onSurface,
@@ -430,7 +435,7 @@ class AccountPage extends StatelessWidget {
       ),
       subtitle: subtitle == null
           ? null
-          : Text(
+          : ShopText(
               subtitle,
               style: Theme.of(
                 context,
@@ -443,9 +448,9 @@ class AccountPage extends StatelessWidget {
     );
   }
 
-  String _currencySubtitle(String code) {
+  String _currencySubtitle(BuildContext context, String code) {
     final currency = CurrencyCatalog.resolve(code);
-    return '${currency.code} · ${currency.name}';
+    return '${currency.code} · ${shopTr(context, currency.name)}';
   }
 
   Future<void> _showCurrencyDialog(
@@ -469,7 +474,9 @@ class AccountPage extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Default currency changed to $selected. Existing items were not changed.',
+            shopIsBangla(context)
+                ? 'ডিফল্ট মুদ্রা $selected করা হয়েছে। আগের পণ্যগুলোর মুদ্রা বদলায়নি।'
+                : 'Default currency changed to $selected. Existing items were not changed.',
           ),
         ),
       );
@@ -477,28 +484,50 @@ class AccountPage extends StatelessWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Could not save the currency preference.'),
+          content: ShopText('Could not save the currency preference.'),
         ),
       );
     }
   }
 
-  void _showLanguageDialog(BuildContext context) {
-    showDialog(
+  Future<void> _showLanguageDialog(
+    BuildContext context,
+    SettingsService settingsService,
+  ) async {
+    final selected = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Language Preference'),
-        content: const Text(
-          'English is currently the supported language. More languages will be available soon.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
+      builder: (dialogContext) => SimpleDialog(
+        title: const ShopText('Language Preference'),
+        children: [
+          for (final language in const ['English', 'Bangla'])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(dialogContext, language),
+              child: Row(
+                children: [
+                  Expanded(child: ShopText(language)),
+                  if (settingsService.settings.language == language)
+                    const Icon(Icons.check),
+                ],
+              ),
+            ),
         ],
       ),
     );
+    if (!context.mounted ||
+        selected == null ||
+        selected == settingsService.settings.language) {
+      return;
+    }
+    try {
+      await settingsService.updateLanguage(selected);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: ShopText('Could not save the language preference.'),
+        ),
+      );
+    }
   }
 
   Future<void> _showNumberFormatDialog(
@@ -508,7 +537,7 @@ class AccountPage extends StatelessWidget {
     final selected = await showDialog<NumberFormatPreference>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: const Text('Number Format'),
+        title: const ShopText('Number Format'),
         children: [
           for (final preference in NumberFormatPreference.values)
             SimpleDialogOption(
@@ -519,8 +548,8 @@ class AccountPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(preference.displayName),
-                        Text(switch (preference) {
+                        ShopText(preference.displayName),
+                        ShopText(switch (preference) {
                           NumberFormatPreference.automatic =>
                             'Match each currency’s region',
                           NumberFormatPreference.international =>

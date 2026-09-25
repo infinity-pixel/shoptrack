@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:intl/intl.dart';
 import 'date_parts_field.dart';
 
@@ -152,7 +153,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: const ShopText('Cancel'),
               ),
               const SizedBox(width: 8),
               ElevatedButton(

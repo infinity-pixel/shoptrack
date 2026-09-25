@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 
 import '../../../../core/theme/design_system.dart';
 import '../../../../core/theme/theme_presets.dart';
@@ -23,7 +24,7 @@ class AppearancePage extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(
+            title: ShopText(
               'Appearance',
               style: Theme.of(
                 context,
@@ -99,7 +100,7 @@ class _SectionHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          ShopText(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: palette.onBackground,
@@ -176,7 +177,7 @@ class _ModeSelector extends StatelessWidget {
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: Text(
+                              child: ShopText(
                                 mode.displayName,
                                 style: _modeTextStyle(
                                   context,
@@ -202,7 +203,7 @@ class _ModeSelector extends StatelessWidget {
                               color: palette.onSurface,
                             ),
                             const SizedBox(height: 7),
-                            Text(
+                            ShopText(
                               mode.displayName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -398,7 +399,7 @@ class _PresetCard<T> extends StatelessWidget {
                     ),
                     const SizedBox(width: 7),
                     Expanded(
-                      child: Text(
+                      child: ShopText(
                         definition.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

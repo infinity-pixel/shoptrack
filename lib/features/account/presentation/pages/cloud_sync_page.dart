@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/data/session_merge.dart';
 import '../../../../core/theme/theme_presets.dart';
@@ -17,7 +18,7 @@ class CloudSyncPage extends StatelessWidget {
       final p = ShopTrackThemeTokens.of(context).palette;
       final conflicts = service.store?.conflicts ?? <Json>[];
       return Scaffold(
-        appBar: AppBar(title: const Text('Cloud Sync')),
+        appBar: AppBar(title: const ShopText('Cloud Sync')),
         body: SafeArea(
           child: Align(
             alignment: Alignment.topCenter,
@@ -68,7 +69,7 @@ class CloudSyncPage extends StatelessWidget {
                             TextButton.icon(
                               onPressed: service.retry,
                               icon: const Icon(Icons.refresh),
-                              label: const Text('Retry Sync'),
+                              label: const ShopText('Retry Sync'),
                             ),
                         ],
                       ),
@@ -106,12 +107,12 @@ class CloudSyncPage extends StatelessWidget {
                     ),
                   ),
                   if (conflicts.isNotEmpty) ...[
-                    Text(
+                    ShopText(
                       'Review Changes',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    const ShopText(
                       'The same record changed in two places. Review both versions before choosing. Other edits can continue syncing.',
                     ),
                     for (final conflict in conflicts)
@@ -127,11 +128,11 @@ class CloudSyncPage extends StatelessWidget {
                               ),
                               Text((conflict['fields'] as List).join(', ')),
                               if (conflict['batchId'] != null)
-                                const Text(
+                                const ShopText(
                                   'This is part of an item transfer. Your choice applies to both related dates below.',
                                 ),
                               const SizedBox(height: 12),
-                              Text(
+                              ShopText(
                                 'This Device',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -140,7 +141,7 @@ class CloudSyncPage extends StatelessWidget {
                               ),
                               Text(_describe(conflict['value'] as Json?)),
                               const SizedBox(height: 12),
-                              Text(
+                              ShopText(
                                 'Saved Version',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -156,12 +157,12 @@ class CloudSyncPage extends StatelessWidget {
                                   OutlinedButton(
                                     onPressed: () =>
                                         _resolve(context, conflict, false),
-                                    child: const Text('Keep Saved Version'),
+                                    child: const ShopText('Keep Saved Version'),
                                   ),
                                   FilledButton(
                                     onPressed: () =>
                                         _resolve(context, conflict, true),
-                                    child: const Text('Use My Changes'),
+                                    child: const ShopText('Use My Changes'),
                                   ),
                                 ],
                               ),
@@ -178,8 +179,8 @@ class CloudSyncPage extends StatelessWidget {
                         vertical: 8,
                       ),
                       leading: const Icon(Icons.settings_backup_restore),
-                      title: const Text('Advanced Backup & Restore'),
-                      subtitle: const Text('File and Google Drive backups'),
+                      title: const ShopText('Advanced Backup & Restore'),
+                      subtitle: const ShopText('File and Google Drive backups'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(
                         context,
@@ -214,14 +215,14 @@ class CloudSyncPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              ShopText(
                 title,
                 style: Theme.of(
                   context,
                 ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 3),
-              Text(
+              ShopText(
                 detail,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: p.textSecondary,
@@ -261,7 +262,7 @@ class CloudSyncPage extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not save your choice. Please try again.'),
+            content: ShopText('Could not save your choice. Please try again.'),
           ),
         );
       }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/data/shopping_repository.dart';
@@ -37,6 +38,8 @@ class _HistoryPageState extends State<HistoryPage>
   late final Animation<double> _headingGlow;
   List<ShoppingSession> _sessions = [];
   bool _isLoading = true;
+  bool _fabExpanded = true;
+  final FabScrollIntent _fabScrollIntent = FabScrollIntent();
   String? _loadError;
 
   @override
@@ -108,7 +111,7 @@ class _HistoryPageState extends State<HistoryPage>
           children: [
             Icon(Icons.history, color: palette.secondary),
             const SizedBox(width: 10),
-            const Text('History'),
+            const ShopText('History'),
           ],
         ),
       ),
@@ -120,43 +123,58 @@ class _HistoryPageState extends State<HistoryPage>
                 ? _buildErrorState()
                 : _sessions.isEmpty
                 ? _buildEmptyState()
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
-                    children: [
-                      if (upcoming.isNotEmpty) ...[
-                        _buildSectionHeader(
-                          'UPCOMING',
-                          palette.planned,
-                          animated: true,
-                        ),
-                        ...upcoming.map(_buildSessionCard),
-                        const SizedBox(height: 16),
+                : NotificationListener<ScrollUpdateNotification>(
+                    onNotification: (notification) {
+                      if (notification.depth != 0) return false;
+                      final desired = _fabScrollIntent.update(
+                        notification.scrollDelta ?? 0,
+                        atStart:
+                            notification.metrics.pixels <=
+                            notification.metrics.minScrollExtent,
+                      );
+                      if (desired != null && _fabExpanded != desired) {
+                        setState(() => _fabExpanded = desired);
+                      }
+                      return false;
+                    },
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
+                      children: [
+                        if (upcoming.isNotEmpty) ...[
+                          _buildSectionHeader(
+                            'UPCOMING',
+                            palette.planned,
+                            animated: true,
+                          ),
+                          ...upcoming.map(_buildSessionCard),
+                          const SizedBox(height: 16),
+                        ],
+                        if (today.isNotEmpty) ...[
+                          _buildSectionHeader(
+                            'TODAY',
+                            palette.today,
+                            animated: true,
+                          ),
+                          ...today.map(_buildSessionCard),
+                          const SizedBox(height: 16),
+                        ],
+                        for (final entry in pastGroups.entries) ...[
+                          _buildSectionHeader(entry.key, palette.textSecondary),
+                          ...entry.value.map(_buildSessionCard),
+                          const SizedBox(height: 16),
+                        ],
                       ],
-                      if (today.isNotEmpty) ...[
-                        _buildSectionHeader(
-                          'TODAY',
-                          palette.today,
-                          animated: true,
-                        ),
-                        ...today.map(_buildSessionCard),
-                        const SizedBox(height: 16),
-                      ],
-                      for (final entry in pastGroups.entries) ...[
-                        _buildSectionHeader(entry.key, palette.textSecondary),
-                        ...entry.value.map(_buildSessionCard),
-                        const SizedBox(height: 16),
-                      ],
-                    ],
+                    ),
                   ),
           ),
         ],
       ),
       floatingActionButton: DelayedExtendedFab(
-        expanded: true,
+        expanded: _fabExpanded,
         onPressed: _showAddCustomDateDialog,
         icon: const CalendarAddIcon(),
-        label: 'New Date',
-        tooltip: 'Create a past or future date',
+        label: shopTr(context, 'New Date'),
+        tooltip: shopTr(context, 'Create a past or future date'),
       ),
     );
   }
@@ -191,7 +209,7 @@ class _HistoryPageState extends State<HistoryPage>
               children: [
                 Icon(Icons.search, color: palette.textSecondary),
                 const SizedBox(width: 10),
-                Text(
+                ShopText(
                   'Search history',
                   style: TextStyle(color: palette.textSecondary, fontSize: 15),
                 ),
@@ -220,7 +238,7 @@ class _HistoryPageState extends State<HistoryPage>
           final strength = animated ? 0.10 + animation.value * 0.18 : 0.0;
           return Row(
             children: [
-              Text(
+              ShopText(
                 title,
                 style: TextStyle(
                   fontSize: 12,
@@ -303,19 +321,19 @@ class _HistoryPageState extends State<HistoryPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete this date?'),
-        content: const Text(
+        title: const ShopText('Delete this date?'),
+        content: const ShopText(
           'This permanently deletes this shopping record and every list inside it.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const ShopText('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: palette.pending),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete Permanently'),
+            child: const ShopText('Delete Permanently'),
           ),
         ],
       ),
@@ -343,7 +361,7 @@ class _HistoryPageState extends State<HistoryPage>
         children: [
           Icon(Icons.history, size: 56, color: palette.border),
           const SizedBox(height: 14),
-          Text(
+          ShopText(
             'No shopping history yet',
             style: TextStyle(color: palette.textSecondary, fontSize: 16),
           ),
@@ -362,7 +380,7 @@ class _HistoryPageState extends State<HistoryPage>
           children: [
             Icon(Icons.error_outline, size: 48, color: palette.pending),
             const SizedBox(height: 12),
-            Text(_loadError!, textAlign: TextAlign.center),
+            ShopText(_loadError!, textAlign: TextAlign.center),
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: () {
@@ -370,7 +388,7 @@ class _HistoryPageState extends State<HistoryPage>
                 _loadSessions();
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
+              label: const ShopText('Try Again'),
             ),
           ],
         ),
@@ -400,13 +418,13 @@ class _HistoryPageState extends State<HistoryPage>
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 leading: Icon(Icons.history, color: palette.secondary),
-                title: const Text('Past Date'),
+                title: const ShopText('Past Date'),
                 onTap: () => Navigator.pop(context, 'past'),
               ),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 leading: Icon(Icons.calendar_month, color: calendarAccent),
-                title: const Text('Future Date'),
+                title: const ShopText('Future Date'),
                 onTap: () => Navigator.pop(context, 'future'),
               ),
             ],
@@ -435,16 +453,16 @@ class _HistoryPageState extends State<HistoryPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Create shopping date?'),
+        title: const ShopText('Create shopping date?'),
         content: Text(DateFormat('d MMMM yyyy').format(selectedDate)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const ShopText('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Create'),
+            child: const ShopText('Create'),
           ),
         ],
       ),

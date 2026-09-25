@@ -75,9 +75,8 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 19.2 — responsive multi-currency display**.
-- Sprint 19.2 started from revision `3abc638`; check `git log` for the latest
-  commit and `git status` for any uncommitted work.
+- Current local milestone: **Sprint 19.3.1 — Bangla interface and scroll-aware FAB refinements**.
+- Check `git log` for the latest commit and `git status` for any uncommitted work.
 
 Sprint 19 foundation work includes:
 
@@ -123,13 +122,14 @@ Sprint 18.4.3 extends that work with:
 - structured headings, separators, counts, and per-list/combined totals; and
 - the concise `System` label in Appearance.
 
-The following refinement removes the preview-heavy entry point: Lists now uses
-a permanently expanded split FAB with one optional `Share Your List` action.
+The following refinement removes the preview-heavy entry point: Lists uses
+a scroll-aware split FAB with one optional `Share Your List` action.
 That action animates directly above the FAB and closes on an outside tap, Back,
 or selection before opening a compact checkbox chooser for one or more lists.
 Long-press selection keeps its direct selected-items flow. The list switcher no
-longer carries a share icon. History restores a permanently expanded
-calendar-plus `New Date` action using the established calendar badge artwork.
+longer carries a share icon. History uses a scroll-aware calendar-plus
+`New Date` action using the established calendar badge artwork. Both FAB labels
+animate after deliberate scrolling.
 
 Latest verification performed for this work:
 
@@ -247,8 +247,8 @@ Implemented behavior includes:
 Important distinction: the ShopTrack display name/photo is local app profile
 data. It does not edit the user's Google account.
 
-Currency picking and grouped totals are visible. Language selection remains
-a placeholder. The underlying per-item currency, catalogue, grouped totals,
+Currency picking, grouped totals, and English/Bangla language selection are
+visible. The underlying per-item currency, catalogue, grouped totals,
 settings, persistence, backup, sharing, and sync contracts are implemented.
 
 ## 6. Theme System and Approved Visual Identities
@@ -677,7 +677,7 @@ checks have not occurred. State the boundary plainly.
 - Conflicts are retained for review, not guessed away.
 - The app remains ad-free; donation, if added, is optional and non-coercive.
 - Multi-currency totals are grouped, not silently converted.
-- Currency and Language remain planned work. The amount-to-quantity calculator
+- Currency and Language are implemented. The amount-to-quantity calculator
   proposal was dropped; do not implement it as part of these refinements.
 - Sync receipt/tombstone retention needs a separate safe cleanup design before
   scaling; do not purge them as routine UI cleanup.

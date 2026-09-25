@@ -77,8 +77,9 @@ class SettingsService extends ChangeNotifier {
   }
 
   Future<void> updateLanguage(String language) async {
-    _settings = _settings.copyWith(language: language);
-    await _repository.saveSettings(_settings);
+    final updated = _settings.copyWith(language: language);
+    await _repository.saveSettings(updated);
+    _settings = updated;
     notifyListeners();
   }
 

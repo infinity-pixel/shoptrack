@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
@@ -33,7 +34,9 @@ Future<void> showShoppingListShareSheet(
 }) async {
   if (session.items.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add an item before sharing this list.')),
+      const SnackBar(
+        content: ShopText('Add an item before sharing this list.'),
+      ),
     );
     return;
   }
@@ -56,14 +59,17 @@ Future<void> showShoppingListShareSheet(
     listIds: request.listIds,
     itemIds: request.itemIds,
     selectedItems: request.selectedItems,
+    translate: (value) => shopTr(context, value),
+    defaultListLabel: shopTr(context, 'My List'),
+    formatCount: (value) => shopNumber(context, value),
   );
   try {
     if (request.action == _ShareAction.copy) {
       await Clipboard.setData(ClipboardData(text: text));
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Shopping list copied.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: ShopText('Shopping list copied.')),
+        );
       }
     } else {
       await SharePlus.instance.share(
@@ -78,7 +84,7 @@ Future<void> showShoppingListShareSheet(
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: ShopText(
             request.action == _ShareAction.copy
                 ? 'Could not copy this list. Please try again.'
                 : 'Could not share this list. Please try again.',
@@ -196,7 +202,7 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
                           ? () => _finish(_ShareAction.copy)
                           : null,
                       icon: const Icon(Icons.copy_outlined),
-                      label: const Text('Copy Text'),
+                      label: const ShopText('Copy Text'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -206,7 +212,7 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
                           ? () => _finish(_ShareAction.share)
                           : null,
                       icon: const Icon(Icons.ios_share_outlined),
-                      label: const Text('Share'),
+                      label: const ShopText('Share'),
                     ),
                   ),
                 ],
@@ -233,7 +239,9 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '$count selected ${count == 1 ? 'item' : 'items'}',
+              shopIsBangla(context)
+                  ? '${shopNumber(context, count)}টি নির্বাচিত পণ্য'
+                  : '$count selected ${count == 1 ? 'item' : 'items'}',
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -248,7 +256,7 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
+        ShopText(
           'Choose one or more lists',
           style: theme.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w700,
@@ -268,8 +276,15 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
                 CheckboxListTile(
                   dense: true,
                   value: _allChosen,
-                  title: const Text('All Lists'),
-                  subtitle: Text('${_availableLists.length} lists'),
+                  title: const ShopText('All Lists'),
+                  subtitle: Text(
+                    shopCount(
+                      context,
+                      _availableLists.length,
+                      singular: 'list',
+                      plural: 'lists',
+                    ),
+                  ),
                   secondary: const Icon(Icons.select_all_rounded),
                   onChanged: (checked) => setState(() {
                     _chosenListIds = checked ?? false
@@ -287,8 +302,17 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
                     return CheckboxListTile(
                       dense: true,
                       value: _chosenListIds.contains(list.id),
-                      title: Text(list.name),
-                      subtitle: Text('$count ${count == 1 ? 'item' : 'items'}'),
+                      title: Text(
+                        shopListName(context, id: list.id, name: list.name),
+                      ),
+                      subtitle: Text(
+                        shopCount(
+                          context,
+                          count,
+                          singular: 'item',
+                          plural: 'items',
+                        ),
+                      ),
                       secondary: const Icon(Icons.checklist_rounded),
                       onChanged: (checked) => setState(() {
                         if (checked ?? false) {
@@ -309,7 +333,7 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
         if (_chosenListIds.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: Text(
+            child: ShopText(
               'Select at least one list.',
               style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
             ),

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/theme_presets.dart';
@@ -146,13 +147,13 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
+                              child: ShopText(
                                 'Select Date Range',
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Close',
+                              tooltip: shopTr(context, 'Close'),
                               onPressed: () => Navigator.pop(context),
                               icon: const Icon(Icons.close),
                               padding: EdgeInsets.zero,
@@ -216,7 +217,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                         Row(
                           children: [
                             IconButton(
-                              tooltip: 'Previous month',
+                              tooltip: shopTr(context, 'Previous month'),
                               onPressed: _month.isAfter(DateTime(2000))
                                   ? () => setState(
                                       () => _month = DateTime(
@@ -236,7 +237,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Next month',
+                              tooltip: shopTr(context, 'Next month'),
                               onPressed: _month.isBefore(DateTime(2100, 12))
                                   ? () => setState(
                                       () => _month = DateTime(
@@ -341,7 +342,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
                           onPressed: _clear,
-                          child: const Text('Clear'),
+                          child: const ShopText('Clear'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -365,7 +366,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                   ),
                                 )
                               : null,
-                          child: const Text('Apply Range'),
+                          child: const ShopText('Apply Range'),
                         ),
                       ),
                     ],

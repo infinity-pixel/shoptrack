@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/theme_presets.dart';
@@ -51,7 +52,7 @@ class RecordHero extends StatelessWidget {
               left: 8,
               top: topInset + 2,
               child: IconButton(
-                tooltip: 'Back to History',
+                tooltip: shopTr(context, 'Back to History'),
                 onPressed: onBack,
                 icon: const Icon(Icons.arrow_back),
                 style: IconButton.styleFrom(

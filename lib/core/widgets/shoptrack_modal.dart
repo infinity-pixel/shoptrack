@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/shoptrack_text.dart';
 
 import '../theme/theme_presets.dart';
 
@@ -27,7 +28,7 @@ class ShopTrackSheetHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                ShopText(
                   title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
@@ -36,7 +37,7 @@ class ShopTrackSheetHeader extends StatelessWidget {
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
-                  Text(
+                  ShopText(
                     subtitle!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: palette.textSecondary,
@@ -50,7 +51,7 @@ class ShopTrackSheetHeader extends StatelessWidget {
           if (onClose != null) ...[
             const SizedBox(width: 8),
             IconButton(
-              tooltip: 'Close',
+              tooltip: shopTr(context, 'Close'),
               onPressed: onClose,
               icon: const Icon(Icons.close),
             ),
@@ -82,7 +83,7 @@ class ShopTrackSheetEmptyState extends StatelessWidget {
     final palette = ShopTrackThemeTokens.of(context).palette;
     return Semantics(
       container: true,
-      label: '$title. $message',
+      label: '${shopTr(context, title)}. ${shopTr(context, message)}',
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
         child: Column(
@@ -90,7 +91,7 @@ class ShopTrackSheetEmptyState extends StatelessWidget {
           children: [
             Icon(icon, size: 34, color: palette.secondary),
             const SizedBox(height: 10),
-            Text(
+            ShopText(
               title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -99,7 +100,7 @@ class ShopTrackSheetEmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
+            ShopText(
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -112,7 +113,7 @@ class ShopTrackSheetEmptyState extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onAction,
                 icon: const Icon(Icons.playlist_add),
-                label: Text(actionLabel!),
+                label: ShopText(actionLabel!),
               ),
             ],
           ],

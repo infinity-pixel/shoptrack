@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:intl/intl.dart';
 import '../../../../app.dart';
 import '../../../../core/data/settings_repository.dart';
@@ -33,13 +34,19 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       await _localBackupService.createBackup();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Local backup created successfully')),
+          const SnackBar(
+            content: ShopText('Local backup created successfully'),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create local backup: $e')),
+          SnackBar(
+            content: Text(
+              '${shopTr(context, 'Failed to create local backup')}: $e',
+            ),
+          ),
         );
       }
     } finally {
@@ -63,7 +70,11 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to restore local backup: $e')),
+          SnackBar(
+            content: Text(
+              '${shopTr(context, 'Failed to restore local backup')}: $e',
+            ),
+          ),
         );
       }
     } finally {
@@ -79,9 +90,11 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       await cloudService.createCloudBackup(appBackup);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Cloud backup failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${shopTr(context, 'Cloud backup failed')}: $e'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -103,9 +116,11 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Cloud restore failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${shopTr(context, 'Cloud restore failed')}: $e'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -116,8 +131,8 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Restore Backup?'),
-        content: const Text(
+        title: const ShopText('Restore Backup?'),
+        content: const ShopText(
           'Restoring this backup will replace your current local ShopTrack data. '
           'If cloud sync is enabled, these changes also sync to this account’s other devices. '
           'Export a backup first if you want to keep the current version.',
@@ -125,14 +140,14 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const ShopText('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Restore'),
+            child: const ShopText('Restore'),
           ),
         ],
       ),
@@ -146,7 +161,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       if (mounted) {
         service.notifyDataRestored();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data restored successfully')),
+          const SnackBar(content: ShopText('Data restored successfully')),
         );
         Navigator.pop(context, true);
       }
@@ -160,7 +175,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       initialIndex: widget.initialTab,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Backup & Restore'),
+          title: const ShopText('Backup & Restore'),
           centerTitle: true,
           bottom: const TabBar(
             tabs: [
@@ -260,7 +275,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
               if (status.state == CloudBackupState.noBackupFound)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
+                  child: ShopText(
                     'No backup found in your cloud storage.',
                     style: TextStyle(
                       color: colors.onSurfaceVariant,
@@ -295,12 +310,12 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
           children: [
             Icon(Icons.cloud_off_outlined, size: 48, color: colors.primary),
             const SizedBox(height: 16),
-            const Text(
+            const ShopText(
               'Sign in Required',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
+            const ShopText(
               'You need to sign in with your Google account to use cloud backup features.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14),
@@ -312,7 +327,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                   ShopTrackApp.authOf(context).signIn();
                 }
               },
-              child: const Text('Sign In with Google'),
+              child: const ShopText('Sign In with Google'),
             ),
           ],
         ),
@@ -323,7 +338,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      child: Text(
+      child: ShopText(
         title,
         style: TextStyle(
           fontSize: 12,
@@ -354,14 +369,14 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
           icon,
           color: isDestructive ? colors.error : colors.primary,
         ),
-        title: Text(
+        title: ShopText(
           title,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isDestructive ? colors.error : colors.onSurface,
           ),
         ),
-        subtitle: Text(subtitle),
+        subtitle: ShopText(subtitle),
         onTap: onTap,
       ),
     );

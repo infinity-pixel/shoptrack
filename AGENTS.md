@@ -75,11 +75,19 @@ that adds friction needs a clear user benefit.
   export the current list, chosen lists, all lists, or a long-press selection;
   output includes pending/purchased states, quantities, notes, prices, and
   scoped totals. Native destination support still depends on installed apps.
-- Lists keeps Add Item permanently expanded and exposes the single optional
+- Lists exposes the single optional
   `Share Your List` action through its split FAB. The action animates above the
   FAB and closes on an outside tap, Back, or selection. The follow-up sheet uses
-  a compact one-or-more-list chooser without an export preview. History keeps a
-  permanently expanded calendar-plus `New Date` action.
+  a compact one-or-more-list chooser without an export preview. The Lists and
+  History FAB labels collapse after a deliberate scroll toward the start and
+  expand while scrolling toward the end; Lists retains its split arrow when
+  collapsed. Both transitions animate their labels.
+  History uses a calendar-plus `New Date` action.
+- Profile offers English and Bangla interface languages. The built-in `My List`
+  displays as `আমার তালিকা` in Bangla; user-authored item and list names remain
+  unchanged. The item editor accepts very large round values
+  up to one quintillion when they survive the current numeric representation
+  exactly; amounts are shortened for display only when they cannot fit.
 - Item notes appear as one compact ellipsized line on shopping cards when
   present. Item editors use a raised field surface across every dark theme so
   controls remain distinct from their containing sheet.

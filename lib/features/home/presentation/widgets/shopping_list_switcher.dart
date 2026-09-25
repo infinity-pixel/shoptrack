@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/shoptrack_text.dart';
 
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../models/shopping_list_group.dart';
@@ -102,7 +103,11 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                                               .42,
                                         ),
                                         child: Text(
-                                          list.name,
+                                          shopListName(
+                                            context,
+                                            id: list.id,
+                                            name: list.name,
+                                          ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -193,7 +198,7 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                       ],
                     ),
                     child: IconButton(
-                      tooltip: 'New shopping list',
+                      tooltip: shopTr(context, 'New shopping list'),
                       onPressed: widget.onCreate,
                       icon: Icon(
                         Icons.playlist_add,

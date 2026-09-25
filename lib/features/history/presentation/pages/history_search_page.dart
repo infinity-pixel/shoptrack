@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/data/shopping_repository.dart';
@@ -154,7 +155,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
               },
             ),
       backgroundColor: p.background,
-      appBar: AppBar(title: const Text('Search History')),
+      appBar: AppBar(title: const ShopText('Search History')),
       body: Column(
         children: [
           Padding(
@@ -162,7 +163,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search items',
+                hintText: shopTr(context, 'Search items'),
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: p.surface,
@@ -172,7 +173,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                 suffixIcon: _searchController.text.isEmpty
                     ? null
                     : IconButton(
-                        tooltip: 'Clear search',
+                        tooltip: shopTr(context, 'Clear search'),
                         icon: const Icon(Icons.close),
                         onPressed: () {
                           _searchController.clear();
@@ -218,7 +219,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                                       _ => p.planned,
                                     },
                             ),
-                      label: Text(switch (status) {
+                      label: ShopText(switch (status) {
                         null => 'All',
                         SearchItemStatus.purchased => 'Purchased',
                         SearchItemStatus.pending => 'Pending',
@@ -242,7 +243,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                     size: 18,
                     color: _range != null ? p.onSecondary : calendarAccent,
                   ),
-                  label: const Text('Date Range'),
+                  label: const ShopText('Date Range'),
                   onPressed: _pickRange,
                 ),
               ],
@@ -283,13 +284,13 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
+          ShopText(
             'Find items across your shopping dates',
             style: TextStyle(color: p.textSecondary),
           ),
           if (_suggestions.isNotEmpty) ...[
             const SizedBox(height: 20),
-            Text(
+            ShopText(
               'Frequently Purchased',
               style: TextStyle(
                 color: p.onBackground,

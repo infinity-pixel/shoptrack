@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/currency/currency_catalog.dart';
+import '../../../../core/widgets/compact_amount_text.dart';
+import '../../../../models/app_settings.dart';
 import '../../../../core/utils/number_formatter.dart';
+import '../../../../core/utils/large_amount_guard.dart';
 import '../../../../core/utils/pricing_calculator.dart';
 import '../../../../core/widgets/currency_picker_dialog.dart';
 import '../../../../models/frequent_item_suggestion.dart';
@@ -22,6 +26,7 @@ class AddItemSheet extends StatefulWidget {
   final ValueChanged<FrequentItemSuggestion>? onRemoveFrequentSuggestion;
   final String defaultCurrencyCode;
   final List<String> recentCurrencyCodes;
+  final NumberFormatPreference numberFormat;
 
   const AddItemSheet({
     super.key,
@@ -32,6 +37,7 @@ class AddItemSheet extends StatefulWidget {
     this.onRemoveFrequentSuggestion,
     this.defaultCurrencyCode = CurrencyCatalog.defaultCode,
     this.recentCurrencyCodes = const [],
+    this.numberFormat = NumberFormatPreference.automatic,
   });
 
   @override
@@ -137,8 +143,10 @@ class _AddItemSheetState extends State<AddItemSheet> {
   }
 
   void _updateCalculation() {
-    final qty = double.tryParse(_quantityController.text);
-    final price = double.tryParse(_priceController.text);
+    final parsedQty = double.tryParse(_quantityController.text);
+    final parsedPrice = double.tryParse(_priceController.text);
+    final qty = parsedQty?.isFinite == true ? parsedQty : null;
+    final price = parsedPrice?.isFinite == true ? parsedPrice : null;
 
     if (_pricingMode == PricingMode.unit &&
         price != null &&
@@ -184,8 +192,14 @@ class _AddItemSheetState extends State<AddItemSheet> {
         (quantity == null ||
             !quantity.isFinite ||
             quantity < 0 ||
-            quantity > 999999.99)) {
-      setState(() => _quantityErrorText = 'Enter a quantity below 1,000,000');
+            !LargeAmountGuard.canStore(
+              quantityText,
+              quantity,
+              maxDecimals: 12,
+            ))) {
+      setState(
+        () => _quantityErrorText = 'This quantity cannot be saved exactly.',
+      );
       return;
     }
     final priceText = _priceController.text.trim();
@@ -193,16 +207,23 @@ class _AddItemSheetState extends State<AddItemSheet> {
     if (priceText.isNotEmpty &&
         (price == null ||
             !price.isFinite ||
-            price > 99999999.99 ||
-            !RegExp(r'^\d+(?:\.\d{1,2})?$').hasMatch(priceText))) {
+            !RegExp(r'^\d+(?:\.\d{1,2})?$').hasMatch(priceText) ||
+            !LargeAmountGuard.canStore(priceText, price))) {
       setState(
-        () => _priceErrorText =
-            'Enter a price below 100 million with up to 2 decimals',
+        () => _priceErrorText = 'Enter an exact price with up to 2 decimals.',
       );
       return;
     }
-    if (_calcResult.totalPrice > 999999999999.99) {
-      setState(() => _priceErrorText = 'The calculated total is too large');
+    if (price != null &&
+        !LargeAmountGuard.canStoreCalculatedTotal(
+          price: priceText,
+          quantity: quantityText.isEmpty ? null : quantityText,
+          calculatedTotal: _calcResult.totalPrice,
+          mode: _pricingMode,
+          unit: _selectedUnit,
+          priceBasis: _selectedPriceBasis,
+        )) {
+      setState(() => _priceErrorText = 'This total cannot be saved exactly.');
       return;
     }
     if (_pricingMode == PricingMode.unit &&
@@ -237,26 +258,24 @@ class _AddItemSheetState extends State<AddItemSheet> {
 
   Widget _buildPreviewAmount(
     String label,
-    String amount, {
+    double amount, {
     bool emphasized = false,
+    String suffix = '',
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, style: const TextStyle(fontSize: 14)),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          reverse: true,
-          child: Text(
-            amount,
-            maxLines: 1,
-            softWrap: false,
-            style: TextStyle(
-              fontWeight: emphasized ? FontWeight.bold : FontWeight.w500,
-              color: emphasized
-                  ? Theme.of(context).colorScheme.onSurface
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+        ShopText(label, style: const TextStyle(fontSize: 14)),
+        CompactAmountText(
+          value: amount,
+          currencyCode: _selectedCurrencyCode,
+          preference: widget.numberFormat,
+          suffix: suffix,
+          style: TextStyle(
+            fontWeight: emphasized ? FontWeight.bold : FontWeight.w500,
+            color: emphasized
+                ? Theme.of(context).colorScheme.onSurface
+                : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -334,7 +353,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
             children: [
               Icon(Icons.delete_outline),
               SizedBox(width: 8),
-              Text('Remove'),
+              ShopText('Remove'),
             ],
           ),
         ),
@@ -349,19 +368,19 @@ class _AddItemSheetState extends State<AddItemSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete item?'),
-        content: const Text('Are you sure you want to delete this item?'),
+        title: const ShopText('Delete item?'),
+        content: const ShopText('Are you sure you want to delete this item?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const ShopText('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Delete'),
+            child: const ShopText('Delete'),
           ),
         ],
       ),
@@ -420,12 +439,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
       items: [
         const PopupMenuItem(
           value: _UnitPickerChoice(null),
-          child: Text('No Unit'),
+          child: ShopText('No Unit'),
         ),
         ...ShoppingUnit.values.map(
           (unit) => PopupMenuItem(
             value: _UnitPickerChoice(unit),
-            child: Text(unit.displayName),
+            child: ShopText(unit.displayName),
           ),
         ),
       ],
@@ -474,7 +493,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      _isEditing ? 'Edit Item' : 'Add Item',
+                      shopTr(context, _isEditing ? 'Edit Item' : 'Add Item'),
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -494,9 +513,11 @@ class _AddItemSheetState extends State<AddItemSheet> {
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
-                  labelText: 'Item Name',
-                  hintText: 'e.g. Eggs',
-                  errorText: _errorText,
+                  labelText: shopTr(context, 'Item Name'),
+                  hintText: shopTr(context, 'e.g. Eggs'),
+                  errorText: _errorText == null
+                      ? null
+                      : shopTr(context, _errorText!),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -527,8 +548,10 @@ class _AddItemSheetState extends State<AddItemSheet> {
                       ),
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: 'Quantity',
-                        errorText: _quantityErrorText,
+                        labelText: shopTr(context, 'Quantity'),
+                        errorText: _quantityErrorText == null
+                            ? null
+                            : shopTr(context, _quantityErrorText!),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -561,7 +584,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                         child: InputDecorator(
                           isFocused: _unitFocusNode.hasFocus,
                           decoration: InputDecoration(
-                            labelText: 'Unit',
+                            labelText: shopTr(context, 'Unit'),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -584,7 +607,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
               ),
               if (!_isEditing && _visibleSuggestions.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text(
+                ShopText(
                   'Often Bought',
                   style: TextStyle(
                     fontSize: 13,
@@ -651,11 +674,11 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   segments: const [
                     ButtonSegment(
                       value: PricingMode.total,
-                      label: Text('Total Price'),
+                      label: ShopText('Total Price'),
                     ),
                     ButtonSegment(
                       value: PricingMode.unit,
-                      label: Text('Price per Unit'),
+                      label: ShopText('Price per Unit'),
                     ),
                   ],
                   selected: {_pricingMode},
@@ -672,7 +695,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   DropdownButtonFormField<ShoppingUnit>(
                     initialValue: _selectedPriceBasis,
                     decoration: InputDecoration(
-                      labelText: 'Price basis',
+                      labelText: shopTr(context, 'Price basis'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -682,7 +705,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                         .map((unit) {
                           return DropdownMenuItem(
                             value: unit,
-                            child: Text(unit.displayName),
+                            child: ShopText(unit.displayName),
                           );
                         })
                         .toList(),
@@ -710,7 +733,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                           borderRadius: BorderRadius.circular(12),
                           child: InputDecorator(
                             decoration: InputDecoration(
-                              labelText: 'Currency',
+                              labelText: shopTr(context, 'Currency'),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 10,
                                 vertical: 17,
@@ -759,9 +782,18 @@ class _AddItemSheetState extends State<AddItemSheet> {
                           ),
                         ],
                         decoration: InputDecoration(
-                          labelText: _getPriceLabel(),
-                          errorText: _priceErrorText,
-                          helperText: _priceReferenceText,
+                          labelText:
+                              _getPriceLabel() != 'Price per Unit' &&
+                                  _getPriceLabel().startsWith('Price per ')
+                              ? '${shopTr(context, 'Price per')} ${_getPriceLabel().substring(10)}'
+                              : shopTr(context, _getPriceLabel()),
+                          errorText: _priceErrorText == null
+                              ? null
+                              : shopTr(context, _priceErrorText!),
+                          helperText: _priceReferenceText?.replaceFirst(
+                            'Last used price:',
+                            '${shopTr(context, 'Last used price')}:',
+                          ),
                           helperStyle: TextStyle(
                             color: colors.primary,
                             fontWeight: FontWeight.w500,
@@ -786,10 +818,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                       children: [
                         _buildPreviewAmount(
                           'Total',
-                          NumberFormatter.formatPrice(
-                            _calcResult.totalPrice,
-                            currencyCode: _selectedCurrencyCode,
-                          ),
+                          _calcResult.totalPrice,
                           emphasized: true,
                         ),
                         const SizedBox(height: 4),
@@ -797,7 +826,10 @@ class _AddItemSheetState extends State<AddItemSheet> {
                           _pricingMode == PricingMode.total
                               ? 'Price per unit'
                               : 'Price per ${_calcResult.priceBasisSymbol}',
-                          '${NumberFormatter.formatPrice(_calcResult.unitPrice, currencyCode: _selectedCurrencyCode)}/${_calcResult.priceBasisSymbol}',
+                          _calcResult.unitPrice,
+                          suffix: _calcResult.priceBasisSymbol.isEmpty
+                              ? ''
+                              : '/${_calcResult.priceBasisSymbol}',
                         ),
                       ],
                     ),
@@ -807,7 +839,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   controller: _notesController,
                   maxLines: 2,
                   decoration: InputDecoration(
-                    labelText: 'Notes',
+                    labelText: shopTr(context, 'Notes'),
                     labelStyle: TextStyle(
                       color: colors.onSurfaceVariant,
                       fontSize: 14,
@@ -833,7 +865,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
+                        child: const ShopText(
                           'Delete',
                           style: TextStyle(
                             fontSize: 16,
@@ -857,7 +889,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
+                      child: const ShopText(
                         'Save',
                         style: TextStyle(
                           fontSize: 16,

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
@@ -68,16 +69,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final discard = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Discard Changes?'),
-          content: const Text('Your profile has not been saved.'),
+          title: const ShopText('Discard Changes?'),
+          content: const ShopText('Your profile has not been saved.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Keep Editing'),
+              child: const ShopText('Keep Editing'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Discard'),
+              child: const ShopText('Discard'),
             ),
           ],
         ),
@@ -137,7 +138,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose From Gallery'),
+              title: const ShopText('Choose From Gallery'),
               onTap: () => Navigator.pop(context, 'choose'),
             ),
             if (_photo != null ||
@@ -148,7 +149,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   Icons.delete_outline,
                   color: Theme.of(context).colorScheme.error,
                 ),
-                title: const Text('Remove Photo'),
+                title: const ShopText('Remove Photo'),
                 onTap: () => Navigator.pop(context, 'remove'),
               ),
             const SizedBox(height: 12),
@@ -207,7 +208,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
+          title: ShopText(
             'Edit Profile',
             style: Theme.of(
               context,
@@ -217,7 +218,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           leading: IconButton(
             onPressed: _busy ? null : _cancel,
             icon: const Icon(Icons.arrow_back),
-            tooltip: 'Back',
+            tooltip: shopTr(context, 'Back'),
           ),
         ),
         bottomNavigationBar: SafeArea(
@@ -236,7 +237,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Cancel'),
+                  child: const ShopText('Cancel'),
                 ),
                 FilledButton(
                   onPressed: _busy ? null : _save,
@@ -256,7 +257,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Save Changes'),
+                  child: const ShopText('Save Changes'),
                 ),
               ],
             ),
@@ -294,7 +295,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             Icons.photo_camera_outlined,
                             size: 20,
                           ),
-                          label: const Text('Change Photo'),
+                          label: const ShopText('Change Photo'),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -315,8 +316,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               textCapitalization: TextCapitalization.words,
                               textInputAction: TextInputAction.done,
                               decoration: InputDecoration(
-                                labelText: 'Display Name',
-                                helperText: 'Only used in ShopTrack',
+                                labelText: shopTr(context, 'Display Name'),
+                                helperText: shopTr(
+                                  context,
+                                  'Only used in ShopTrack',
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -329,7 +333,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             const SizedBox(height: 12),
                             Divider(color: p.border),
                             const SizedBox(height: 16),
-                            Text(
+                            ShopText(
                               'Google Account',
                               style: Theme.of(context).textTheme.labelLarge,
                             ),
@@ -348,7 +352,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
+                            ShopText(
                               'Email cannot be edited here.',
                               style: TextStyle(
                                 color: p.textSecondary,
@@ -359,7 +363,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      Text(
+                      ShopText(
                         'Saved on this device. Your Google account name and photo stay unchanged.',
                         style: TextStyle(color: p.textSecondary, fontSize: 13),
                       ),

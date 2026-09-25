@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 
 /// Owns the list-name field for the full lifetime of the dialog route.
 ///
@@ -19,8 +20,7 @@ class ShoppingListNameDialog extends StatefulWidget {
   final String? hintText;
 
   @override
-  State<ShoppingListNameDialog> createState() =>
-      _ShoppingListNameDialogState();
+  State<ShoppingListNameDialog> createState() => _ShoppingListNameDialogState();
 }
 
 class _ShoppingListNameDialogState extends State<ShoppingListNameDialog> {
@@ -45,27 +45,26 @@ class _ShoppingListNameDialogState extends State<ShoppingListNameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.title),
+      title: ShopText(widget.title),
       content: TextField(
         controller: _controller,
         autofocus: true,
         textCapitalization: TextCapitalization.words,
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(
-          labelText: 'List name',
-          hintText: widget.hintText,
+          labelText: shopTr(context, 'List name'),
+          hintText: widget.hintText == null
+              ? null
+              : shopTr(context, widget.hintText!),
         ),
         onSubmitted: (_) => _submit(),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: const ShopText('Cancel'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(widget.actionLabel),
-        ),
+        FilledButton(onPressed: _submit, child: ShopText(widget.actionLabel)),
       ],
     );
   }

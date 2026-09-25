@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 
 class DatePartsField extends StatefulWidget {
@@ -95,7 +96,7 @@ class _DatePartsFieldState extends State<DatePartsField> {
               fillColor: Theme.of(
                 context,
               ).colorScheme.onSurface.withValues(alpha: .05),
-              labelText: ['Day', 'Month', 'Year'][i],
+              labelText: shopTr(context, ['Day', 'Month', 'Year'][i]),
               isDense: true,
               floatingLabelAlignment: FloatingLabelAlignment.center,
               floatingLabelBehavior: FloatingLabelBehavior.always,

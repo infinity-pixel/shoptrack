@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 
 import '../currency/currency_catalog.dart';
 
@@ -72,6 +73,7 @@ class _CurrencyPickerDialogState extends State<CurrencyPickerDialog> {
     if (query.isEmpty) return true;
     return currency.code.toLowerCase().contains(query) ||
         currency.name.toLowerCase().contains(query) ||
+        shopTr(context, currency.name).toLowerCase().contains(query) ||
         currency.country.toLowerCase().contains(query) ||
         currency.symbol.toLowerCase().contains(query);
   }
@@ -103,7 +105,7 @@ class _CurrencyPickerDialogState extends State<CurrencyPickerDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
+                    child: ShopText(
                       widget.title,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
@@ -111,7 +113,7 @@ class _CurrencyPickerDialogState extends State<CurrencyPickerDialog> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close',
+                    tooltip: shopTr(context, 'Close'),
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
                   ),
@@ -124,12 +126,12 @@ class _CurrencyPickerDialogState extends State<CurrencyPickerDialog> {
                 autofocus: false,
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: 'Search currencies',
+                  hintText: shopTr(context, 'Search currencies'),
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _query.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: 'Clear search',
+                          tooltip: shopTr(context, 'Clear search'),
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _query = '');
@@ -157,14 +159,14 @@ class _CurrencyPickerDialogState extends State<CurrencyPickerDialog> {
                                 color: colors.onSurfaceVariant,
                               ),
                               const SizedBox(height: 8),
-                              Text(
+                              ShopText(
                                 'No matching currency',
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               const SizedBox(height: 3),
-                              Text(
+                              ShopText(
                                 'Try its three-letter code or full name.',
                                 textAlign: TextAlign.center,
                                 style: theme.textTheme.bodySmall?.copyWith(
@@ -199,10 +201,10 @@ class _CurrencyPickerDialogState extends State<CurrencyPickerDialog> {
                               selected: isSelected,
                               button: true,
                               label:
-                                  '${currency.code}, ${currency.name}${isDefault
-                                      ? ', default'
+                                  '${currency.code}, ${shopTr(context, currency.name)}${isDefault
+                                      ? ', ${shopTr(context, 'default')}'
                                       : isRecent
-                                      ? ', recent'
+                                      ? ', ${shopTr(context, 'recent')}'
                                       : ''}',
                               child: ListTile(
                                 key: ValueKey(
@@ -257,7 +259,7 @@ class _CurrencyPickerDialogState extends State<CurrencyPickerDialog> {
                                     if (isDefault || isRecent) ...[
                                       const SizedBox(width: 7),
                                       Flexible(
-                                        child: Text(
+                                        child: ShopText(
                                           isDefault ? '(default)' : 'Recent',
                                           overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.labelSmall
@@ -272,7 +274,7 @@ class _CurrencyPickerDialogState extends State<CurrencyPickerDialog> {
                                     ],
                                   ],
                                 ),
-                                subtitle: Text(
+                                subtitle: ShopText(
                                   currency.name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

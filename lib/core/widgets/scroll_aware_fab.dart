@@ -1,6 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 
 import '../theme/theme_presets.dart';
+
+/// Requires a short, deliberate scroll before changing FAB width.
+class FabScrollIntent {
+  FabScrollIntent({this.threshold = 48});
+
+  final double threshold;
+  double _distance = 0;
+  bool? _towardStart;
+
+  bool? update(double delta, {required bool atStart}) {
+    if (atStart) {
+      reset();
+      return true;
+    }
+    if (!delta.isFinite || delta == 0) return null;
+    final towardStart = delta < 0;
+    if (_towardStart != towardStart) _distance = 0;
+    _towardStart = towardStart;
+    _distance += delta.abs();
+    if (_distance < threshold) return null;
+    _distance = 0;
+    return !towardStart;
+  }
+
+  void reset() {
+    _distance = 0;
+    _towardStart = null;
+  }
+}
 
 /// Lets the button finish widening before its label appears.
 class DelayedExtendedFab extends StatefulWidget {
@@ -72,9 +102,9 @@ class _DelayedExtendedFabState extends State<DelayedExtendedFab>
           ).transform(_motion.value);
           return Semantics(
             button: true,
-            label: widget.tooltip ?? widget.label,
+            label: shopTr(context, widget.tooltip ?? widget.label),
             child: Tooltip(
-              message: widget.tooltip ?? widget.label,
+              message: shopTr(context, widget.tooltip ?? widget.label),
               child: Material(
                 color: background,
                 elevation: 6,
@@ -160,10 +190,12 @@ class CalendarAddIcon extends StatelessWidget {
 class ShoppingSplitFab extends StatefulWidget {
   const ShoppingSplitFab({
     super.key,
+    required this.expanded,
     required this.onAddPressed,
     required this.onSharePressed,
   });
 
+  final bool expanded;
   final VoidCallback onAddPressed;
   final VoidCallback onSharePressed;
 
@@ -172,14 +204,31 @@ class ShoppingSplitFab extends StatefulWidget {
 }
 
 class _ShoppingSplitFabState extends State<ShoppingSplitFab>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _motion = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 220),
     reverseDuration: const Duration(milliseconds: 170),
   );
+  late final AnimationController _expansion = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 320),
+    reverseDuration: const Duration(milliseconds: 260),
+    value: widget.expanded ? 1 : 0,
+  );
 
   bool _menuOpen = false;
+
+  @override
+  void didUpdateWidget(covariant ShoppingSplitFab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.expanded == widget.expanded) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _expansion.value = widget.expanded ? 1 : 0;
+    } else {
+      widget.expanded ? _expansion.forward() : _expansion.reverse();
+    }
+  }
 
   void _toggle() {
     final show = !_menuOpen;
@@ -214,6 +263,7 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
   @override
   void dispose() {
     _motion.dispose();
+    _expansion.dispose();
     super.dispose();
   }
 
@@ -264,7 +314,7 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Semantics(
                           button: true,
-                          label: 'Share Your List',
+                          label: shopTr(context, 'Share Your List'),
                           child: Material(
                             key: const ValueKey('share-fab-action'),
                             color: colors.surfaceContainerHigh,
@@ -292,7 +342,7 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                                     ),
                                     const SizedBox(width: 8),
                                     Flexible(
-                                      child: Text(
+                                      child: ShopText(
                                         'Share Your List',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -315,6 +365,7 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                 ),
               ),
               Material(
+                key: const ValueKey('split-main-fab'),
                 color: background,
                 elevation: 6,
                 borderRadius: BorderRadius.circular(28),
@@ -325,30 +376,54 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Tooltip(
-                        message: 'Add item',
+                        message: shopTr(context, 'Add item'),
                         child: InkWell(
                           onTap: _add,
-                          child: SizedBox(
-                            height: 56,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 16,
-                                right: 12,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.add),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Add Item',
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      color: foreground,
+                          child: AnimatedBuilder(
+                            animation: _expansion,
+                            builder: (context, child) {
+                              final width = Curves.easeInOutCubic.transform(
+                                _expansion.value,
+                              );
+                              final opacity = const Interval(
+                                0.55,
+                                1,
+                                curve: Curves.easeOut,
+                              ).transform(_expansion.value);
+                              return SizedBox(
+                                height: 56,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(
+                                      width: 56,
+                                      height: 56,
+                                      child: Center(child: Icon(Icons.add)),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                                    ClipRect(
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        widthFactor: width,
+                                        child: Opacity(
+                                          opacity: opacity,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 14,
+                                            ),
+                                            child: ShopText(
+                                              'Add Item',
+                                              maxLines: 1,
+                                              style: theme.textTheme.labelLarge
+                                                  ?.copyWith(color: foreground),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -361,7 +436,7 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                         ),
                       ),
                       Tooltip(
-                        message: 'More actions',
+                        message: shopTr(context, 'More actions'),
                         child: InkWell(
                           onTap: _toggle,
                           child: SizedBox(

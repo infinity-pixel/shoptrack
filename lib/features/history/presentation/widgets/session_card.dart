@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/currency/currency_catalog.dart';
@@ -43,7 +44,7 @@ class SessionCard extends StatelessWidget {
         final amount = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            ShopText(
               'Total Purchased',
               style: TextStyle(color: palette.textSecondary, fontSize: 10),
             ),
@@ -141,7 +142,7 @@ class SessionCard extends StatelessWidget {
           animation: animation,
           color: palette.planned,
           text:
-              '${session.plannedCount} Planned ${session.plannedCount == 1 ? 'Item' : 'Items'}',
+              '${shopNumber(context, session.plannedCount)} ${shopTr(context, 'Planned')} ${shopTr(context, session.plannedCount == 1 ? 'Item' : 'Items')}',
         ),
       ];
     }
@@ -150,13 +151,15 @@ class SessionCard extends StatelessWidget {
         _GlowingStatus(
           animation: animation,
           color: palette.purchasedStatus,
-          text: '${session.purchasedCount} Purchased',
+          text:
+              '${shopNumber(context, session.purchasedCount)} ${shopTr(context, 'Purchased')}',
         ),
       if (session.pendingCount > 0)
         _GlowingStatus(
           animation: animation,
           color: palette.pending,
-          text: '${session.pendingCount} Pending',
+          text:
+              '${shopNumber(context, session.pendingCount)} ${shopTr(context, 'Pending')}',
         ),
     ];
   }
@@ -169,7 +172,7 @@ class SessionCard extends StatelessWidget {
     final palette = tokens.palette;
     final calendarAccent = tokens.calendarAccent ?? palette.onSurface;
     return PopupMenuButton<String>(
-      tooltip: 'Date options',
+      tooltip: shopTr(context, 'Date options'),
       onSelected: (value) {
         if (value == 'share') onShare?.call();
         if (value == 'edit') onEdit?.call();
@@ -183,7 +186,7 @@ class SessionCard extends StatelessWidget {
               children: [
                 Icon(Icons.ios_share_outlined, color: palette.secondary),
                 const SizedBox(width: 8),
-                const Text('Copy or Share'),
+                const ShopText('Copy or Share'),
               ],
             ),
           ),
@@ -194,7 +197,7 @@ class SessionCard extends StatelessWidget {
               children: [
                 Icon(Icons.edit_calendar_outlined, color: calendarAccent),
                 const SizedBox(width: 8),
-                const Text('Edit Date'),
+                const ShopText('Edit Date'),
               ],
             ),
           ),
@@ -205,7 +208,7 @@ class SessionCard extends StatelessWidget {
               children: [
                 Icon(Icons.delete_outline, color: palette.pending),
                 const SizedBox(width: 8),
-                Text('Delete', style: TextStyle(color: palette.pending)),
+                ShopText('Delete', style: TextStyle(color: palette.pending)),
               ],
             ),
           ),

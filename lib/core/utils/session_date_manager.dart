@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../data/shopping_repository.dart';
 import '../../models/shopping_session.dart';
 import '../../models/shopping_item.dart';
+import '../localization/shoptrack_text.dart';
 
 class SessionDateManager {
   static Future<void> editSessionDate({
@@ -17,7 +18,7 @@ class SessionDateManager {
       initialDate: session.date,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      helpText: 'Edit Shopping Date',
+      helpText: shopTr(context, 'Edit Shopping Date'),
     );
 
     if (newDate == null || !context.mounted) return;
@@ -45,15 +46,16 @@ class SessionDateManager {
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Date Already Exists'),
+          title: const ShopText('Date Already Exists'),
           content: Text(
-            'A shopping session already exists for ${DateFormat('d MMMM yyyy').format(targetDate)}. '
-            'Please delete the existing session first if you want to move this session to that date.',
+            shopIsBangla(context)
+                ? '${DateFormat('d MMMM yyyy', 'bn').format(targetDate)} তারিখে আগে থেকেই কেনাকাটার রেকর্ড আছে। এই রেকর্ডটি ওই তারিখে নিতে চাইলে আগের রেকর্ডটি আগে মুছুন।'
+                : 'A shopping session already exists for ${DateFormat('d MMMM yyyy').format(targetDate)}. Please delete the existing session first if you want to move this session to that date.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
+              child: const ShopText('OK'),
             ),
           ],
         ),
@@ -71,19 +73,20 @@ class SessionDateManager {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Purchased items detected'),
+          title: const ShopText('Purchased items detected'),
           content: Text(
-            '${purchasedItems.length} purchased ${purchasedItems.length == 1 ? 'item' : 'items'} '
-            'will be moved to Today\'s list. The remaining items will be planned for the new date.',
+            shopIsBangla(context)
+                ? '${shopNumber(context, purchasedItems.length)}টি কেনা পণ্য আজকের তালিকায় যাবে। বাকি পণ্য নতুন তারিখের জন্য রাখা হবে।'
+                : '${purchasedItems.length} purchased ${purchasedItems.length == 1 ? 'item' : 'items'} will be moved to Today\'s list. The remaining items will be planned for the new date.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: const ShopText('Cancel'),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Continue'),
+              child: const ShopText('Continue'),
             ),
           ],
         ),
@@ -110,7 +113,7 @@ class SessionDateManager {
           // In this case, we don't create a future session, and the user is informed.
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
+              content: ShopText(
                 'Purchased items stay in Today. No future session created.',
               ),
             ),
@@ -156,8 +159,10 @@ class SessionDateManager {
 
       if (context.mounted) {
         final msg = pendingItems.isNotEmpty
-            ? 'Items moved to Today and ${DateFormat('d MMMM').format(targetDate)}'
-            : 'All items moved to Today';
+            ? shopIsBangla(context)
+                  ? 'পণ্যগুলো আজ এবং ${DateFormat('d MMMM', 'bn').format(targetDate)} তারিখে সরানো হয়েছে'
+                  : 'Items moved to Today and ${DateFormat('d MMMM').format(targetDate)}'
+            : shopTr(context, 'All items moved to Today');
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(msg)));
@@ -169,19 +174,20 @@ class SessionDateManager {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Change Shopping Date?'),
+          title: const ShopText('Change Shopping Date?'),
           content: Text(
-            'Move this session from ${DateFormat('d MMMM').format(session.date)} '
-            'to ${DateFormat('d MMMM yyyy').format(targetDate)}?',
+            shopIsBangla(context)
+                ? '${DateFormat('d MMMM', 'bn').format(session.date)} থেকে ${DateFormat('d MMMM yyyy', 'bn').format(targetDate)} তারিখে এই রেকর্ড সরাবেন?'
+                : 'Move this session from ${DateFormat('d MMMM').format(session.date)} to ${DateFormat('d MMMM yyyy').format(targetDate)}?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: const ShopText('Cancel'),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Move Date'),
+              child: const ShopText('Move Date'),
             ),
           ],
         ),
@@ -200,7 +206,9 @@ class SessionDateManager {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Moved to ${DateFormat('d MMMM').format(targetDate)}',
+                shopIsBangla(context)
+                    ? '${DateFormat('d MMMM', 'bn').format(targetDate)} তারিখে সরানো হয়েছে'
+                    : 'Moved to ${DateFormat('d MMMM').format(targetDate)}',
               ),
             ),
           );

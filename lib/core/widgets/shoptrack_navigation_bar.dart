@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/shoptrack_text.dart';
 
 import '../theme/theme_presets.dart';
 
@@ -43,7 +44,7 @@ class ShopTrackNavigationBar extends StatelessWidget {
       items: [
         for (var i = 0; i < _labels.length; i++)
           BottomNavigationBarItem(
-            label: _labels[i],
+            label: shopTr(context, _labels[i]),
             icon: _NavigationIcon(
               index: i,
               selected: i == currentIndex,

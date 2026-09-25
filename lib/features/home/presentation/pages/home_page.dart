@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 import '../widgets/record_hero.dart';
 import 'package:intl/intl.dart';
@@ -64,6 +65,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late final FrequentItemsService _frequentItemsService;
   List<FrequentItemSuggestion> _frequentSuggestions = [];
   bool _isLoading = true;
+  bool _fabExpanded = true;
+  final FabScrollIntent _fabScrollIntent = FabScrollIntent();
   late final ScrollController _scrollController;
   String _activeListId = ShoppingListGroup.defaultId;
   final Set<String> _transitioningItemIds = <String>{};
@@ -139,7 +142,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (_hasLoadedSession) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(_loadError!)));
+        ).showSnackBar(SnackBar(content: ShopText(_loadError!)));
       }
     }
   }
@@ -205,7 +208,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
+          content: ShopText(
             conflicted
                 ? 'This record changed elsewhere. Both versions are kept; review them in Profile → Cloud Sync.'
                 : message,
@@ -214,14 +217,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           persist: false,
           action: conflicted || onUndo == null
               ? null
-              : SnackBarAction(label: 'Undo', onPressed: onUndo),
+              : SnackBarAction(
+                  label: shopTr(context, 'Undo'),
+                  onPressed: onUndo,
+                ),
         ),
       );
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: ShopText(
               'Could not save this change. Your selection is kept; please try again.',
             ),
           ),
@@ -284,9 +290,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         leading: const Icon(Icons.checklist_rounded),
-                        title: Text(list.name),
+                        title: Text(
+                          shopListName(context, id: list.id, name: list.name),
+                        ),
                         subtitle: Text(
-                          '${_currentSession.itemsForList(list.id).length} ${_currentSession.itemsForList(list.id).length == 1 ? 'item' : 'items'}',
+                          shopCount(
+                            context,
+                            _currentSession.itemsForList(list.id).length,
+                            singular: 'item',
+                            plural: 'items',
+                          ),
                         ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => Navigator.pop(context, list),
@@ -306,10 +319,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     if (choice == 'create') {
       final name = await showDialog<String>(
         context: context,
-        builder: (_) => const ShoppingListNameDialog(
+        builder: (_) => ShoppingListNameDialog(
           title: 'New shopping list',
           actionLabel: 'Create',
-          hintText: 'e.g. Household',
+          hintText: shopTr(context, 'e.g. Household'),
         ),
       );
       if (!mounted || name == null || name.isEmpty || !_selectionMode) return;
@@ -318,7 +331,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       )) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('A list with that name already exists.'),
+            content: ShopText('A list with that name already exists.'),
           ),
         );
         return;
@@ -336,8 +349,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
     final count = _selectedItemIds.length;
     if (!await _confirmSelectionAction(
-          'Move $count ${count == 1 ? 'item' : 'items'}?',
-          'Move the selected ${count == 1 ? 'item' : 'items'} to ${target.name}?',
+          shopIsBangla(context)
+              ? '${shopCount(context, count)} সরাবেন?'
+              : 'Move $count ${count == 1 ? 'item' : 'items'}?',
+          shopIsBangla(context)
+              ? 'নির্বাচিত ${shopCount(context, count)} ${shopListName(context, id: target.id, name: target.name)} তালিকায় সরাবেন?'
+              : 'Move the selected ${count == 1 ? 'item' : 'items'} to ${shopListName(context, id: target.id, name: target.name)}?',
           'Move',
         ) ||
         !mounted ||
@@ -356,7 +373,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
     await _saveSelection(
       updated,
-      'Moved $count ${count == 1 ? 'item' : 'items'} to ${target.name}.',
+      shopIsBangla(context)
+          ? '${shopCount(context, count)} ${shopListName(context, id: target.id, name: target.name)} তালিকায় সরানো হয়েছে।'
+          : 'Moved $count ${count == 1 ? 'item' : 'items'} to ${shopListName(context, id: target.id, name: target.name)}.',
       onUndo: () => _undoMove(date, originals, updated),
     );
   }
@@ -369,17 +388,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text(title),
-            content: Text(message),
+            title: ShopText(title),
+            content: ShopText(message),
             scrollable: true,
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: const ShopText('Cancel'),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text(action),
+                child: ShopText(action),
               ),
             ],
           ),
@@ -409,7 +428,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: ShopText(
             _repository.conflictCount > beforeConflicts
                 ? 'This record changed elsewhere. Review changes in Profile → Cloud Sync.'
                 : 'Move undone.',
@@ -420,7 +439,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: ShopText(
               'Could not undo the move. The items or lists may have changed; your latest data is kept.',
             ),
           ),
@@ -436,8 +455,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final count = _selectedItemIds.length;
     if (count == 0) return;
     if (!await _confirmSelectionAction(
-          'Delete $count ${count == 1 ? 'item' : 'items'}?',
-          'Remove the selected ${count == 1 ? 'item' : 'items'} from this list?',
+          shopIsBangla(context)
+              ? '${shopCount(context, count)} মুছবেন?'
+              : 'Delete $count ${count == 1 ? 'item' : 'items'}?',
+          shopIsBangla(context)
+              ? 'নির্বাচিত ${shopCount(context, count)} এই তালিকা থেকে মুছবেন?'
+              : 'Remove the selected ${count == 1 ? 'item' : 'items'} from this list?',
           'Delete',
         ) ||
         !mounted ||
@@ -454,7 +477,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         sourceListId: _activeListId,
         ids: _selectedItemIds,
       ),
-      'Deleted $count ${count == 1 ? 'item' : 'items'}.',
+      shopIsBangla(context)
+          ? '${shopCount(context, count)} মুছে ফেলা হয়েছে।'
+          : 'Deleted $count ${count == 1 ? 'item' : 'items'}.',
       onUndo: () => _restoreDeletedItems(deletedItems),
     );
   }
@@ -483,8 +508,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Restored ${restorable.length} ${restorable.length == 1 ? 'item' : 'items'}.',
+          content: ShopText(
+            shopIsBangla(context)
+                ? '${shopCount(context, restorable.length)} ফিরিয়ে আনা হয়েছে।'
+                : 'Restored ${restorable.length} ${restorable.length == 1 ? 'item' : 'items'}.',
           ),
         ),
       );
@@ -492,7 +519,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: ShopText(
               'Could not undo the deletion because this list changed. Your latest data is kept.',
             ),
           ),
@@ -562,6 +589,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             defaultCurrencyCode:
                 settings?.currency ?? CurrencyCatalog.defaultCode,
             recentCurrencyCodes: settings?.recentCurrencies ?? const [],
+            numberFormat:
+                settings?.numberFormat ?? NumberFormatPreference.automatic,
           ),
         );
 
@@ -580,7 +609,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
+          content: ShopText(
             'Item saved, but the recent currency shortcut could not be updated.',
           ),
         ),
@@ -608,7 +637,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (mounted && _repository.conflictCount > conflictsBefore) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: ShopText(
               'This record changed elsewhere. Both versions are kept; review them in Profile → Cloud Sync.',
             ),
           ),
@@ -618,7 +647,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not save this change. Please try again.'),
+            content: ShopText('Could not save this change. Please try again.'),
           ),
         );
       }
@@ -693,11 +722,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
-          content: const Text('Item deleted'),
+          content: const ShopText('Item deleted'),
           duration: const Duration(seconds: 4),
           persist: false,
           action: SnackBarAction(
-            label: 'Undo',
+            label: shopTr(context, 'Undo'),
             onPressed: () {
               if (!mounted) return;
               setState(() {
@@ -745,7 +774,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       _loadSession();
                     },
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Try Again'),
+                    label: const ShopText('Try Again'),
                   ),
                 ],
               ),
@@ -869,40 +898,55 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 Expanded(
                   child: !hasActiveListItems
                       ? _buildEmptyState()
-                      : ListView(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          children: [
-                            if (allPurchased) _buildCompletedState(),
+                      : NotificationListener<ScrollUpdateNotification>(
+                          onNotification: (notification) {
+                            if (notification.depth != 0) return false;
+                            final desired = _fabScrollIntent.update(
+                              notification.scrollDelta ?? 0,
+                              atStart:
+                                  notification.metrics.pixels <=
+                                  notification.metrics.minScrollExtent,
+                            );
+                            if (desired != null && _fabExpanded != desired) {
+                              setState(() => _fabExpanded = desired);
+                            }
+                            return false;
+                          },
+                          child: ListView(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            children: [
+                              if (allPurchased) _buildCompletedState(),
 
-                            // To Buy Section
-                            if (activeItems.isNotEmpty) ...[
-                              _buildSectionLabel(
-                                'To Buy',
-                                Icons.shopping_cart_outlined,
-                                activeItems.length,
-                              ),
-                              const SizedBox(height: 8),
-                              _buildCurrencyItemGroups(activeItems),
-                              const SizedBox(height: 12),
-                              _buildTotalAmountRow(),
-                              const SizedBox(height: 28),
-                            ],
+                              // To Buy Section
+                              if (activeItems.isNotEmpty) ...[
+                                _buildSectionLabel(
+                                  'To Buy',
+                                  Icons.shopping_cart_outlined,
+                                  activeItems.length,
+                                ),
+                                const SizedBox(height: 8),
+                                _buildCurrencyItemGroups(activeItems),
+                                const SizedBox(height: 12),
+                                _buildTotalAmountRow(),
+                                const SizedBox(height: 28),
+                              ],
 
-                            // Purchased Section
-                            if (purchasedItems.isNotEmpty) ...[
-                              _buildSectionLabel(
-                                'Purchased',
-                                Icons.check_circle_outline,
-                                purchasedItems.length,
-                              ),
-                              const SizedBox(height: 8),
-                              _buildCurrencyItemGroups(purchasedItems),
-                              const SizedBox(height: 20),
-                              _buildPurchasedAmountCard(),
+                              // Purchased Section
+                              if (purchasedItems.isNotEmpty) ...[
+                                _buildSectionLabel(
+                                  'Purchased',
+                                  Icons.check_circle_outline,
+                                  purchasedItems.length,
+                                ),
+                                const SizedBox(height: 8),
+                                _buildCurrencyItemGroups(purchasedItems),
+                                const SizedBox(height: 20),
+                                _buildPurchasedAmountCard(),
+                              ],
+                              const SizedBox(height: 100), // FAB Clearance
                             ],
-                            const SizedBox(height: 100), // FAB Clearance
-                          ],
+                          ),
                         ),
                 ),
               ],
@@ -1026,7 +1070,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: _HeroGradientText(
-                          text: "Today's Shopping",
+                          text: shopTr(context, "Today's Shopping"),
                           style: TextStyle(
                             fontSize: isCompactWidth ? 22 : 24,
                             fontWeight: FontWeight.w800,
@@ -1035,7 +1079,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(height: 1),
-                      Text(
+                      ShopText(
                         'Stay organized. Shop smarter.',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1113,7 +1157,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         Icon(icon, size: 24, color: color),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
+          child: ShopText(
             label,
             style: TextStyle(
               fontSize: 18,
@@ -1131,7 +1175,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            '$count ${count == 1 ? 'Item' : 'Items'}',
+            shopCount(context, count),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -1163,7 +1207,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               Padding(
                 padding: const EdgeInsets.fromLTRB(3, 12, 3, 6),
                 child: Text(
-                  '${entry.key} · ${CurrencyCatalog.resolve(entry.key).name}',
+                  '${entry.key} · ${shopTr(context, CurrencyCatalog.resolve(entry.key).name)}',
                   key: ValueKey(
                     'currency_heading_${entry.key}_${items.first.isPurchased}',
                   ),
@@ -1240,10 +1284,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Future<void> _createShoppingList() => _withStableEditor(() async {
     final name = await showDialog<String>(
       context: context,
-      builder: (_) => const ShoppingListNameDialog(
+      builder: (_) => ShoppingListNameDialog(
         title: 'New shopping list',
         actionLabel: 'Create',
-        hintText: 'e.g. Grandmother',
+        hintText: shopTr(context, 'e.g. Grandmother'),
       ),
     );
     if (!mounted || name == null || name.isEmpty) return;
@@ -1251,7 +1295,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       (list) => list.name.toLowerCase() == name.toLowerCase(),
     )) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A list with that name already exists.')),
+        const SnackBar(
+          content: ShopText('A list with that name already exists.'),
+        ),
       );
       return;
     }
@@ -1281,14 +1327,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ShopTrackSheetHeader(
-                  title: list.name,
-                  subtitle: 'Manage this shopping list.',
+                  title: shopListName(context, id: list.id, name: list.name),
+                  subtitle: shopTr(context, 'Manage this shopping list.'),
                   onClose: () => Navigator.pop(context),
                 ),
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                   leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Rename List'),
+                  title: const ShopText('Rename List'),
                   onTap: () => Navigator.pop(context, 'rename'),
                 ),
                 if (_currentSession.orderedLists.length > 1)
@@ -1298,7 +1344,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       Icons.delete_outline,
                       color: Theme.of(context).colorScheme.error,
                     ),
-                    title: Text(
+                    title: ShopText(
                       'Delete List',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
@@ -1319,41 +1365,43 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         }
       });
 
-  Future<void> _renameShoppingList(
-    ShoppingListGroup list,
-  ) => _withStableEditor(() async {
-    final name = await showDialog<String>(
-      context: context,
-      builder: (_) => ShoppingListNameDialog(
-        title: 'Rename shopping list',
-        actionLabel: 'Save',
-        initialName: list.name,
-      ),
-    );
-    if (!mounted || name == null || name.isEmpty || name == list.name) return;
-    if (_currentSession.orderedLists.any(
-      (candidate) =>
-          candidate.id != list.id &&
-          candidate.name.toLowerCase() == name.toLowerCase(),
-    )) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A list with that name already exists.')),
+  Future<void> _renameShoppingList(ShoppingListGroup list) => _withStableEditor(
+    () async {
+      final name = await showDialog<String>(
+        context: context,
+        builder: (_) => ShoppingListNameDialog(
+          title: 'Rename shopping list',
+          actionLabel: 'Save',
+          initialName: list.name,
+        ),
       );
-      return;
-    }
-    setState(() {
-      _currentSession = _currentSession.copyWith(
-        lists: _currentSession.orderedLists
-            .map(
-              (candidate) => candidate.id == list.id
-                  ? candidate.copyWith(name: name)
-                  : candidate,
-            )
-            .toList(),
-      );
-    });
-    await _persistSession();
-  });
+      if (!mounted || name == null || name.isEmpty || name == list.name) return;
+      if (_currentSession.orderedLists.any(
+        (candidate) =>
+            candidate.id != list.id &&
+            candidate.name.toLowerCase() == name.toLowerCase(),
+      )) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: ShopText('A list with that name already exists.'),
+          ),
+        );
+        return;
+      }
+      setState(() {
+        _currentSession = _currentSession.copyWith(
+          lists: _currentSession.orderedLists
+              .map(
+                (candidate) => candidate.id == list.id
+                    ? candidate.copyWith(name: name)
+                    : candidate,
+              )
+              .toList(),
+        );
+      });
+      await _persistSession();
+    },
+  );
 
   Future<void> _deleteShoppingList(
     ShoppingListGroup list,
@@ -1362,20 +1410,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete ${list.name}?'),
+        title: Text(
+          shopIsBangla(context)
+              ? '${shopListName(context, id: list.id, name: list.name)} তালিকাটি মুছবেন?'
+              : 'Delete ${list.name}?',
+        ),
         content: Text(
           itemCount == 0
-              ? 'This empty list will be deleted.'
+              ? shopTr(context, 'This empty list will be deleted.')
+              : shopIsBangla(context)
+              ? 'এই তালিকার ${shopCount(context, itemCount)} স্থায়ীভাবে মুছে যাবে।'
               : 'This will permanently delete $itemCount ${itemCount == 1 ? 'item' : 'items'} in this list.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const ShopText('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: const ShopText('Delete'),
           ),
         ],
       ),
@@ -1399,6 +1453,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget _buildFAB() {
     return ShoppingSplitFab(
+      expanded: _fabExpanded,
       onAddPressed: () => _openAddSheet(),
       onSharePressed: () => showShoppingListShareSheet(
         context,
@@ -1412,18 +1467,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('No items added'),
-        content: const Text(
+        title: const ShopText('No items added'),
+        content: const ShopText(
           'You must add at least one item for this date to be saved.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Stay Here'),
+            child: const ShopText('Stay Here'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Discard & Go Back'),
+            child: const ShopText('Discard & Go Back'),
           ),
         ],
       ),
@@ -1442,6 +1497,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         initialItem: item,
         defaultCurrencyCode: settings?.currency ?? CurrencyCatalog.defaultCode,
         recentCurrencyCodes: settings?.recentCurrencies ?? const [],
+        numberFormat:
+            settings?.numberFormat ?? NumberFormatPreference.automatic,
       ),
     );
 
@@ -1634,7 +1691,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Could not move this item. Please try again.'),
+              content: ShopText('Could not move this item. Please try again.'),
             ),
           );
         }
@@ -1648,7 +1705,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       final messenger = ScaffoldMessenger.of(context);
       messenger.showSnackBar(
         SnackBar(
-          content: Text('${item.name} moved to Today\'s list'),
+          content: Text(
+            shopIsBangla(context)
+                ? '${item.name} আজকের তালিকায় সরানো হয়েছে'
+                : '${item.name} moved to Today\'s list',
+          ),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -1753,7 +1814,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         children: [
           Divider(color: palette.border, thickness: 1),
           const SizedBox(height: 10),
-          Text(
+          ShopText(
             'Total Amount',
             textAlign: TextAlign.end,
             style: TextStyle(
@@ -1810,7 +1871,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       ),
                       const SizedBox(width: 8),
                       Flexible(
-                        child: Text(
+                        child: ShopText(
                           'Purchased Amount',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

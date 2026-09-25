@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import '../../../../services/auth_service.dart';
 
 Future<void> confirmSignOut(BuildContext context, AuthService auth) async {
@@ -11,13 +12,13 @@ Future<void> confirmSignOut(BuildContext context, AuthService auth) async {
       builder: (context, update) => PopScope(
         canPop: !busy,
         child: AlertDialog(
-          title: const Text('Sign Out?'),
+          title: const ShopText('Sign Out?'),
           scrollable: true,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              const ShopText(
                 'Your lists stay accessible on this device. Cloud sync pauses until you sign back into the same account.\n\nCloud data and backups are kept. Other accounts have separate history.',
               ),
               if (error != null)
@@ -40,7 +41,7 @@ Future<void> confirmSignOut(BuildContext context, AuthService auth) async {
           actions: [
             TextButton(
               onPressed: busy ? null : () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: const ShopText('Cancel'),
             ),
             TextButton(
               onPressed: busy
@@ -65,7 +66,7 @@ Future<void> confirmSignOut(BuildContext context, AuthService auth) async {
                         }
                       }
                     },
-              child: const Text('Sign Out'),
+              child: const ShopText('Sign Out'),
             ),
           ],
         ),

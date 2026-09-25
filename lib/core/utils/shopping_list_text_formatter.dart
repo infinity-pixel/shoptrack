@@ -16,7 +16,12 @@ class ShoppingListTextFormatter {
     Set<String>? listIds,
     Set<String>? itemIds,
     bool selectedItems = false,
+    String Function(String value)? translate,
+    String defaultListLabel = 'My List',
+    String Function(int value)? formatCount,
   }) {
+    final tr = translate ?? (value) => value;
+    final countText = formatCount ?? (value) => '$value';
     final includedLists = session.orderedLists
         .where((list) {
           if (listIds != null && !listIds.contains(list.id)) return false;
@@ -45,8 +50,8 @@ class ShoppingListTextFormatter {
       output
         ..writeln()
         ..writeln()
-        ..writeln('SELECTED ITEMS')
-        ..write('==============');
+        ..writeln(tr('SELECTED ITEMS'))
+        ..write('=' * tr('SELECTED ITEMS').runes.length);
     }
 
     for (final list in includedLists) {
@@ -54,16 +59,22 @@ class ShoppingListTextFormatter {
         return (item.listId ?? ShoppingListGroup.defaultId) == list.id;
       }).toList()..sort((a, b) => a.position.compareTo(b.position));
 
+      final listTitle = list.id == ShoppingListGroup.defaultId &&
+              list.name == ShoppingListGroup.defaultList.name
+          ? defaultListLabel
+          : list.name;
       output
         ..writeln()
         ..writeln()
-        ..writeln(list.name)
-        ..writeln(_underline(list.name));
+        ..writeln(listTitle)
+        ..writeln(_underline(listTitle));
       _writeSection(
         output,
         'TO BUY',
         items.where((item) => !item.isPurchased),
         '☐',
+        translate: tr,
+        formatCount: countText,
         includeCurrencyCodes: includeCurrencyCodes,
       );
       _writeSection(
@@ -71,16 +82,18 @@ class ShoppingListTextFormatter {
         'PURCHASED',
         items.where((item) => item.isPurchased),
         '☑',
+        translate: tr,
+        formatCount: countText,
         includeCurrencyCodes: includeCurrencyCodes,
       );
-      _writeTotals(output, items);
+      _writeTotals(output, items, translate: tr);
     }
 
     if (includedItems.isEmpty) {
       output
         ..writeln()
         ..writeln()
-        ..write('No items yet.');
+        ..write(tr('No items yet.'));
       return output.toString();
     }
 
@@ -88,9 +101,9 @@ class ShoppingListTextFormatter {
       output
         ..writeln()
         ..writeln()
-        ..writeln('ALL LISTS')
-        ..writeln('=========');
-      _writeTotals(output, includedItems, divider: false);
+        ..writeln(tr('ALL LISTS'))
+        ..writeln('=' * tr('ALL LISTS').runes.length);
+      _writeTotals(output, includedItems, divider: false, translate: tr);
     }
     return output.toString();
   }
@@ -100,17 +113,19 @@ class ShoppingListTextFormatter {
     String title,
     Iterable<ShoppingItem> items,
     String marker, {
+    required String Function(String) translate,
+    required String Function(int) formatCount,
     required bool includeCurrencyCodes,
   }) {
     final section = items.toList(growable: false);
     if (section.isEmpty) return;
-    output.writeln('$title (${section.length})');
+    output.writeln('${translate(title)} (${formatCount(section.length)})');
     for (final item in section) {
       output.writeln(
         '$marker ${_itemLine(item, includeCurrencyCode: includeCurrencyCodes)}',
       );
       if (item.notes?.trim().isNotEmpty == true) {
-        output.writeln('   Note: ${item.notes!.trim()}');
+        output.writeln('   ${translate('Note')}: ${item.notes!.trim()}');
       }
     }
     output.writeln();
@@ -120,6 +135,7 @@ class ShoppingListTextFormatter {
     StringBuffer output,
     Iterable<ShoppingItem> items, {
     bool divider = true,
+    required String Function(String) translate,
   }) {
     final included = items.toList(growable: false);
     final pendingTotals = CurrencyTotals.fromItems(
@@ -139,6 +155,7 @@ class ShoppingListTextFormatter {
       output,
       'Pending',
       pendingTotals,
+      translate: translate,
       includeCurrencyCodes: allTotals.isMultiCurrency,
       fallbackCurrencyCode: singleCurrencyCode,
     );
@@ -146,6 +163,7 @@ class ShoppingListTextFormatter {
       output,
       'Purchased',
       purchasedTotals,
+      translate: translate,
       includeCurrencyCodes: allTotals.isMultiCurrency,
       fallbackCurrencyCode: singleCurrencyCode,
       trailingNewline: false,
@@ -156,6 +174,7 @@ class ShoppingListTextFormatter {
     StringBuffer output,
     String label,
     CurrencyTotals totals, {
+    required String Function(String) translate,
     required bool includeCurrencyCodes,
     String? fallbackCurrencyCode,
     bool trailingNewline = true,
@@ -166,13 +185,13 @@ class ShoppingListTextFormatter {
           ? fallbackCurrencyCode
           : totals.values.single.currencyCode;
       output.write(
-        '$label total: ${NumberFormatter.formatPrice(value, currencyCode: code ?? 'BDT')}',
+        '${translate(label)} ${translate('total')}: ${NumberFormatter.formatPrice(value, currencyCode: code ?? 'BDT')}',
       );
       if (trailingNewline) output.writeln();
       return;
     }
 
-    output.writeln('$label totals:');
+    output.writeln('${translate(label)} ${translate('totals')}:');
     final values = totals.ordered();
     if (values.isEmpty) {
       output.write('  —');

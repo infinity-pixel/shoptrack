@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 
 class ItemSelectionBar extends StatelessWidget {
   const ItemSelectionBar({
@@ -35,7 +36,7 @@ class ItemSelectionBar extends StatelessWidget {
           child: Row(
             children: [
               IconButton(
-                tooltip: 'Cancel Selection',
+                tooltip: shopTr(context, 'Cancel Selection'),
                 onPressed: busy ? null : onClose,
                 icon: const Icon(Icons.close),
               ),
@@ -43,7 +44,7 @@ class ItemSelectionBar extends StatelessWidget {
                 child: Semantics(
                   liveRegion: true,
                   child: Text(
-                    '$count Selected',
+                    '$count ${shopTr(context, 'Selected')}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -62,30 +63,33 @@ class ItemSelectionBar extends StatelessWidget {
                 )
               else
                 IconButton(
-                  tooltip: allSelected ? 'Deselect All' : 'Select All',
+                  tooltip: shopTr(
+                    context,
+                    allSelected ? 'Deselect All' : 'Select All',
+                  ),
                   onPressed: onSelectAll,
                   icon: Icon(allSelected ? Icons.deselect : Icons.select_all),
                 ),
               if (compact) ...[
                 IconButton(
-                  tooltip: 'Copy or Share Selected Items',
+                  tooltip: shopTr(context, 'Copy or Share Selected Items'),
                   onPressed: busy || count == 0 ? null : onShare,
                   icon: const Icon(Icons.ios_share_outlined, size: 21),
                 ),
                 IconButton(
-                  tooltip: 'Move',
+                  tooltip: shopTr(context, 'Move'),
                   onPressed: busy || count == 0 ? null : onMove,
                   icon: const Icon(Icons.drive_file_move_outline, size: 21),
                 ),
                 IconButton(
-                  tooltip: 'Delete',
+                  tooltip: shopTr(context, 'Delete'),
                   color: colors.error,
                   onPressed: busy || count == 0 ? null : onDelete,
                   icon: const Icon(Icons.delete_outline, size: 21),
                 ),
               ] else ...[
                 Tooltip(
-                  message: 'Copy or Share Selected Items',
+                  message: shopTr(context, 'Copy or Share Selected Items'),
                   child: TextButton.icon(
                     onPressed: busy || count == 0 ? null : onShare,
                     style: TextButton.styleFrom(
@@ -93,11 +97,11 @@ class ItemSelectionBar extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                     ),
                     icon: const Icon(Icons.ios_share_outlined, size: 19),
-                    label: const Text('Share'),
+                    label: const ShopText('Share'),
                   ),
                 ),
                 Tooltip(
-                  message: 'Move',
+                  message: shopTr(context, 'Move'),
                   child: TextButton.icon(
                     onPressed: busy || count == 0 ? null : onMove,
                     style: TextButton.styleFrom(
@@ -105,11 +109,11 @@ class ItemSelectionBar extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                     ),
                     icon: const Icon(Icons.drive_file_move_outline, size: 19),
-                    label: const Text('Move'),
+                    label: const ShopText('Move'),
                   ),
                 ),
                 Tooltip(
-                  message: 'Delete',
+                  message: shopTr(context, 'Delete'),
                   child: TextButton.icon(
                     onPressed: busy || count == 0 ? null : onDelete,
                     style: TextButton.styleFrom(
@@ -118,7 +122,7 @@ class ItemSelectionBar extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                     ),
                     icon: const Icon(Icons.delete_outline, size: 19),
-                    label: const Text('Delete'),
+                    label: const ShopText('Delete'),
                   ),
                 ),
               ],

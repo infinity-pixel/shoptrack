@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
+import 'core/localization/shoptrack_text.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -117,6 +120,9 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
     return ListenableBuilder(
       listenable: Listenable.merge([settingsService, ?syncService]),
       builder: (context, child) {
+        Intl.defaultLocale = settingsService.settings.language == 'Bangla'
+            ? 'bn_BD'
+            : 'en_US';
         final platformBrightness = MediaQuery.of(context).platformBrightness;
         final themeDefinition = ThemePresets.getDefinition(
           settingsService.settings,
@@ -126,6 +132,15 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
         return MaterialApp(
           key: ValueKey(syncService?.store?.scope ?? 'local'),
           title: 'ShopTrack',
+          locale: settingsService.settings.language == 'Bangla'
+              ? const Locale('bn', 'BD')
+              : const Locale('en', 'US'),
+          supportedLocales: const [Locale('en', 'US'), Locale('bn', 'BD')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           debugShowCheckedModeBanner: false,
           scaffoldMessengerKey: ShopTrackApp.scaffoldMessengerKey,
           themeMode: settingsService.themeMode,
@@ -159,7 +174,7 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
                                 FilledButton.icon(
                                   onPressed: syncService!.retry,
                                   icon: const Icon(Icons.refresh),
-                                  label: const Text('Try Again'),
+                                  label: const ShopText('Try Again'),
                                 ),
                               ],
                             ),

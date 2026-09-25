@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/utils/session_date_manager.dart';
@@ -71,14 +72,14 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete this date?'),
-        content: const Text(
+        title: const ShopText('Delete this date?'),
+        content: const ShopText(
           'This will permanently delete this shopping record and all of its items. This action cannot be undone.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const ShopText('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -86,7 +87,7 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
               backgroundColor: Theme.of(context).colorScheme.error,
               foregroundColor: Theme.of(context).colorScheme.onError,
             ),
-            child: const Text('Delete Permanently'),
+            child: const ShopText('Delete Permanently'),
           ),
         ],
       ),
@@ -182,16 +183,16 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Shopping Date'),
+        title: const ShopText('Add Shopping Date'),
         content: Text(DateFormat('d MMMM yyyy').format(selectedDate)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const ShopText('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Create'),
+            child: const ShopText('Create'),
           ),
         ],
       ),
