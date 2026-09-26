@@ -65,7 +65,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late final FrequentItemsService _frequentItemsService;
   List<FrequentItemSuggestion> _frequentSuggestions = [];
   bool _isLoading = true;
-  bool _fabExpanded = true;
+  final _fabExpanded = ValueNotifier<bool>(true);
   final FabScrollIntent _fabScrollIntent = FabScrollIntent();
   late final ScrollController _scrollController;
   String _activeListId = ShoppingListGroup.defaultId;
@@ -108,6 +108,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _fabExpanded.dispose();
     _repository.changes?.removeListener(_onShoppingChanged);
     _scrollController.dispose();
     super.dispose();
@@ -907,8 +908,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   notification.metrics.pixels <=
                                   notification.metrics.minScrollExtent,
                             );
-                            if (desired != null && _fabExpanded != desired) {
-                              setState(() => _fabExpanded = desired);
+                            if (desired != null) {
+                              _fabExpanded.value = desired;
                             }
                             return false;
                           },
@@ -1452,13 +1453,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   });
 
   Widget _buildFAB() {
-    return ShoppingSplitFab(
-      expanded: _fabExpanded,
-      onAddPressed: () => _openAddSheet(),
-      onSharePressed: () => showShoppingListShareSheet(
-        context,
-        _currentSession,
-        currentListId: _activeListId,
+    return ValueListenableBuilder<bool>(
+      valueListenable: _fabExpanded,
+      builder: (context, expanded, child) => ShoppingSplitFab(
+        expanded: expanded,
+        onAddPressed: () => _openAddSheet(),
+        onSharePressed: () => showShoppingListShareSheet(
+          context,
+          _currentSession,
+          currentListId: _activeListId,
+        ),
       ),
     );
   }

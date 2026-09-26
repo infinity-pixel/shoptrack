@@ -124,7 +124,10 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                                                 .withValues(alpha: .45),
                                       ),
                                       Text(
-                                        '${widget.itemCountForList(list.id)}',
+                                        shopNumber(
+                                          context,
+                                          widget.itemCountForList(list.id),
+                                        ),
                                       ),
                                     ],
                                   ),

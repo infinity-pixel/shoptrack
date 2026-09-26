@@ -192,7 +192,9 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                         ? colors.secondary
                                         : null,
                                   ),
-                                  child: Text(end ? 'End Date' : 'Start Date'),
+                                  child: ShopText(
+                                    end ? 'End Date' : 'Start Date',
+                                  ),
                                 ),
                               ),
                           ],
@@ -208,7 +210,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                         if (error != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 5),
-                            child: Text(
+                            child: ShopText(
                               error,
                               style: TextStyle(color: colors.error),
                             ),
@@ -272,7 +274,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                       vertical: 3,
                                     ),
                                     visualDensity: VisualDensity.compact,
-                                    label: Text(
+                                    label: ShopText(
                                       [
                                         'Previous 7 Days',
                                         'Previous 30 Days',
@@ -387,7 +389,10 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
       children: [
         Row(
           children: [
-            for (final day in ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
+            for (final day
+                in shopIsBangla(context)
+                    ? ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র', 'শনি']
+                    : ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
               Expanded(
                 child: Center(
                   child: Text(
@@ -468,7 +473,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                       onTap: () => _select(date, calendar: true),
                       child: Center(
                         child: Text(
-                          '${date.day}',
+                          shopNumber(context, date.day),
                           style: TextStyle(
                             color: endpoint
                                 ? colors.onSecondary

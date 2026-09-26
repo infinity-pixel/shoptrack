@@ -1,6 +1,6 @@
 # ShopTrack — Codex Cloud and Local Development Handover
 
-Last reviewed against the local checkout: **24 September 2026**.
+Last reviewed against the local checkout: **26 September 2026**.
 
 This is the canonical continuity document for moving ShopTrack work between
 Codex Cloud and local Codex tasks. It records the product intent, implemented
@@ -75,7 +75,7 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 19.3.1 — Bangla interface and scroll-aware FAB refinements**.
+- Current local milestone: **Sprint 19.3.2 — Bengali completion and deliberate FAB response**.
 - Check `git log` for the latest commit and `git status` for any uncommitted work.
 
 Sprint 19 foundation work includes:

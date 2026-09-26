@@ -38,7 +38,7 @@ class _HistoryPageState extends State<HistoryPage>
   late final Animation<double> _headingGlow;
   List<ShoppingSession> _sessions = [];
   bool _isLoading = true;
-  bool _fabExpanded = true;
+  final _fabExpanded = ValueNotifier<bool>(true);
   final FabScrollIntent _fabScrollIntent = FabScrollIntent();
   String? _loadError;
 
@@ -65,6 +65,7 @@ class _HistoryPageState extends State<HistoryPage>
 
   @override
   void dispose() {
+    _fabExpanded.dispose();
     _repository.changes?.removeListener(_loadSessions);
     _headingGlowController.dispose();
     super.dispose();
@@ -132,8 +133,8 @@ class _HistoryPageState extends State<HistoryPage>
                             notification.metrics.pixels <=
                             notification.metrics.minScrollExtent,
                       );
-                      if (desired != null && _fabExpanded != desired) {
-                        setState(() => _fabExpanded = desired);
+                      if (desired != null) {
+                        _fabExpanded.value = desired;
                       }
                       return false;
                     },
@@ -169,12 +170,15 @@ class _HistoryPageState extends State<HistoryPage>
           ),
         ],
       ),
-      floatingActionButton: DelayedExtendedFab(
-        expanded: _fabExpanded,
-        onPressed: _showAddCustomDateDialog,
-        icon: const CalendarAddIcon(),
-        label: shopTr(context, 'New Date'),
-        tooltip: shopTr(context, 'Create a past or future date'),
+      floatingActionButton: ValueListenableBuilder<bool>(
+        valueListenable: _fabExpanded,
+        builder: (context, expanded, child) => DelayedExtendedFab(
+          expanded: expanded,
+          onPressed: _showAddCustomDateDialog,
+          icon: const CalendarAddIcon(),
+          label: shopTr(context, 'New Date'),
+          tooltip: shopTr(context, 'Create a past or future date'),
+        ),
       ),
     );
   }

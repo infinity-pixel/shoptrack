@@ -107,7 +107,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
+                child: ShopText(
                   widget.helpText,
                   style: const TextStyle(
                     fontSize: 14,
@@ -133,7 +133,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
                     onChanged: _onManualInput,
                   ),
                   if (_errorText != null)
-                    Text(
+                    ShopText(
                       _errorText!,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
@@ -165,7 +165,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   elevation: 0,
                 ),
-                child: Text(widget.confirmText),
+                child: ShopText(widget.confirmText),
               ),
             ],
           ),
@@ -211,7 +211,9 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
     final List<Widget> dayWidgets = [];
 
     // Weekday headers
-    const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    final weekdays = shopIsBangla(context)
+        ? ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র', 'শনি']
+        : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     for (var day in weekdays) {
       dayWidgets.add(
         Center(
@@ -253,7 +255,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
             ),
             child: Center(
               child: Text(
-                day.toString(),
+                shopNumber(context, day),
                 style: TextStyle(
                   color: isSelected
                       ? Theme.of(context).colorScheme.onPrimary

@@ -108,7 +108,7 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          Text(
+          ShopText(
             description,
             style: Theme.of(
               context,

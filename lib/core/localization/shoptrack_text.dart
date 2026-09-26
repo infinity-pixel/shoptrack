@@ -63,7 +63,15 @@ class ShopText extends StatelessWidget {
 
 String shopTr(BuildContext context, String english) {
   if (Localizations.localeOf(context).languageCode != 'bn') return english;
-  return _bangla[english] ?? english;
+  final translated = _bangla[english];
+  if (translated != null) return translated;
+  // Keep technical diagnostics intact while translating the user-facing prefix.
+  for (final prefix in ['Cloud backup failed', 'Cloud restore failed']) {
+    if (english.startsWith('$prefix: ')) {
+      return '${_bangla[prefix]}${english.substring(prefix.length)}';
+    }
+  }
+  return english;
 }
 
 bool shopIsBangla(BuildContext context) =>
@@ -90,6 +98,60 @@ String shopListName(
     : name;
 
 const Map<String, String> _bangla = {
+  'Select Date': 'তারিখ বাছুন',
+  'Date out of range': 'তারিখটি অনুমোদিত সীমার বাইরে',
+  'Enter a valid day, month and year.': 'সঠিক দিন, মাস ও বছর লিখুন।',
+  'Failed to authorize Google Drive access.':
+      'গুগল ড্রাইভ ব্যবহারের অনুমতি পাওয়া যায়নি।',
+  'Start Date': 'শুরুর তারিখ',
+  'End Date': 'শেষের তারিখ',
+  'Previous 7 Days': 'আগের ৭ দিন',
+  'Previous 30 Days': 'আগের ৩০ দিন',
+  'Last 3 Months': 'গত ৩ মাস',
+  'This Year': 'এই বছর',
+  'Last Year': 'গত বছর',
+  'Enter a valid date (2000–2100).': 'সঠিক তারিখ লিখুন (২০০০–২১০০)।',
+  'End date must be on or after start date.':
+      'শেষের তারিখ শুরুর তারিখের আগে হতে পারবে না।',
+  'Use your device setting or keep ShopTrack in light or dark mode.':
+      'ডিভাইসের সেটিং অনুসরণ করুন, অথবা শপট্র্যাকের উজ্জ্বল বা অন্ধকার মোড বেছে নিন।',
+  'Choose the scenery used in light mode.': 'উজ্জ্বল মোডের পটভূমি বাছুন।',
+  'Choose the scenery used in dark mode.': 'অন্ধকার মোডের পটভূমি বাছুন।',
+  'Local': 'ফাইল',
+  'Cloud': 'ক্লাউড',
+  'LOCAL BACKUP': 'ফাইলে ব্যাকআপ',
+  'LOCAL RESTORE': 'ফাইল থেকে পুনরুদ্ধার',
+  'CLOUD BACKUP': 'ক্লাউডে ব্যাকআপ',
+  'CLOUD RESTORE': 'ক্লাউড থেকে পুনরুদ্ধার',
+  'Last backup': 'সর্বশেষ ব্যাকআপ',
+  'Save a separate backup in Google Drive. This is not automatic Cloud Sync.':
+      'গুগল ড্রাইভে আলাদা ব্যাকআপ রাখুন। এটি স্বয়ংক্রিয় ক্লাউড সিঙ্ক নয়।',
+  'Saved on This Device': 'এই ডিভাইসে সংরক্ষিত',
+  'Saving Changes': 'পরিবর্তন সংরক্ষণ হচ্ছে',
+  'All Changes Saved': 'সব পরিবর্তন সংরক্ষিত',
+  'Sync Needs Attention': 'সিঙ্কের সমস্যা দেখুন',
+  'A local save failed. Keep the app open and try again.':
+      'এই ডিভাইসে তথ্য সংরক্ষণ করা যায়নি। অ্যাপ খোলা রেখে আবার চেষ্টা করুন।',
+  'Some edits need your review. Both versions have been kept.':
+      'কিছু পরিবর্তন আপনার পর্যালোচনা প্রয়োজন। দুই সংস্করণই রাখা হয়েছে।',
+  'Sign in to sync. These lists stay with their original account.':
+      'সিঙ্ক করতে সাইন ইন করুন। তালিকাগুলো আগের অ্যাকাউন্টের অধীনেই থাকবে।',
+  'Waiting for the cloud. Changes will upload automatically when a connection is available.':
+      'ক্লাউডের সংযোগের অপেক্ষায়। সংযোগ পাওয়া গেলে পরিবর্তনগুলো স্বয়ংক্রিয়ভাবে আপলোড হবে।',
+  'Your shopping lists and history sync automatically while ShopTrack is open.':
+      'শপট্র্যাক খোলা থাকা অবস্থায় ইন্টারনেট সংযোগ থাকলে কেনাকাটার তালিকা ও ইতিহাস স্বয়ংক্রিয়ভাবে সিঙ্ক হয়।',
+  'Cloud saving is paused. Your changes remain on this device. Try again shortly.':
+      'ক্লাউডে সংরক্ষণ আপাতত বন্ধ আছে। পরিবর্তনগুলো এই ডিভাইসে আছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
+  'Last uploaded from this device': 'এই ডিভাইস থেকে সর্বশেষ আপলোড',
+  'Shopping data in your account': 'অ্যাকাউন্টে কেনাকাটার তথ্য',
+  'Lists, items, prices and purchase history sync to your signed-in account while the app is open and online.':
+      'অ্যাপ খোলা ও ইন্টারনেট সংযোগ থাকা অবস্থায় তালিকা, পণ্য, দাম ও কেনাকাটার ইতিহাস আপনার সাইন-ইন করা অ্যাকাউন্টে সিঙ্ক হয়।',
+  'Settings kept on this device': 'শুধু এই ডিভাইসের সেটিং',
+  'Appearance and your ShopTrack profile stay on this device; automatic sync does not copy them to other devices.':
+      'রূপের সেটিং ও শপট্র্যাক প্রোফাইল এই ডিভাইসেই থাকে; স্বয়ংক্রিয় সিঙ্ক এগুলো অন্য ডিভাইসে পাঠায় না।',
+  'Continue on another device': 'অন্য ডিভাইসে ব্যবহার করুন',
+  'Open ShopTrack and sign in to the same account to load your synced shopping data.':
+      'অন্য ডিভাইসে শপট্র্যাক খুলে একই অ্যাকাউন্টে সাইন ইন করলে সিঙ্ক হওয়া কেনাকাটার তথ্য পাবেন।',
   'Lists': 'তালিকা',
   'History': 'ইতিহাস',
   'Profile': 'প্রোফাইল',
@@ -357,7 +419,7 @@ const Map<String, String> _bangla = {
   'Choose Theme': 'থিম বাছুন',
   'Light Theme': 'উজ্জ্বল থিম',
   'Dark Theme': 'অন্ধকার থিম',
-  'Golden Summer': 'সোনালি গ্রীষ্ম',
+  'Golden Summer': 'সোনালী গ্রীষ্ম',
   'Blooming Spring': 'ফুলেল বসন্ত',
   'Tranquil Ocean': 'শান্ত সমুদ্র',
   'Ember Autumn': 'অগ্নিময় শরৎ',

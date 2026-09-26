@@ -12,9 +12,11 @@ void main() {
   test('FAB waits for deliberate movement and uses reversed direction', () {
     final motion = FabScrollIntent();
     expect(motion.update(-20, atStart: false), isNull);
-    expect(motion.update(-28, atStart: false), isFalse);
+    expect(motion.update(-28, atStart: false), isNull);
+    expect(motion.update(-48, atStart: false), isFalse);
     expect(motion.update(20, atStart: false), isNull);
-    expect(motion.update(28, atStart: false), isTrue);
+    expect(motion.update(28, atStart: false), isNull);
+    expect(motion.update(48, atStart: false), isTrue);
     expect(motion.update(-90, atStart: true), isTrue);
   });
 

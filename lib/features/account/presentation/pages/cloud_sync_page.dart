@@ -41,13 +41,13 @@ class CloudSyncPage extends StatelessWidget {
                             size: 34,
                           ),
                           const SizedBox(height: 12),
-                          Text(
+                          ShopText(
                             service.statusLabel,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           const SizedBox(height: 8),
-                          Text(
+                          ShopText(
                             service.explanation,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(color: p.textSecondary, height: 1.4),
@@ -55,7 +55,7 @@ class CloudSyncPage extends StatelessWidget {
                           if (service.lastSaved != null) ...[
                             const SizedBox(height: 8),
                             Text(
-                              'Last Saved: ${DateFormat.yMMMd().add_jm().format(service.lastSaved!)}',
+                              '${shopTr(context, 'Last uploaded from this device')}: ${DateFormat.yMMMd().add_Hm().format(service.lastSaved!)}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: p.textSecondary),
                             ),
@@ -85,22 +85,22 @@ class CloudSyncPage extends StatelessWidget {
                           _info(
                             context,
                             Icons.checklist_outlined,
-                            'Synced',
-                            'Lists, items, prices, quantities and history.',
+                            'Shopping data in your account',
+                            'Lists, items, prices and purchase history sync to your signed-in account while the app is open and online.',
                           ),
                           const SizedBox(height: 16),
                           _info(
                             context,
                             Icons.phone_android_outlined,
-                            'On This Device',
-                            'Appearance and your ShopTrack profile.',
+                            'Settings kept on this device',
+                            'Appearance and your ShopTrack profile stay on this device; automatic sync does not copy them to other devices.',
                           ),
                           const SizedBox(height: 16),
                           _info(
                             context,
                             Icons.devices_outlined,
-                            'Use Another Device',
-                            'Sign in to the same account to load your lists.',
+                            'Continue on another device',
+                            'Open ShopTrack and sign in to the same account to load your synced shopping data.',
                           ),
                         ],
                       ),

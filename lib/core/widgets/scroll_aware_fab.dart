@@ -5,7 +5,7 @@ import '../theme/theme_presets.dart';
 
 /// Requires a short, deliberate scroll before changing FAB width.
 class FabScrollIntent {
-  FabScrollIntent({this.threshold = 48});
+  FabScrollIntent({this.threshold = 96});
 
   final double threshold;
   double _distance = 0;

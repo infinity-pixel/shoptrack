@@ -17,6 +17,32 @@ class DatePartsField extends StatefulWidget {
 class _DatePartsFieldState extends State<DatePartsField> {
   late final List<TextEditingController> _fields;
   final _focusNodes = List.generate(3, (_) => FocusNode());
+  bool _bangla = false;
+
+  String _digits(String text, {required bool bangla}) {
+    const english = '0123456789', bengali = '০১২৩৪৫৬৭৮৯';
+    final from = bangla ? english : bengali;
+    final to = bangla ? bengali : english;
+    return text.split('').map((char) {
+      final index = from.indexOf(char);
+      return index < 0 ? char : to[index];
+    }).join();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bangla = shopIsBangla(context);
+    if (_bangla != bangla) {
+      _bangla = bangla;
+      for (final field in _fields) {
+        field.value = field.value.copyWith(
+          text: _digits(field.text, bangla: bangla),
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -33,7 +59,7 @@ class _DatePartsFieldState extends State<DatePartsField> {
     }
     final values = [widget.date!.day, widget.date!.month, widget.date!.year];
     for (var i = 0; i < 3; i++) {
-      _fields[i].text = '${values[i]}';
+      _fields[i].text = _digits('${values[i]}', bangla: _bangla);
     }
   }
 
@@ -44,9 +70,9 @@ class _DatePartsFieldState extends State<DatePartsField> {
   }
 
   void _changed(String _) {
-    final d = int.tryParse(_fields[0].text),
-        m = int.tryParse(_fields[1].text),
-        y = int.tryParse(_fields[2].text);
+    final d = int.tryParse(_digits(_fields[0].text, bangla: false)),
+        m = int.tryParse(_digits(_fields[1].text, bangla: false)),
+        y = int.tryParse(_digits(_fields[2].text, bangla: false));
     DateTime? date;
     if (d != null &&
         m != null &&
@@ -88,7 +114,12 @@ class _DatePartsFieldState extends State<DatePartsField> {
                 ? TextInputAction.done
                 : TextInputAction.next,
             inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
+              FilteringTextInputFormatter.allow(RegExp('[0-9০-৯]')),
+              TextInputFormatter.withFunction(
+                (oldValue, newValue) => newValue.copyWith(
+                  text: _digits(newValue.text, bangla: _bangla),
+                ),
+              ),
               LengthLimitingTextInputFormatter(i == 2 ? 4 : 2),
             ],
             decoration: InputDecoration(

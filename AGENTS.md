@@ -81,7 +81,8 @@ that adds friction needs a clear user benefit.
   a compact one-or-more-list chooser without an export preview. The Lists and
   History FAB labels collapse after a deliberate scroll toward the start and
   expand while scrolling toward the end; Lists retains its split arrow when
-  collapsed. Both transitions animate their labels.
+  collapsed. Both transitions animate their labels. Scroll intent updates only
+  the FAB subtree, not the entire page, and requires sustained movement.
   History uses a calendar-plus `New Date` action.
 - Profile offers English and Bangla interface languages. The built-in `My List`
   displays as `আমার তালিকা` in Bangla; user-authored item and list names remain

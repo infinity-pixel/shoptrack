@@ -179,8 +179,8 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
           centerTitle: true,
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'Local'),
-              Tab(text: 'Cloud'),
+              Tab(child: ShopText('Local')),
+              Tab(child: ShopText('Cloud')),
             ],
           ),
         ),
@@ -242,7 +242,8 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
               _buildTile(
                 icon: Icons.cloud_upload_outlined,
                 title: 'Back up to Cloud',
-                subtitle: 'Sync your data to Google Drive App Data',
+                subtitle:
+                    'Save a separate backup in Google Drive. This is not automatic Cloud Sync.',
                 onTap: _isProcessing ? null : _createCloudBackup,
               ),
               if (status.lastBackupTime != null)
@@ -252,7 +253,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                     vertical: 4,
                   ),
                   child: Text(
-                    'Last backup: ${DateFormat('d MMM yyyy, HH:mm').format(status.lastBackupTime!)}',
+                    '${shopTr(context, 'Last backup')}: ${DateFormat('d MMM yyyy, HH:mm').format(status.lastBackupTime!)}',
                     style: TextStyle(
                       color: colors.onSurfaceVariant,
                       fontSize: 12,
@@ -287,7 +288,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
             if (status.errorMessage != null)
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(
+                child: ShopText(
                   status.errorMessage!,
                   style: TextStyle(color: colors.error, fontSize: 13),
                 ),

@@ -95,7 +95,9 @@ class RecordHero extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${date.year}',
+                          shopIsBangla(context)
+                              ? DateFormat('yyyy', 'bn').format(date)
+                              : '${date.year}',
                           style: TextStyle(
                             color: p.textSecondary,
                             fontSize: 12,
