@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
-import 'package:intl/intl.dart';
+import '../calendar/shop_calendar.dart';
 import 'date_parts_field.dart';
 
 class ShopTrackDatePicker extends StatefulWidget {
@@ -30,16 +30,22 @@ class ShopTrackDatePicker extends StatefulWidget {
     String helpText = 'Select Date',
     String confirmText = 'OK',
   }) {
+    final calendar = ShopCalendarScope.of(context);
     return showDialog<DateTime>(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: ShopTrackDatePicker(
-          initialDate: initialDate,
-          firstDate: firstDate,
-          lastDate: lastDate,
-          helpText: helpText,
-          confirmText: confirmText,
+      builder: (context) => ShopCalendarScope(
+        calendar: calendar,
+        child: Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: ShopTrackDatePicker(
+            initialDate: initialDate,
+            firstDate: firstDate,
+            lastDate: lastDate,
+            helpText: helpText,
+            confirmText: confirmText,
+          ),
         ),
       ),
     );
@@ -55,7 +61,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
   void initState() {
     super.initState();
     _selectedDate = widget.initialDate;
-    _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month);
+    _displayedMonth = _selectedDate;
   }
 
   void _onDateSelected(DateTime date) {
@@ -64,7 +70,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
     }
     setState(() {
       _selectedDate = date;
-      _displayedMonth = DateTime(date.year, date.month);
+      _displayedMonth = date;
       _errorText = null;
     });
   }
@@ -78,7 +84,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
       }
       setState(() {
         _selectedDate = parsed;
-        _displayedMonth = DateTime(parsed.year, parsed.month);
+        _displayedMonth = parsed;
         _errorText = null;
       });
     } else {
@@ -88,10 +94,9 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
 
   void _changeMonth(int offset) {
     setState(() {
-      _displayedMonth = DateTime(
-        _displayedMonth.year,
-        _displayedMonth.month + offset,
-      );
+      _displayedMonth = ShopCalendarScope.of(
+        context,
+      ).monthOffset(_displayedMonth, offset);
     });
   }
 
@@ -116,6 +121,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
                 ),
               ),
               IconButton(
+                tooltip: shopTr(context, 'Close'),
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.close, size: 20),
                 visualDensity: VisualDensity.compact,
@@ -151,21 +157,28 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const ShopText('Cancel'),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const ShopText('Cancel', textAlign: TextAlign.center),
+                ),
               ),
               const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _errorText == null
-                    ? () => Navigator.pop(context, _selectedDate)
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  elevation: 0,
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _errorText == null
+                      ? () => Navigator.pop(context, _selectedDate)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    elevation: 0,
+                  ),
+                  child: ShopText(
+                    widget.confirmText,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                child: ShopText(widget.confirmText),
               ),
             ],
           ),
@@ -175,45 +188,56 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
   }
 
   Widget _buildCalendarHeader() {
+    final calendar = ShopCalendarScope.of(context);
+    final previous = calendar.monthOffset(_displayedMonth, -1);
+    final next = calendar.monthOffset(_displayedMonth, 1);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          onPressed: () => _changeMonth(-1),
-          icon: const Icon(Icons.chevron_left),
+          tooltip: shopTr(context, 'Previous month'),
+          onPressed: previous.isBefore(calendar.monthStart(widget.firstDate))
+              ? null
+              : () => _changeMonth(-1),
+          icon: Icon(
+            Directionality.of(context) == TextDirection.rtl
+                ? Icons.chevron_right
+                : Icons.chevron_left,
+          ),
         ),
         Expanded(
           child: Text(
-            DateFormat('MMMM yyyy').format(_displayedMonth),
+            shopDate(context, _displayedMonth, 'MMMM yyyy'),
             textAlign: TextAlign.center,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
         ),
         IconButton(
-          onPressed: () => _changeMonth(1),
-          icon: const Icon(Icons.chevron_right),
+          tooltip: shopTr(context, 'Next month'),
+          onPressed: next.isAfter(calendar.monthStart(widget.lastDate))
+              ? null
+              : () => _changeMonth(1),
+          icon: Icon(
+            Directionality.of(context) == TextDirection.rtl
+                ? Icons.chevron_left
+                : Icons.chevron_right,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildCalendarGrid() {
-    final firstDay = DateTime(_displayedMonth.year, _displayedMonth.month, 1);
-    final lastDay = DateTime(
-      _displayedMonth.year,
-      _displayedMonth.month + 1,
-      0,
-    );
-    final daysInMonth = lastDay.day;
+    final calendar = ShopCalendarScope.of(context);
+    final firstDay = calendar.monthStart(_displayedMonth);
+    final daysInMonth = calendar.daysInMonth(_displayedMonth);
     final weekdayOfFirstDay =
         firstDay.weekday % 7; // Sunday is 0 if we want it to be
 
     final List<Widget> dayWidgets = [];
 
     // Weekday headers
-    final weekdays = shopIsBangla(context)
-        ? ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র', 'শনি']
-        : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    final weekdays = shopWeekdays(context);
     for (var day in weekdays) {
       dayWidgets.add(
         Center(
@@ -236,7 +260,11 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
 
     // Days of the month
     for (int day = 1; day <= daysInMonth; day++) {
-      final date = DateTime(_displayedMonth.year, _displayedMonth.month, day);
+      final date = DateTime(
+        firstDay.year,
+        firstDay.month,
+        firstDay.day + day - 1,
+      );
       final isSelected =
           date.year == _selectedDate.year &&
           date.month == _selectedDate.month &&
@@ -245,24 +273,32 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
           date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate);
 
       dayWidgets.add(
-        InkWell(
-          onTap: isDisabled ? null : () => _onDateSelected(date),
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isSelected ? Theme.of(context).colorScheme.primary : null,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                shopNumber(context, day),
-                style: TextStyle(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : (isDisabled
-                            ? Theme.of(context).disabledColor
-                            : Theme.of(context).colorScheme.onSurface),
-                  fontWeight: isSelected ? FontWeight.bold : null,
+        Semantics(
+          label: shopDate(context, date, 'yMMMMd'),
+          selected: isSelected,
+          enabled: !isDisabled,
+          button: true,
+          child: InkWell(
+            onTap: isDisabled ? null : () => _onDateSelected(date),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  shopNumber(context, day),
+                  style: TextStyle(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : (isDisabled
+                              ? Theme.of(context).disabledColor
+                              : Theme.of(context).colorScheme.onSurface),
+                    fontWeight: isSelected ? FontWeight.bold : null,
+                  ),
                 ),
               ),
             ),

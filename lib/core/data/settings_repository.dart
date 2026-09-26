@@ -16,7 +16,7 @@ class LocalSettingsRepository implements SettingsRepository {
       final prefs = await SharedPreferences.getInstance();
       final String? jsonStr = prefs.getString(_settingsKey);
       if (jsonStr == null) return const AppSettings();
-      
+
       return AppSettings.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
     } catch (e) {
       return const AppSettings();
@@ -25,11 +25,9 @@ class LocalSettingsRepository implements SettingsRepository {
 
   @override
   Future<void> saveSettings(AppSettings settings) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_settingsKey, jsonEncode(settings.toJson()));
-    } catch (e) {
-      // Log error if needed
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setString(_settingsKey, jsonEncode(settings.toJson()))) {
+      throw StateError('Could not save settings.');
     }
   }
 }

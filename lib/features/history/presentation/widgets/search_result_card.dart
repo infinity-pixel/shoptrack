@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/shoptrack_text.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
+import '../../../../core/widgets/compact_amount_text.dart';
 import '../../../../models/shopping_search_result.dart';
 import 'history_date_badge.dart';
 
@@ -65,12 +67,13 @@ class SearchResultCard extends StatelessWidget {
                     ),
                     if ('$quantity $unit'.trim().isNotEmpty)
                       Text(
-                        '$quantity $unit'.trim(),
+                        '${shopDigitsLanguage(Localizations.localeOf(context).languageCode, quantity)} ${shopTr(context, unit)}'
+                            .trim(),
                         style: TextStyle(color: p.textSecondary),
                       ),
                     const SizedBox(height: 4),
                     Text(
-                      '● ${result.statusLabel}',
+                      '● ${shopTr(context, result.statusLabel)}',
                       style: TextStyle(
                         color: color,
                         fontWeight: FontWeight.w600,
@@ -82,25 +85,24 @@ class SearchResultCard extends StatelessWidget {
               const SizedBox(width: 8),
               Flexible(
                 child: Align(
-                  alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerEnd,
                   heightFactor: 1,
-                  child: Text(
-                    result.status == SearchItemStatus.purchased &&
-                            item.priceValue != null
-                        ? NumberFormatter.formatPrice(
-                            item.pricing.totalPrice,
-                            currencyCode: item.currencyCode,
-                          )
-                        : '—',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: result.status == SearchItemStatus.purchased
-                          ? p.purchased
-                          : p.textSecondary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+                  child:
+                      result.status == SearchItemStatus.purchased &&
+                          item.priceValue != null
+                      ? CompactAmountText(
+                          value: item.pricing.totalPrice,
+                          currencyCode: item.currencyCode,
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            color: result.status == SearchItemStatus.purchased
+                                ? p.purchased
+                                : p.textSecondary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        )
+                      : Text('—', style: TextStyle(color: p.textSecondary)),
                 ),
               ),
             ],

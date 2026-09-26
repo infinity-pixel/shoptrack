@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
-import 'package:intl/intl.dart';
+import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import '../../../../core/data/session_merge.dart';
 import '../../../../core/theme/theme_presets.dart';
+import '../../../../core/utils/number_formatter.dart';
 import '../../../../models/shopping_session.dart';
 import '../../../../services/shopping_sync_service.dart';
 import 'backup_restore_page.dart';
@@ -55,7 +56,7 @@ class CloudSyncPage extends StatelessWidget {
                           if (service.lastSaved != null) ...[
                             const SizedBox(height: 8),
                             Text(
-                              '${shopTr(context, 'Last uploaded from this device')}: ${DateFormat.yMMMd().add_Hm().format(service.lastSaved!)}',
+                              '${shopTr(context, 'Last uploaded from this device')}: ${shopDate(context, service.lastSaved!, 'd MMM yyyy, HH:mm')}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: p.textSecondary),
                             ),
@@ -123,7 +124,11 @@ class CloudSyncPage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
-                                conflict['day'] as String,
+                                shopDate(
+                                  context,
+                                  DateTime.parse(conflict['day'] as String),
+                                  'd MMMM yyyy',
+                                ),
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               Text((conflict['fields'] as List).join(', ')),
@@ -139,7 +144,9 @@ class CloudSyncPage extends StatelessWidget {
                                   color: p.primary,
                                 ),
                               ),
-                              Text(_describe(conflict['value'] as Json?)),
+                              Text(
+                                _describe(context, conflict['value'] as Json?),
+                              ),
                               const SizedBox(height: 12),
                               ShopText(
                                 'Saved Version',
@@ -148,7 +155,9 @@ class CloudSyncPage extends StatelessWidget {
                                   color: p.primary,
                                 ),
                               ),
-                              Text(_describe(conflict['remote'] as Json?)),
+                              Text(
+                                _describe(context, conflict['remote'] as Json?),
+                              ),
                               const SizedBox(height: 12),
                               Wrap(
                                 spacing: 8,
@@ -181,7 +190,11 @@ class CloudSyncPage extends StatelessWidget {
                       leading: const Icon(Icons.settings_backup_restore),
                       title: const ShopText('Advanced Backup & Restore'),
                       subtitle: const ShopText('File and Google Drive backups'),
-                      trailing: const Icon(Icons.chevron_right),
+                      trailing: Icon(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? Icons.chevron_left
+                            : Icons.chevron_right,
+                      ),
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -236,15 +249,18 @@ class CloudSyncPage extends StatelessWidget {
     );
   }
 
-  String _describe(Json? value) {
-    if (value == null) return 'Date Removed';
+  String _describe(BuildContext context, Json? value) {
+    if (value == null) return shopTr(context, 'Date Removed');
     final session = ShoppingSession.fromJson(value);
+    final names = session.lists
+        .map((list) => shopListName(context, id: list.id, name: list.name))
+        .join(', ');
     if (session.items.isEmpty) {
-      return 'No Items • ${session.lists.map((l) => l.name).join(', ')}';
+      return '${shopTr(context, 'No Items')} • $names';
     }
-    return 'Lists: ${session.lists.map((l) => l.name).join(', ')}\n${session.items.map((item) => '${item.name} • ${item.quantityValue ?? item.quantity ?? ''} ${item.unitLabel}'
-        ' • ${item.isPurchased ? 'Purchased' : 'Pending'}'
-        ' • ${item.pricing.totalPrice}'
+    return '${shopTr(context, 'Lists')}: $names\n${session.items.map((item) => '${item.name} • ${shopDigits(context, '${item.quantityValue ?? item.quantity ?? ''}')} ${shopTr(context, item.unitLabel)}'
+        ' • ${shopTr(context, item.isPurchased ? 'Purchased' : 'Pending')}'
+        ' • ${shopDigits(context, NumberFormatter.formatPrice(item.pricing.totalPrice, currencyCode: item.currencyCode, includeCode: true))}'
         '${item.notes?.isNotEmpty == true ? ' • ${item.notes}' : ''}').join('\n')}';
   }
 

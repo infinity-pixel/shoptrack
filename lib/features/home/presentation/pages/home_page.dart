@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 import '../widgets/record_hero.dart';
-import 'package:intl/intl.dart';
+import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/currency/currency_catalog.dart';
 import '../../../../core/currency/currency_item_groups.dart';
@@ -350,12 +350,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
     final count = _selectedItemIds.length;
     if (!await _confirmSelectionAction(
-          shopIsBangla(context)
-              ? '${shopCount(context, count)} সরাবেন?'
-              : 'Move $count ${count == 1 ? 'item' : 'items'}?',
-          shopIsBangla(context)
-              ? 'নির্বাচিত ${shopCount(context, count)} ${shopListName(context, id: target.id, name: target.name)} তালিকায় সরাবেন?'
-              : 'Move the selected ${count == 1 ? 'item' : 'items'} to ${shopListName(context, id: target.id, name: target.name)}?',
+          shopTr(
+            context,
+            count == 1 ? 'Move {count} item?' : 'Move {count} items?',
+          ).replaceAll('{count}', shopNumber(context, count)),
+          shopTr(context, 'Move the selected items to {list}?').replaceAll(
+            '{list}',
+            shopListName(context, id: target.id, name: target.name),
+          ),
           'Move',
         ) ||
         !mounted ||
@@ -374,9 +376,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
     await _saveSelection(
       updated,
-      shopIsBangla(context)
-          ? '${shopCount(context, count)} ${shopListName(context, id: target.id, name: target.name)} তালিকায় সরানো হয়েছে।'
-          : 'Moved $count ${count == 1 ? 'item' : 'items'} to ${shopListName(context, id: target.id, name: target.name)}.',
+      shopTr(
+            context,
+            count == 1
+                ? 'Moved {count} item to {list}.'
+                : 'Moved {count} items to {list}.',
+          )
+          .replaceAll('{count}', shopNumber(context, count))
+          .replaceAll(
+            '{list}',
+            shopListName(context, id: target.id, name: target.name),
+          ),
       onUndo: () => _undoMove(date, originals, updated),
     );
   }
@@ -456,12 +466,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final count = _selectedItemIds.length;
     if (count == 0) return;
     if (!await _confirmSelectionAction(
-          shopIsBangla(context)
-              ? '${shopCount(context, count)} মুছবেন?'
-              : 'Delete $count ${count == 1 ? 'item' : 'items'}?',
-          shopIsBangla(context)
-              ? 'নির্বাচিত ${shopCount(context, count)} এই তালিকা থেকে মুছবেন?'
-              : 'Remove the selected ${count == 1 ? 'item' : 'items'} from this list?',
+          shopTr(
+            context,
+            count == 1 ? 'Delete {count} item?' : 'Delete {count} items?',
+          ).replaceAll('{count}', shopNumber(context, count)),
+          shopTr(context, 'Remove the selected items from this list?'),
           'Delete',
         ) ||
         !mounted ||
@@ -478,9 +487,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         sourceListId: _activeListId,
         ids: _selectedItemIds,
       ),
-      shopIsBangla(context)
-          ? '${shopCount(context, count)} মুছে ফেলা হয়েছে।'
-          : 'Deleted $count ${count == 1 ? 'item' : 'items'}.',
+      shopTr(
+        context,
+        count == 1 ? 'Deleted {count} item.' : 'Deleted {count} items.',
+      ).replaceAll('{count}', shopNumber(context, count)),
       onUndo: () => _restoreDeletedItems(deletedItems),
     );
   }
@@ -510,9 +520,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: ShopText(
-            shopIsBangla(context)
-                ? '${shopCount(context, restorable.length)} ফিরিয়ে আনা হয়েছে।'
-                : 'Restored ${restorable.length} ${restorable.length == 1 ? 'item' : 'items'}.',
+            shopTr(
+              context,
+              restorable.length == 1
+                  ? 'Restored {count} item.'
+                  : 'Restored {count} items.',
+            ).replaceAll('{count}', shopNumber(context, restorable.length)),
           ),
         ),
       );
@@ -764,7 +777,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 children: [
                   const Icon(Icons.cloud_off_outlined, size: 42),
                   const SizedBox(height: 12),
-                  Text(
+                  ShopText(
                     _loadError ?? 'Could not open this shopping list.',
                     textAlign: TextAlign.center,
                   ),
@@ -786,8 +799,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
 
     final String formattedDate = widget.sessionDate != null
-        ? DateFormat('EEEE, d MMMM yyyy').format(_currentSession.date)
-        : DateFormat('EEEE, d MMMM').format(_currentSession.date);
+        ? shopDate(context, _currentSession.date, 'EEEE, d MMMM yyyy')
+        : shopDate(context, _currentSession.date, 'EEEE, d MMMM');
 
     final activeListItems = _activeItems;
     final activeItems = activeListItems.where((i) => !i.isPurchased).toList()
@@ -843,8 +856,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
                 title: Text(
                   _currentSession.isToday
-                      ? 'Today'
-                      : DateFormat('d MMM').format(_currentSession.date),
+                      ? shopTr(context, 'Today')
+                      : shopDate(context, _currentSession.date, 'd MMM'),
                 ),
                 centerTitle: true,
               )
@@ -1004,6 +1017,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               if (tokens.headerArtworkPath != null)
                 Image.asset(
                   tokens.headerArtworkPath!,
+                  matchTextDirection: true,
                   fit: BoxFit.cover,
                   alignment: useDarkStatusIcons
                       ? Alignment.center
@@ -1023,8 +1037,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         alpha: useDarkStatusIcons ? 0.12 : 0,
                       ),
                     ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+                    begin: AlignmentDirectional.centerStart,
+                    end: AlignmentDirectional.centerEnd,
                   ),
                 ),
               ),
@@ -1069,7 +1083,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     if (_currentSession.isToday) ...[
                       FittedBox(
                         fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
+                        alignment: AlignmentDirectional.centerStart,
                         child: _HeroGradientText(
                           text: shopTr(context, "Today's Shopping"),
                           style: TextStyle(
@@ -1122,7 +1136,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              DateFormat('EEEE').format(_currentSession.date).toUpperCase(),
+              shopDate(context, _currentSession.date, 'EEEE').toUpperCase(),
               style: TextStyle(
                 color: palette.secondary,
                 fontSize: 11,
@@ -1131,7 +1145,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
             Text(
-              DateFormat('d MMM').format(_currentSession.date),
+              shopDate(context, _currentSession.date, 'd MMM'),
               style: TextStyle(
                 color: palette.onBackground,
                 fontSize: 24,
@@ -1140,7 +1154,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
             Text(
-              DateFormat('yyyy').format(_currentSession.date),
+              shopDate(context, _currentSession.date, 'yyyy'),
               style: TextStyle(color: palette.textSecondary, fontSize: 12),
             ),
           ],
@@ -1412,16 +1426,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          shopIsBangla(context)
-              ? '${shopListName(context, id: list.id, name: list.name)} তালিকাটি মুছবেন?'
-              : 'Delete ${list.name}?',
+          shopTr(context, 'Delete {list}?').replaceAll(
+            '{list}',
+            shopListName(context, id: list.id, name: list.name),
+          ),
         ),
         content: Text(
           itemCount == 0
               ? shopTr(context, 'This empty list will be deleted.')
-              : shopIsBangla(context)
-              ? 'এই তালিকার ${shopCount(context, itemCount)} স্থায়ীভাবে মুছে যাবে।'
-              : 'This will permanently delete $itemCount ${itemCount == 1 ? 'item' : 'items'} in this list.',
+              : shopTr(
+                  context,
+                  itemCount == 1
+                      ? 'This will permanently delete {count} item in this list.'
+                      : 'This will permanently delete {count} items in this list.',
+                ).replaceAll('{count}', shopNumber(context, itemCount)),
         ),
         actions: [
           TextButton(
@@ -1710,9 +1728,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            shopIsBangla(context)
-                ? '${item.name} আজকের তালিকায় সরানো হয়েছে'
-                : '${item.name} moved to Today\'s list',
+            shopTr(
+              context,
+              '{item} moved to Today’s list',
+            ).replaceAll('{item}', item.name),
           ),
           duration: const Duration(seconds: 3),
         ),
@@ -1752,7 +1771,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               color: palette.secondary,
             ),
             const SizedBox(height: 16),
-            Text(
+            ShopText(
               "No items yet",
               style: TextStyle(
                 fontSize: 18,
@@ -1761,7 +1780,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            ShopText(
               "Tap + to add your first item.",
               textAlign: TextAlign.center,
               style: TextStyle(color: palette.textSecondary, fontSize: 14),
@@ -1789,7 +1808,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         children: [
           Icon(Icons.receipt_long_outlined, size: 48, color: palette.primary),
           const SizedBox(height: 16),
-          Text(
+          ShopText(
             "Shopping Completed",
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -1799,7 +1818,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          ShopText(
             "All items have been purchased.",
             textAlign: TextAlign.center,
             style: TextStyle(color: palette.textSecondary, fontSize: 14),
@@ -1856,8 +1875,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
                 colors: [palette.surfaceReceipt, palette.receiptEdge],
               ),
             ),
@@ -2009,7 +2028,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         }
 
         final desiredWidth =
-            (widthOf(code, codeStyle) + 6 + widthOf(full, amountStyle))
+            (widthOf(code, codeStyle) +
+                    6 +
+                    widthOf(
+                      shopIsArabic(context) ? shopDigits(context, full) : full,
+                      amountStyle,
+                    ))
                 .ceilToDouble() +
             1;
         final row = SizedBox(
@@ -2039,7 +2063,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         );
         return rightAligned
-            ? Align(alignment: Alignment.centerRight, child: row)
+            ? Align(alignment: AlignmentDirectional.centerEnd, child: row)
             : row;
       },
     );

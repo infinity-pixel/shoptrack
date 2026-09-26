@@ -24,7 +24,7 @@ Future<void> confirmSignOut(BuildContext context, AuthService auth) async {
               if (error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text(
+                  child: ShopText(
                     error!,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,

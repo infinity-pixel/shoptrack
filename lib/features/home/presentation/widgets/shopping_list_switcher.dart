@@ -62,9 +62,9 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                         children: [
                           ListView.separated(
                             scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.only(
-                              left: 16,
-                              right: 12,
+                            padding: const EdgeInsetsDirectional.only(
+                              start: 16,
+                              end: 12,
                               top: 4,
                               bottom: 4,
                             ),
@@ -146,8 +146,8 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                             },
                           ),
                           if (_hasMore)
-                            Positioned(
-                              right: 0,
+                            PositionedDirectional(
+                              end: 0,
                               top: 6,
                               bottom: 6,
                               width: 12,
@@ -156,6 +156,8 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                                   key: const ValueKey('list-overflow-shadow'),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
+                                      begin: AlignmentDirectional.centerStart,
+                                      end: AlignmentDirectional.centerEnd,
                                       colors: [
                                         Colors.black.withValues(alpha: 0),
                                         Theme.of(context).brightness ==
@@ -181,7 +183,7 @@ class _ShoppingListSwitcherState extends State<ShoppingListSwitcher> {
                   key: const ValueKey('new-list-divider'),
                   width: 1.5,
                   height: 32,
-                  margin: const EdgeInsets.only(left: 2, right: 4),
+                  margin: const EdgeInsetsDirectional.only(start: 2, end: 4),
                   decoration: BoxDecoration(
                     color: palette.border,
                     borderRadius: BorderRadius.circular(2),

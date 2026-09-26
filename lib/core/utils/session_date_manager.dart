@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../calendar/shop_calendar.dart';
+import '../calendar/calendar_date_dialog.dart';
 import 'package:uuid/uuid.dart';
 import '../data/shopping_repository.dart';
 import '../../models/shopping_session.dart';
@@ -13,7 +14,7 @@ class SessionDateManager {
     required ShoppingRepository repository,
     required VoidCallback onUpdated,
   }) async {
-    final newDate = await showDatePicker(
+    final newDate = await showPreferredDatePicker(
       context: context,
       initialDate: session.date,
       firstDate: DateTime(2000),
@@ -48,9 +49,13 @@ class SessionDateManager {
         builder: (context) => AlertDialog(
           title: const ShopText('Date Already Exists'),
           content: Text(
-            shopIsBangla(context)
-                ? '${DateFormat('d MMMM yyyy', 'bn').format(targetDate)} তারিখে আগে থেকেই কেনাকাটার রেকর্ড আছে। এই রেকর্ডটি ওই তারিখে নিতে চাইলে আগের রেকর্ডটি আগে মুছুন।'
-                : 'A shopping session already exists for ${DateFormat('d MMMM yyyy').format(targetDate)}. Please delete the existing session first if you want to move this session to that date.',
+            shopTr(
+              context,
+              'A shopping session already exists for {date}. Delete that session first to move this record there.',
+            ).replaceAll(
+              '{date}',
+              shopDate(context, targetDate, 'd MMMM yyyy'),
+            ),
           ),
           actions: [
             TextButton(
@@ -75,9 +80,10 @@ class SessionDateManager {
         builder: (context) => AlertDialog(
           title: const ShopText('Purchased items detected'),
           content: Text(
-            shopIsBangla(context)
-                ? '${shopNumber(context, purchasedItems.length)}টি কেনা পণ্য আজকের তালিকায় যাবে। বাকি পণ্য নতুন তারিখের জন্য রাখা হবে।'
-                : '${purchasedItems.length} purchased ${purchasedItems.length == 1 ? 'item' : 'items'} will be moved to Today\'s list. The remaining items will be planned for the new date.',
+            shopTr(
+              context,
+              '{count} purchased items will be moved to Today’s list. Remaining items will be planned for the new date.',
+            ).replaceAll('{count}', shopNumber(context, purchasedItems.length)),
           ),
           actions: [
             TextButton(
@@ -159,9 +165,10 @@ class SessionDateManager {
 
       if (context.mounted) {
         final msg = pendingItems.isNotEmpty
-            ? shopIsBangla(context)
-                  ? 'পণ্যগুলো আজ এবং ${DateFormat('d MMMM', 'bn').format(targetDate)} তারিখে সরানো হয়েছে'
-                  : 'Items moved to Today and ${DateFormat('d MMMM').format(targetDate)}'
+            ? shopTr(
+                context,
+                'Items moved to Today and {date}',
+              ).replaceAll('{date}', shopDate(context, targetDate, 'd MMMM'))
             : shopTr(context, 'All items moved to Today');
         ScaffoldMessenger.of(
           context,
@@ -176,9 +183,12 @@ class SessionDateManager {
         builder: (context) => AlertDialog(
           title: const ShopText('Change Shopping Date?'),
           content: Text(
-            shopIsBangla(context)
-                ? '${DateFormat('d MMMM', 'bn').format(session.date)} থেকে ${DateFormat('d MMMM yyyy', 'bn').format(targetDate)} তারিখে এই রেকর্ড সরাবেন?'
-                : 'Move this session from ${DateFormat('d MMMM').format(session.date)} to ${DateFormat('d MMMM yyyy').format(targetDate)}?',
+            shopTr(context, 'Move this session from {from} to {to}?')
+                .replaceAll('{from}', shopDate(context, session.date, 'd MMMM'))
+                .replaceAll(
+                  '{to}',
+                  shopDate(context, targetDate, 'd MMMM yyyy'),
+                ),
           ),
           actions: [
             TextButton(
@@ -206,9 +216,10 @@ class SessionDateManager {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                shopIsBangla(context)
-                    ? '${DateFormat('d MMMM', 'bn').format(targetDate)} তারিখে সরানো হয়েছে'
-                    : 'Moved to ${DateFormat('d MMMM').format(targetDate)}',
+                shopTr(
+                  context,
+                  'Moved to {date}',
+                ).replaceAll('{date}', shopDate(context, targetDate, 'd MMMM')),
               ),
             ),
           );

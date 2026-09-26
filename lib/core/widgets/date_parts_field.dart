@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
+import '../calendar/shop_calendar.dart';
 
 class DatePartsField extends StatefulWidget {
   const DatePartsField({
@@ -17,29 +18,20 @@ class DatePartsField extends StatefulWidget {
 class _DatePartsFieldState extends State<DatePartsField> {
   late final List<TextEditingController> _fields;
   final _focusNodes = List.generate(3, (_) => FocusNode());
-  bool _bangla = false;
-
-  String _digits(String text, {required bool bangla}) {
-    const english = '0123456789', bengali = '০১২৩৪৫৬৭৮৯';
-    final from = bangla ? english : bengali;
-    final to = bangla ? bengali : english;
-    return text.split('').map((char) {
-      final index = from.indexOf(char);
-      return index < 0 ? char : to[index];
-    }).join();
-  }
+  String _language = 'en';
+  ShopCalendar _calendar = const ShopCalendar();
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final bangla = shopIsBangla(context);
-    if (_bangla != bangla) {
-      _bangla = bangla;
-      for (final field in _fields) {
-        field.value = field.value.copyWith(
-          text: _digits(field.text, bangla: bangla),
-        );
-      }
+    final language = Localizations.localeOf(context).languageCode;
+    final calendar = ShopCalendarScope.of(context);
+    if (_language != language ||
+        _calendar.system != calendar.system ||
+        _calendar.hijriAdjustment != calendar.hijriAdjustment) {
+      _language = language;
+      _calendar = calendar;
+      _sync();
     }
   }
 
@@ -57,9 +49,10 @@ class _DatePartsFieldState extends State<DatePartsField> {
       }
       return;
     }
-    final values = [widget.date!.day, widget.date!.month, widget.date!.year];
+    final date = _calendar.parts(widget.date!);
+    final values = [date.day, date.month, date.year];
     for (var i = 0; i < 3; i++) {
-      _fields[i].text = _digits('${values[i]}', bangla: _bangla);
+      _fields[i].text = localizeDateDigits('${values[i]}', _language);
     }
   }
 
@@ -70,18 +63,13 @@ class _DatePartsFieldState extends State<DatePartsField> {
   }
 
   void _changed(String _) {
-    final d = int.tryParse(_digits(_fields[0].text, bangla: false)),
-        m = int.tryParse(_digits(_fields[1].text, bangla: false)),
-        y = int.tryParse(_digits(_fields[2].text, bangla: false));
+    final d = int.tryParse(normalizeDateDigits(_fields[0].text)),
+        m = int.tryParse(normalizeDateDigits(_fields[1].text)),
+        y = int.tryParse(normalizeDateDigits(_fields[2].text));
     DateTime? date;
-    if (d != null &&
-        m != null &&
-        y != null &&
-        _fields[2].text.length == 4 &&
-        y >= 2000 &&
-        y <= 2100) {
-      final candidate = DateTime(y, m, d);
-      if (candidate.day == d && candidate.month == m && candidate.year == y) {
+    if (d != null && m != null && y != null && _fields[2].text.length == 4) {
+      final candidate = _calendar.fromParts(y, m, d);
+      if (candidate != null && _calendar.isSelectable(candidate)) {
         date = candidate;
       }
     }
@@ -114,10 +102,10 @@ class _DatePartsFieldState extends State<DatePartsField> {
                 ? TextInputAction.done
                 : TextInputAction.next,
             inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp('[0-9০-৯]')),
+              FilteringTextInputFormatter.allow(RegExp('[0-9০-৯٠-٩۰-۹]')),
               TextInputFormatter.withFunction(
                 (oldValue, newValue) => newValue.copyWith(
-                  text: _digits(newValue.text, bangla: _bangla),
+                  text: localizeDateDigits(newValue.text, _language),
                 ),
               ),
               LengthLimitingTextInputFormatter(i == 2 ? 4 : 2),

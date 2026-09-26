@@ -44,7 +44,7 @@ class ItemSelectionBar extends StatelessWidget {
                 child: Semantics(
                   liveRegion: true,
                   child: Text(
-                    '$count ${shopTr(context, 'Selected')}',
+                    '${shopNumber(context, count)} ${shopTr(context, 'Selected')}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -118,7 +118,12 @@ class ItemSelectionBar extends StatelessWidget {
                     onPressed: busy || count == 0 ? null : onDelete,
                     style: TextButton.styleFrom(
                       foregroundColor: colors.error,
-                      padding: const EdgeInsets.fromLTRB(6, 0, 10, 0),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        6,
+                        0,
+                        10,
+                        0,
+                      ),
                       visualDensity: VisualDensity.compact,
                     ),
                     icon: const Icon(Icons.delete_outline, size: 19),

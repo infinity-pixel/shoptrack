@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import '../../../../app.dart';
@@ -15,6 +16,7 @@ import '../widgets/profile_avatar.dart';
 import '../widgets/sign_out_dialog.dart';
 import 'backup_restore_page.dart';
 import 'cloud_sync_page.dart';
+import 'calendar_settings_page.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -109,6 +111,23 @@ class AccountPage extends StatelessWidget {
                             subtitle: settings.language,
                             onTap: () =>
                                 _showLanguageDialog(context, settingsService),
+                          ),
+                          _buildSettingsTile(
+                            context,
+                            icon: Icons.calendar_month_outlined,
+                            title: 'Calendar',
+                            subtitle:
+                                settings.calendar == CalendarPreference.hijri
+                                ? 'Hijri (Umm al-Qura)'
+                                : 'Gregorian',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CalendarSettingsPage(
+                                  settingsService: settingsService,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -288,7 +307,9 @@ class AccountPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  account != null ? displayName : 'Welcome to ShopTrack',
+                  account != null
+                      ? displayName
+                      : shopTr(context, 'Welcome to ShopTrack'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
@@ -301,6 +322,7 @@ class AccountPage extends StatelessWidget {
                     message: account.email,
                     child: Text(
                       account.email,
+                      textDirection: TextDirection.ltr,
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -311,7 +333,11 @@ class AccountPage extends StatelessWidget {
                   )
                 else
                   Text(
-                    errorMessage ?? 'Sign in with Google to use cloud backup.',
+                    shopTr(
+                      context,
+                      errorMessage ??
+                          'Sign in with Google to use cloud backup.',
+                    ),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: errorMessage != null ? p.error : p.textSecondary,
@@ -337,7 +363,7 @@ class AccountPage extends StatelessWidget {
                         : TextButton.icon(
                             onPressed: () => authService.signIn(),
                             icon: const Icon(Icons.login, size: 18),
-                            label: Text(
+                            label: ShopText(
                               errorMessage != null
                                   ? 'Retry Sign In'
                                   : 'Sign In With Google',
@@ -348,9 +374,9 @@ class AccountPage extends StatelessWidget {
               ],
             ),
             if (account != null)
-              Positioned(
+              PositionedDirectional(
                 top: -8,
-                right: -6,
+                end: -6,
                 child: TextButton.icon(
                   onPressed: !profiles.loaded || profiles.loadError != null
                       ? null
@@ -443,7 +469,13 @@ class AccountPage extends StatelessWidget {
             ),
       trailing: onTap == null
           ? null
-          : Icon(Icons.chevron_right, size: 20, color: p.textSecondary),
+          : Icon(
+              Directionality.of(context) == TextDirection.rtl
+                  ? Icons.chevron_left
+                  : Icons.chevron_right,
+              size: 20,
+              color: p.textSecondary,
+            ),
       onTap: onTap,
     );
   }
@@ -476,6 +508,8 @@ class AccountPage extends StatelessWidget {
           content: Text(
             shopIsBangla(context)
                 ? 'ডিফল্ট মুদ্রা $selected করা হয়েছে। আগের পণ্যগুলোর মুদ্রা বদলায়নি।'
+                : shopIsArabic(context)
+                ? 'تم تغيير العملة الافتراضية إلى $selected. لم تتغير عملات المنتجات السابقة.'
                 : 'Default currency changed to $selected. Existing items were not changed.',
           ),
         ),
@@ -499,7 +533,7 @@ class AccountPage extends StatelessWidget {
       builder: (dialogContext) => SimpleDialog(
         title: const ShopText('Language Preference'),
         children: [
-          for (final language in const ['English', 'Bangla'])
+          for (final language in const ['English', 'Bangla', 'Arabic'])
             SimpleDialogOption(
               onPressed: () => Navigator.pop(dialogContext, language),
               child: Row(
@@ -518,8 +552,22 @@ class AccountPage extends StatelessWidget {
         selected == settingsService.settings.language) {
       return;
     }
+    final navigator = Navigator.of(context, rootNavigator: true);
+    // Keep Back from dismissing the screen during the locale transaction. The
+    // root builder paints the localized busy UI above this transparent route.
+    final busyRoute = DialogRoute<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      builder: (_) => const PopScope(canPop: false, child: SizedBox.shrink()),
+    );
+    unawaited(navigator.push(busyRoute));
     try {
-      await settingsService.updateLanguage(selected);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await settingsService.updateLanguage(
+        selected,
+        waitForFrame: () => WidgetsBinding.instance.endOfFrame,
+      );
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -527,6 +575,8 @@ class AccountPage extends StatelessWidget {
           content: ShopText('Could not save the language preference.'),
         ),
       );
+    } finally {
+      if (busyRoute.isActive) navigator.removeRoute(busyRoute);
     }
   }
 

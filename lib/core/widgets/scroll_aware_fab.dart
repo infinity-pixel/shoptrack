@@ -125,13 +125,15 @@ class _DelayedExtendedFabState extends State<DelayedExtendedFab>
                           ),
                           ClipRect(
                             child: Align(
-                              alignment: Alignment.centerLeft,
+                              alignment: AlignmentDirectional.centerStart,
                               widthFactor: width,
                               heightFactor: 1,
                               child: Opacity(
                                 opacity: opacity,
                                 child: Padding(
-                                  padding: const EdgeInsets.only(right: 14),
+                                  padding: const EdgeInsetsDirectional.only(
+                                    end: 14,
+                                  ),
                                   child: Text(
                                     widget.label,
                                     style: theme.textTheme.labelLarge?.copyWith(
@@ -169,8 +171,8 @@ class CalendarAddIcon extends StatelessWidget {
       child: Stack(
         children: [
           const Icon(Icons.calendar_month_outlined, size: 24),
-          Positioned(
-            right: 0,
+          PositionedDirectional(
+            end: 0,
             bottom: 0,
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -302,14 +304,18 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
             children: [
               SizeTransition(
                 sizeFactor: curve,
-                alignment: Alignment.bottomRight,
+                alignment: AlignmentDirectional.bottomEnd.resolve(
+                  Directionality.of(context),
+                ),
                 child: FadeTransition(
                   opacity: curve,
                   child: SlideTransition(
                     position: slide,
                     child: ScaleTransition(
                       scale: scale,
-                      alignment: Alignment.bottomRight,
+                      alignment: AlignmentDirectional.bottomEnd.resolve(
+                        Directionality.of(context),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Semantics(
@@ -402,14 +408,16 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                                     ),
                                     ClipRect(
                                       child: Align(
-                                        alignment: Alignment.centerLeft,
+                                        alignment:
+                                            AlignmentDirectional.centerStart,
                                         widthFactor: width,
                                         child: Opacity(
                                           opacity: opacity,
                                           child: Padding(
-                                            padding: const EdgeInsets.only(
-                                              right: 14,
-                                            ),
+                                            padding:
+                                                const EdgeInsetsDirectional.only(
+                                                  end: 14,
+                                                ),
                                             child: ShopText(
                                               'Add Item',
                                               maxLines: 1,

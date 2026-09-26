@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/app_settings.dart';
 import '../currency/currency_catalog.dart';
+import '../localization/shoptrack_text.dart';
 import '../utils/number_formatter.dart';
 
 /// Shows a bounded shopping amount and exposes its full value on tap.
@@ -30,19 +31,25 @@ class CompactAmountText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = WidgetsBinding.instance.platformDispatcher.locale.toString();
-    final full = NumberFormatter.formatPrice(
-      value,
-      currencyCode: currencyCode,
-      includeCode: includeCode,
-      preference: preference,
-      deviceLocale: locale,
+    String localize(String value) =>
+        shopIsArabic(context) ? shopDigits(context, value) : value;
+    final full = localize(
+      NumberFormatter.formatPrice(
+        value,
+        currencyCode: currencyCode,
+        includeCode: includeCode,
+        preference: preference,
+        deviceLocale: locale,
+      ),
     );
-    final display = NumberFormatter.formatDisplayPrice(
-      value,
-      currencyCode: currencyCode,
-      includeCode: includeCode,
-      preference: preference,
-      deviceLocale: locale,
+    final display = localize(
+      NumberFormatter.formatDisplayPrice(
+        value,
+        currencyCode: currencyCode,
+        includeCode: includeCode,
+        preference: preference,
+        deviceLocale: locale,
+      ),
     );
     final symbol = CurrencyCatalog.resolve(currencyCode).symbol;
     final isArabicSymbol = RegExp(r'[\u0600-\u06ff]').hasMatch(symbol);
@@ -75,7 +82,19 @@ class CompactAmountText extends StatelessWidget {
                 maxLines: 1,
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
-                textAlign: textAlign,
+                // Resolve logical alignment against the interface, not the
+                // currency symbol's bidi direction.
+                textAlign: switch (textAlign) {
+                  TextAlign.start =>
+                    Directionality.of(context) == ui.TextDirection.rtl
+                        ? TextAlign.right
+                        : TextAlign.left,
+                  TextAlign.end =>
+                    Directionality.of(context) == ui.TextDirection.rtl
+                        ? TextAlign.left
+                        : TextAlign.right,
+                  _ => textAlign,
+                },
                 textDirection: direction,
                 style: style,
               ),

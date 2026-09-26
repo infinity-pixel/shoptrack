@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'core/localization/shoptrack_text.dart';
+import 'core/calendar/shop_calendar.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -120,9 +121,12 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
     return ListenableBuilder(
       listenable: Listenable.merge([settingsService, ?syncService]),
       builder: (context, child) {
-        Intl.defaultLocale = settingsService.settings.language == 'Bangla'
-            ? 'bn_BD'
-            : 'en_US';
+        final locale = switch (settingsService.settings.language) {
+          'Bangla' => const Locale('bn', 'BD'),
+          'Arabic' => const Locale('ar'),
+          _ => const Locale('en', 'US'),
+        };
+        Intl.defaultLocale = locale.toString();
         final platformBrightness = MediaQuery.of(context).platformBrightness;
         final themeDefinition = ThemePresets.getDefinition(
           settingsService.settings,
@@ -132,16 +136,76 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
         return MaterialApp(
           key: ValueKey(syncService?.store?.scope ?? 'local'),
           title: 'ShopTrack',
-          locale: settingsService.settings.language == 'Bangla'
-              ? const Locale('bn', 'BD')
-              : const Locale('en', 'US'),
-          supportedLocales: const [Locale('en', 'US'), Locale('bn', 'BD')],
+          locale: locale,
+          supportedLocales: const [
+            Locale('en', 'US'),
+            Locale('bn', 'BD'),
+            Locale('ar'),
+          ],
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           debugShowCheckedModeBanner: false,
+          builder: (context, child) => ShopCalendarScope(
+            calendar: ShopCalendar(
+              system: settingsService.settings.calendar,
+              hijriAdjustment: settingsService.settings.hijriAdjustment,
+            ),
+            child: PopScope(
+              canPop: !settingsService.isSwitchingLanguage,
+              child: Stack(
+                children: [
+                  ExcludeSemantics(
+                    excluding: settingsService.isSwitchingLanguage,
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                  if (settingsService.isSwitchingLanguage) ...[
+                    ModalBarrier(
+                      dismissible: false,
+                      color: Theme.of(context).colorScheme.surface,
+                    ),
+                    Positioned.fill(
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: Center(
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (MediaQuery.disableAnimationsOf(context))
+                                    const Icon(Icons.translate, size: 36)
+                                  else
+                                    const CircularProgressIndicator(),
+                                  const SizedBox(height: 20),
+                                  ShopText(
+                                    'Changing language…',
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleLarge,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const ShopText(
+                                    'Please wait while ShopTrack updates the interface.',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
           scaffoldMessengerKey: ShopTrackApp.scaffoldMessengerKey,
           themeMode: settingsService.themeMode,
           theme:

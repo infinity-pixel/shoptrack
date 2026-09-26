@@ -19,9 +19,12 @@ class ShoppingListTextFormatter {
     String Function(String value)? translate,
     String defaultListLabel = 'My List',
     String Function(int value)? formatCount,
+    String? dateLabel,
+    String Function(String value)? formatNumberText,
   }) {
     final tr = translate ?? (value) => value;
     final countText = formatCount ?? (value) => '$value';
+    final numberText = formatNumberText ?? (value) => value;
     final includedLists = session.orderedLists
         .where((list) {
           if (listIds != null && !listIds.contains(list.id)) return false;
@@ -43,7 +46,9 @@ class ShoppingListTextFormatter {
 
     final output = StringBuffer()
       ..writeln('ShopTrack')
-      ..writeln(DateFormat('EEEE, d MMMM yyyy').format(session.date))
+      ..writeln(
+        dateLabel ?? DateFormat('EEEE, d MMMM yyyy').format(session.date),
+      )
       ..write('============================');
 
     if (selectedItems) {
@@ -59,7 +64,8 @@ class ShoppingListTextFormatter {
         return (item.listId ?? ShoppingListGroup.defaultId) == list.id;
       }).toList()..sort((a, b) => a.position.compareTo(b.position));
 
-      final listTitle = list.id == ShoppingListGroup.defaultId &&
+      final listTitle =
+          list.id == ShoppingListGroup.defaultId &&
               list.name == ShoppingListGroup.defaultList.name
           ? defaultListLabel
           : list.name;
@@ -75,6 +81,7 @@ class ShoppingListTextFormatter {
         '☐',
         translate: tr,
         formatCount: countText,
+        numberText: numberText,
         includeCurrencyCodes: includeCurrencyCodes,
       );
       _writeSection(
@@ -84,9 +91,10 @@ class ShoppingListTextFormatter {
         '☑',
         translate: tr,
         formatCount: countText,
+        numberText: numberText,
         includeCurrencyCodes: includeCurrencyCodes,
       );
-      _writeTotals(output, items, translate: tr);
+      _writeTotals(output, items, translate: tr, numberText: numberText);
     }
 
     if (includedItems.isEmpty) {
@@ -103,7 +111,13 @@ class ShoppingListTextFormatter {
         ..writeln()
         ..writeln(tr('ALL LISTS'))
         ..writeln('=' * tr('ALL LISTS').runes.length);
-      _writeTotals(output, includedItems, divider: false, translate: tr);
+      _writeTotals(
+        output,
+        includedItems,
+        divider: false,
+        translate: tr,
+        numberText: numberText,
+      );
     }
     return output.toString();
   }
@@ -115,6 +129,7 @@ class ShoppingListTextFormatter {
     String marker, {
     required String Function(String) translate,
     required String Function(int) formatCount,
+    required String Function(String) numberText,
     required bool includeCurrencyCodes,
   }) {
     final section = items.toList(growable: false);
@@ -122,7 +137,7 @@ class ShoppingListTextFormatter {
     output.writeln('${translate(title)} (${formatCount(section.length)})');
     for (final item in section) {
       output.writeln(
-        '$marker ${_itemLine(item, includeCurrencyCode: includeCurrencyCodes)}',
+        '$marker ${_itemLine(item, includeCurrencyCode: includeCurrencyCodes, numberText: numberText)}',
       );
       if (item.notes?.trim().isNotEmpty == true) {
         output.writeln('   ${translate('Note')}: ${item.notes!.trim()}');
@@ -136,6 +151,7 @@ class ShoppingListTextFormatter {
     Iterable<ShoppingItem> items, {
     bool divider = true,
     required String Function(String) translate,
+    required String Function(String) numberText,
   }) {
     final included = items.toList(growable: false);
     final pendingTotals = CurrencyTotals.fromItems(
@@ -156,6 +172,7 @@ class ShoppingListTextFormatter {
       'Pending',
       pendingTotals,
       translate: translate,
+      numberText: numberText,
       includeCurrencyCodes: allTotals.isMultiCurrency,
       fallbackCurrencyCode: singleCurrencyCode,
     );
@@ -164,6 +181,7 @@ class ShoppingListTextFormatter {
       'Purchased',
       purchasedTotals,
       translate: translate,
+      numberText: numberText,
       includeCurrencyCodes: allTotals.isMultiCurrency,
       fallbackCurrencyCode: singleCurrencyCode,
       trailingNewline: false,
@@ -175,6 +193,7 @@ class ShoppingListTextFormatter {
     String label,
     CurrencyTotals totals, {
     required String Function(String) translate,
+    required String Function(String) numberText,
     required bool includeCurrencyCodes,
     String? fallbackCurrencyCode,
     bool trailingNewline = true,
@@ -185,7 +204,7 @@ class ShoppingListTextFormatter {
           ? fallbackCurrencyCode
           : totals.values.single.currencyCode;
       output.write(
-        '${translate(label)} ${translate('total')}: ${NumberFormatter.formatPrice(value, currencyCode: code ?? 'BDT')}',
+        '${translate(label)} ${translate('total')}: ${numberText(NumberFormatter.formatPrice(value, currencyCode: code ?? 'BDT'))}',
       );
       if (trailingNewline) output.writeln();
       return;
@@ -199,7 +218,7 @@ class ShoppingListTextFormatter {
       for (var index = 0; index < values.length; index++) {
         final total = values[index];
         output.write(
-          '  ${NumberFormatter.formatPrice(total.value, currencyCode: total.currencyCode, includeCode: true)}',
+          '  ${numberText(NumberFormatter.formatPrice(total.value, currencyCode: total.currencyCode, includeCode: true))}',
         );
         if (index != values.length - 1) output.writeln();
       }
@@ -214,22 +233,25 @@ class ShoppingListTextFormatter {
   static String _itemLine(
     ShoppingItem item, {
     required bool includeCurrencyCode,
+    required String Function(String) numberText,
   }) {
     final pricing = item.pricing;
     final details = <String>[];
     if (pricing.resolvedQuantity != null ||
         pricing.resolvedUnitSymbol != null) {
       details.add(
-        '${NumberFormatter.formatQuantity(pricing.resolvedQuantity ?? 0, enteredText: item.quantity)} ${pricing.resolvedUnitSymbol ?? ''}'
+        '${numberText(NumberFormatter.formatQuantity(pricing.resolvedQuantity ?? 0, enteredText: item.quantity))} ${pricing.resolvedUnitSymbol ?? ''}'
             .trim(),
       );
     }
     if (pricing.totalPrice > 0) {
       details.add(
-        NumberFormatter.formatPrice(
-          pricing.totalPrice,
-          currencyCode: item.currencyCode,
-          includeCode: includeCurrencyCode,
+        numberText(
+          NumberFormatter.formatPrice(
+            pricing.totalPrice,
+            currencyCode: item.currencyCode,
+            includeCode: includeCurrencyCode,
+          ),
         ),
       );
     }

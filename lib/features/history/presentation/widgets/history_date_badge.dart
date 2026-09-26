@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import '../../../../core/theme/theme_presets.dart';
 
 /// The same date marker is used in History and its search results.
@@ -45,7 +45,7 @@ class HistoryDateBadge extends StatelessWidget {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          '${date.day}',
+                          shopDate(context, date, 'd'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: isFuture
@@ -95,7 +95,7 @@ class HistoryDateBadge extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  DateFormat.MMM().format(date).toUpperCase(),
+                  shopDate(context, date, 'MMM').toUpperCase(),
                   style: TextStyle(
                     fontSize: 7,
                     height: 1,

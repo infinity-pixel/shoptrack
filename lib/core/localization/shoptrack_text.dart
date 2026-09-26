@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 
+import 'shoptrack_arabic.dart';
+import 'shoptrack_currency_names.dart';
+
+export 'shoptrack_currency_names.dart'
+    show registerShopTrackLocalizationLicenses;
+
 /// Translates interface copy only. User-authored item and list names should
 /// continue to use Flutter's ordinary Text widget unchanged.
 class ShopText extends StatelessWidget {
@@ -61,14 +67,23 @@ class ShopText extends StatelessWidget {
   );
 }
 
-String shopTr(BuildContext context, String english) {
-  if (Localizations.localeOf(context).languageCode != 'bn') return english;
-  final translated = _bangla[english];
+String shopTr(BuildContext context, String english) =>
+    shopTrLanguage(Localizations.localeOf(context).languageCode, english);
+
+/// Context-free translation for exports and status messages. Only interface
+/// strings belong here; never pass user-authored content through this helper.
+String shopTrLanguage(String languageCode, String english) {
+  final translations = switch (languageCode) {
+    'bn' => _bangla,
+    'ar' => shopArabicTranslations,
+    _ => const <String, String>{},
+  };
+  final translated = translations[english];
   if (translated != null) return translated;
   // Keep technical diagnostics intact while translating the user-facing prefix.
   for (final prefix in ['Cloud backup failed', 'Cloud restore failed']) {
     if (english.startsWith('$prefix: ')) {
-      return '${_bangla[prefix]}${english.substring(prefix.length)}';
+      return '${translations[prefix] ?? prefix}${english.substring(prefix.length)}';
     }
   }
   return english;
@@ -77,9 +92,52 @@ String shopTr(BuildContext context, String english) {
 bool shopIsBangla(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'bn';
 
-String shopNumber(BuildContext context, num value) => shopIsBangla(context)
-    ? NumberFormat.decimalPattern('bn_BD').format(value)
-    : NumberFormat.decimalPattern('en_US').format(value);
+bool shopIsArabic(BuildContext context) =>
+    Localizations.localeOf(context).languageCode == 'ar';
+
+String shopNumber(BuildContext context, num value) =>
+    shopNumberLanguage(Localizations.localeOf(context).languageCode, value);
+
+String shopNumberLanguage(String languageCode, num value) {
+  final locale = switch (languageCode) {
+    'bn' => 'bn_BD',
+    'ar' => 'ar',
+    _ => 'en_US',
+  };
+  return shopDigitsLanguage(
+    languageCode,
+    NumberFormat.decimalPattern(locale).format(value),
+  );
+}
+
+/// Shapes interface digits without changing currency codes, punctuation, or
+/// underlying stored values. Arabic explicitly uses Arabic-Indic digits.
+String shopDigits(BuildContext context, String text) =>
+    shopDigitsLanguage(Localizations.localeOf(context).languageCode, text);
+
+String shopDigitsLanguage(String languageCode, String text) {
+  final digits = switch (languageCode) {
+    'bn' => '০১২৩৪৫৬৭৮৯',
+    'ar' => '٠١٢٣٤٥٦٧٨٩',
+    _ => null,
+  };
+  if (digits == null) return text;
+  const sources = ['0123456789', '০১২৩৪৫৬৭৮৯', '٠١٢٣٤٥٦٧٨٩', '۰۱۲۳۴۵۶۷۸۹'];
+  return text.split('').map((character) {
+    for (final source in sources) {
+      final index = source.indexOf(character);
+      if (index >= 0) return digits[index];
+    }
+    return character;
+  }).join();
+}
+
+@visibleForTesting
+Set<String> shopTranslationKeys(String languageCode) => switch (languageCode) {
+  'bn' => _bangla.keys.toSet(),
+  'ar' => shopArabicTranslations.keys.toSet(),
+  _ => const {},
+};
 
 String shopCount(
   BuildContext context,
@@ -98,6 +156,89 @@ String shopListName(
     : name;
 
 const Map<String, String> _bangla = {
+  ...shopBanglaCurrencyNames,
+  'Date Removed': 'তারিখ সরানো হয়েছে',
+  'No Items': 'কোনো পণ্য নেই',
+  'Sign In With Google': 'গুগল দিয়ে সাইন ইন করুন',
+  'Retry Sign In': 'আবার সাইন ইন করুন',
+  'packet': 'প্যাকেট',
+  'package': 'প্যাকেজ',
+  'No matching items. Try another search or filter.':
+      'মিলে যাওয়া পণ্য নেই। অন্য শব্দ বা ছাঁকনি দিয়ে খুঁজুন।',
+  'result': 'ফলাফল',
+  'results': 'ফলাফল',
+  'Could not open this shopping list.': 'এই কেনাকাটার তালিকাটি খোলা যায়নি।',
+  'Please enter a name.': 'একটি নাম লিখুন।',
+  'Could not sign out. Please try again.':
+      'সাইন আউট করা যায়নি। আবার চেষ্টা করুন।',
+  'kg': 'কেজি',
+  'g': 'গ্রাম',
+  'L': 'লিটার',
+  'mL': 'মিলি',
+  'pc': 'পিস',
+  'pkt': 'প্যাকেট',
+  'pkg': 'প্যাকেজ',
+  'Move {count} items?': '{count}টি পণ্য সরাবেন?',
+  'Move {count} item?': '{count}টি পণ্য সরাবেন?',
+  'Move the selected items to {list}?':
+      'নির্বাচিত পণ্যগুলো {list} তালিকায় সরাবেন?',
+  'Moved {count} items to {list}.':
+      '{count}টি পণ্য {list} তালিকায় সরানো হয়েছে।',
+  'Moved {count} item to {list}.':
+      '{count}টি পণ্য {list} তালিকায় সরানো হয়েছে।',
+  'Delete {count} items?': '{count}টি পণ্য মুছবেন?',
+  'Delete {count} item?': '{count}টি পণ্য মুছবেন?',
+  'Remove the selected items from this list?':
+      'নির্বাচিত পণ্যগুলো এই তালিকা থেকে মুছবেন?',
+  'Deleted {count} items.': '{count}টি পণ্য মুছে ফেলা হয়েছে।',
+  'Deleted {count} item.': '{count}টি পণ্য মুছে ফেলা হয়েছে।',
+  'Restored {count} items.': '{count}টি পণ্য ফিরিয়ে আনা হয়েছে।',
+  'Restored {count} item.': '{count}টি পণ্য ফিরিয়ে আনা হয়েছে।',
+  'Delete {list}?': '{list} মুছবেন?',
+  'This will permanently delete {count} items in this list.':
+      'এই তালিকার {count}টি পণ্য স্থায়ীভাবে মুছে যাবে।',
+  'This will permanently delete {count} item in this list.':
+      'এই তালিকার {count}টি পণ্য স্থায়ীভাবে মুছে যাবে।',
+  '{item} moved to Today’s list': '{item} আজকের তালিকায় সরানো হয়েছে',
+  '{count} selected items': '{count}টি পণ্য নির্বাচিত',
+  '{count} selected item': '{count}টি পণ্য নির্বাচিত',
+  'A shopping session already exists for {date}. Delete that session first to move this record there.':
+      '{date} তারিখে কেনাকাটার রেকর্ড আগে থেকেই আছে। এই রেকর্ডটি সেখানে নিতে আগে ওই রেকর্ড মুছুন।',
+  '{count} purchased items will be moved to Today’s list. Remaining items will be planned for the new date.':
+      'কেনা হয়েছে এমন {count}টি পণ্য আজকের তালিকায় যাবে। বাকি পণ্যগুলো নতুন তারিখের জন্য পরিকল্পিত থাকবে।',
+  'Items moved to Today and {date}':
+      'পণ্যগুলো আজকের ও {date} তারিখের তালিকায় সরানো হয়েছে',
+  'Move this session from {from} to {to}?':
+      'এই রেকর্ডটি {from} থেকে {to} তারিখে সরাবেন?',
+  'Moved to {date}': '{date} তারিখে সরানো হয়েছে',
+  'Arabic': 'আরবি',
+  'Calendar': 'ক্যালেন্ডার',
+  'Gregorian': 'গ্রেগরীয়',
+  'Hijri': 'হিজরি',
+  'Hijri (Umm al-Qura)': 'হিজরি (উম্মুল কুরা)',
+  'Hijri date adjustment': 'হিজরি তারিখ সমন্বয়',
+  'No adjustment': 'কোনো সমন্বয় নয়',
+  'Today’s preview': 'আজকের তারিখের পূর্বরূপ',
+  'Uses the Umm al-Qura calendar. Dates may differ from local moon-sighting announcements.':
+      'উম্মুল কুরা ক্যালেন্ডার অনুসরণ করে। স্থানীয় চাঁদ দেখার ঘোষণা অনুযায়ী তারিখ ভিন্ন হতে পারে।',
+  'Adjust the Hijri date to match your local moon-sighting announcement.':
+      'স্থানীয় চাঁদ দেখার ঘোষণার সঙ্গে মিলিয়ে হিজরি তারিখ সমন্বয় করুন।',
+  'This changes calendar labels, not your saved shopping dates.':
+      'এতে শুধু তারিখ দেখানোর ধরন বদলাবে, সংরক্ষিত কেনাকাটার দিন বদলাবে না।',
+  'Could not save the calendar preference.':
+      'ক্যালেন্ডারের পছন্দ সংরক্ষণ করা যায়নি।',
+  'Changing language…': 'ভাষা পরিবর্তন হচ্ছে…',
+  'Please wait while ShopTrack updates the interface.':
+      'শপট্র্যাকের ইন্টারফেস পরিবর্তন হওয়া পর্যন্ত অপেক্ষা করুন।',
+  '{count} days': '{count} দিন',
+  'Calendar and language are independent.':
+      'ক্যালেন্ডার ও ভাষা আলাদাভাবে বেছে নিতে পারেন।',
+  'Gregorian date': 'গ্রেগরীয় তারিখ',
+  'Hijri date': 'হিজরি তারিখ',
+  '1,234,567 · 1.23M': '১,২৩৪,৫৬৭ · ১.২৩M',
+  '12,34,567 · 12.34 Lakh': '১২,৩৪,৫৬৭ · ১২.৩৪ লাখ',
+  'Select item': 'পণ্য বাছুন',
+  'Mark as purchased': 'কেনা হয়েছে হিসেবে চিহ্নিত করুন',
   'Select Date': 'তারিখ বাছুন',
   'Date out of range': 'তারিখটি অনুমোদিত সীমার বাইরে',
   'Enter a valid day, month and year.': 'সঠিক দিন, মাস ও বছর লিখুন।',

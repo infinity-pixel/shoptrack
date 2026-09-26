@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/widgets/shoptrack_navigation_bar.dart';
@@ -197,7 +197,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
               children: [
                 for (final status in [null, ...SearchItemStatus.values])
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsetsDirectional.only(end: 8),
                     child: FilterChip(
                       selected: _status == status,
                       selectedColor: p.secondary,
@@ -253,10 +253,10 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Align(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 child: InputChip(
                   label: Text(
-                    '${DateFormat.yMMMd().format(_range!.start)} — ${DateFormat.yMMMd().format(_range!.end)}',
+                    '${shopDate(context, _range!.start)} — ${shopDate(context, _range!.end)}',
                     maxLines: 2,
                   ),
                   onDeleted: () {
@@ -277,7 +277,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
       return Center(
-        child: TextButton(onPressed: _search, child: Text(_error!)),
+        child: TextButton(onPressed: _search, child: ShopText(_error!)),
       );
     }
     if (!_active) {
@@ -322,8 +322,11 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(
               _results.isEmpty
-                  ? 'No matching items. Try another search or filter.'
-                  : '${_results.length} ${_results.length == 1 ? 'result' : 'results'}',
+                  ? shopTr(
+                      context,
+                      'No matching items. Try another search or filter.',
+                    )
+                  : '${shopNumber(context, _results.length)} ${shopTr(context, _results.length == 1 ? 'result' : 'results')}',
               style: TextStyle(color: p.textSecondary),
             ),
           );
@@ -334,15 +337,15 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
         return Column(
           children: [
             if (previous == null ||
-                previous.month != date.month ||
-                previous.year != date.year)
+                ShopCalendarScope.of(context).monthStart(previous) !=
+                    ShopCalendarScope.of(context).monthStart(date))
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Row(
                   children: [
                     Flexible(
                       child: Text(
-                        DateFormat.yMMMM().format(date).toUpperCase(),
+                        shopDate(context, date, 'yMMMM').toUpperCase(),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: p.onBackground,

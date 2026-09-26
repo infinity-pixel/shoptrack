@@ -75,7 +75,7 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 19.3.2 — Bengali completion and deliberate FAB response**.
+- Current local milestone: **Sprint 19.4 — Arabic RTL and independent Hijri calendar**.
 - Check `git log` for the latest commit and `git status` for any uncommitted work.
 
 Sprint 19 foundation work includes:
@@ -242,14 +242,27 @@ Implemented behavior includes:
 - Google Drive App Data backup/restore as a separate advanced system;
 - About and app-version UI;
 - a dedicated Appearance screen, a searchable default-currency picker,
-  number-format selection, and a language placeholder dialog.
+  number-format selection, three-language selection, and calendar preferences.
 
 Important distinction: the ShopTrack display name/photo is local app profile
 data. It does not edit the user's Google account.
 
-Currency picking, grouped totals, and English/Bangla language selection are
+Currency picking, grouped totals, and English/Bangla/Arabic language selection are
 visible. The underlying per-item currency, catalogue, grouped totals,
 settings, persistence, backup, sharing, and sync contracts are implemented.
+
+Arabic uses Modern Standard Arabic, RTL layout, mirrored decorative scenery,
+and Arabic-Indic interface digits. User-written names are not translated.
+Language switching blocks interaction until settings save and the new frame
+complete; failure preserves the old preference and reports an error.
+
+Calendar selection is independent of language: Gregorian remains the default;
+Hijri uses a bundled Umm al-Qura table with optional -2 to +2 day adjustment.
+Profile previews the adjusted date and explains regional moon-sighting differences.
+Date pickers, history labels, and shared date text use the selected calendar, while
+persisted dates, session identifiers, and sync ownership remain unchanged Gregorian
+civil days. Calendar settings are local device preferences, not cloud data.
+See `sprint_19_4_arabic_calendar.md` and `umm_al_qura_calendar.md`.
 
 ## 6. Theme System and Approved Visual Identities
 
@@ -465,8 +478,9 @@ the actual row width, abbreviating only when needed; a tap shows the full value.
 Lists totals sit below a right-aligned Total Amount heading, and the Purchased
 Amount receipt centers its wallet-and-title heading above a thin divider and
 vertical currency rows. Swipe-delete backgrounds are clipped to tile corners.
-Item price entry is limited to two decimals;
-the current UI also caps impractically large inputs to protect layout.
+Item price entry is limited to two decimals. Very large round values up to one
+quintillion are accepted only when representable exactly by the current numeric
+storage; visual abbreviation is not a storage or precision guarantee.
 
 ### Receipt-photo import / OCR
 

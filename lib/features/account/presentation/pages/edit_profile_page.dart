@@ -327,7 +327,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ),
                               onChanged: (_) => setState(() {}),
                               validator: (v) => v == null || v.trim().isEmpty
-                                  ? 'Please enter a name.'
+                                  ? shopTr(context, 'Please enter a name.')
                                   : null,
                             ),
                             const SizedBox(height: 12),
@@ -341,7 +341,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             Row(
                               children: [
                                 Expanded(
-                                  child: SelectableText(widget.account.email),
+                                  child: SelectableText(
+                                    widget.account.email,
+                                    textDirection: TextDirection.ltr,
+                                    textAlign:
+                                        Directionality.of(context) ==
+                                            TextDirection.rtl
+                                        ? TextAlign.right
+                                        : TextAlign.left,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 Icon(
@@ -370,7 +378,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       if (_error != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
-                          child: Text(
+                          child: ShopText(
                             _error!,
                             style: TextStyle(color: p.error),
                           ),

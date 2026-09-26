@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/calendar/shop_calendar.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/widgets/date_parts_field.dart';
 
@@ -31,7 +31,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
     super.initState();
     _start = widget.initialRange?.start ?? DateUtils.dateOnly(DateTime.now());
     _end = widget.initialRange?.end ?? _start;
-    _month = DateTime(_start.year, _start.month);
+    _month = _start;
   }
 
   void _select(DateTime? date, {bool calendar = false}) {
@@ -48,7 +48,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
         _start = date;
       }
       _hasSelection = true;
-      _month = DateTime(date.year, date.month);
+      _month = date;
       if (calendar && !_editingEnd) {
         if (_end.isBefore(_start)) _end = _start;
         _editingEnd = true;
@@ -63,7 +63,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
     setState(() {
       _start = today;
       _end = today;
-      _month = DateTime(today.year, today.month);
+      _month = today;
       _editingEnd = false;
       _valid = true;
       _hasSelection = false;
@@ -72,6 +72,8 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
 
   void _preset(int index) {
     final today = DateUtils.dateOnly(DateTime.now());
+    final calendar = ShopCalendarScope.of(context);
+    final todayParts = calendar.parts(today);
     var start = today;
     var end = today;
     switch (index) {
@@ -84,23 +86,19 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
         start = range.start;
         end = range.end;
       case 2:
-        final month = DateTime(today.year, today.month - 3);
-        start = DateTime(
-          month.year,
-          month.month,
-          math.min(today.day, DateTime(month.year, month.month + 1, 0).day),
-        );
+        start = calendar.monthOffset(today, -3, keepDay: true);
       case 3:
-        start = DateTime(today.year, 1, 1);
+        start = calendar.fromParts(todayParts.year, 1, 1)!;
       case 4:
-        start = DateTime(today.year - 1, 1, 1);
-        end = DateTime(today.year - 1, 12, 31);
+        start = calendar.fromParts(todayParts.year - 1, 1, 1)!;
+        final nextYear = calendar.fromParts(todayParts.year, 1, 1)!;
+        end = DateTime(nextYear.year, nextYear.month, nextYear.day - 1);
     }
     FocusScope.of(context).unfocus();
     setState(() {
       _start = start;
       _end = end;
-      _month = DateTime(start.year, start.month);
+      _month = start;
       _valid = true;
       _hasSelection = true;
     });
@@ -109,12 +107,15 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final calendar = ShopCalendarScope.of(context);
+    final previousMonth = calendar.monthOffset(_month, -1);
+    final nextMonth = calendar.monthOffset(_month, 1);
     final calendarAccent =
         Theme.of(context).extension<ShopTrackThemeTokens>()?.calendarAccent ??
         colors.secondary;
     final media = MediaQuery.of(context);
     final error = !_valid
-        ? 'Enter a valid date (2000–2100).'
+        ? 'Enter a valid day, month and year.'
         : _end.isBefore(_start)
         ? 'End date must be on or after start date.'
         : null;
@@ -175,7 +176,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                     _editingEnd = end;
                                     _valid = true;
                                     final date = end ? _end : _start;
-                                    _month = DateTime(date.year, date.month);
+                                    _month = date;
                                   }),
                                   style: TextButton.styleFrom(
                                     foregroundColor: _editingEnd == end
@@ -220,35 +221,43 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                           children: [
                             IconButton(
                               tooltip: shopTr(context, 'Previous month'),
-                              onPressed: _month.isAfter(DateTime(2000))
-                                  ? () => setState(
-                                      () => _month = DateTime(
-                                        _month.year,
-                                        _month.month - 1,
-                                      ),
-                                    )
+                              onPressed:
+                                  !previousMonth.isBefore(
+                                    calendar.monthStart(
+                                      ShopCalendar.firstSelectableDate,
+                                    ),
+                                  )
+                                  ? () => setState(() => _month = previousMonth)
                                   : null,
-                              icon: const Icon(Icons.chevron_left),
+                              icon: Icon(
+                                Directionality.of(context) == TextDirection.rtl
+                                    ? Icons.chevron_right
+                                    : Icons.chevron_left,
+                              ),
                               visualDensity: VisualDensity.compact,
                             ),
                             Expanded(
                               child: Text(
-                                DateFormat.yMMMM().format(_month),
+                                shopDate(context, _month, 'yMMMM'),
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ),
                             IconButton(
                               tooltip: shopTr(context, 'Next month'),
-                              onPressed: _month.isBefore(DateTime(2100, 12))
-                                  ? () => setState(
-                                      () => _month = DateTime(
-                                        _month.year,
-                                        _month.month + 1,
-                                      ),
-                                    )
+                              onPressed:
+                                  !nextMonth.isAfter(
+                                    calendar.monthStart(
+                                      ShopCalendar.lastSelectableDate,
+                                    ),
+                                  )
+                                  ? () => setState(() => _month = nextMonth)
                                   : null,
-                              icon: const Icon(Icons.chevron_right),
+                              icon: Icon(
+                                Directionality.of(context) == TextDirection.rtl
+                                    ? Icons.chevron_left
+                                    : Icons.chevron_right,
+                              ),
                               visualDensity: VisualDensity.compact,
                             ),
                           ],
@@ -261,7 +270,9 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                             children: [
                               for (var i = 0; i < 5; i++)
                                 Padding(
-                                  padding: const EdgeInsets.only(right: 8),
+                                  padding: const EdgeInsetsDirectional.only(
+                                    end: 8,
+                                  ),
                                   child: ActionChip(
                                     backgroundColor:
                                         colors.brightness == Brightness.dark
@@ -316,8 +327,11 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                               Flexible(
                                 child: Text(
                                   _hasSelection
-                                      ? '${DateFormat.yMMMd().format(_start)} — ${DateFormat.yMMMd().format(_end)}'
-                                      : 'No Date Range Selected',
+                                      ? '${shopDate(context, _start)} — ${shopDate(context, _end)}'
+                                      : shopTr(
+                                          context,
+                                          'No Date Range Selected',
+                                        ),
                                   style: TextStyle(color: colors.onSurface),
                                   textAlign: TextAlign.center,
                                 ),
@@ -383,16 +397,15 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
   }
 
   Widget _calendar(ColorScheme colors) {
-    final offset = _month.weekday % 7;
-    final days = DateTime(_month.year, _month.month + 1, 0).day;
+    final calendar = ShopCalendarScope.of(context);
+    final firstDay = calendar.monthStart(_month);
+    final offset = firstDay.weekday % 7;
+    final days = calendar.daysInMonth(_month);
     return Column(
       children: [
         Row(
           children: [
-            for (final day
-                in shopIsBangla(context)
-                    ? ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র', 'শনি']
-                    : ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
+            for (final day in shopWeekdays(context))
               Expanded(
                 child: Center(
                   child: Text(
@@ -419,10 +432,11 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
           itemBuilder: (context, index) {
             if (index < offset) return const SizedBox.shrink();
             final date = DateTime(
-              _month.year,
-              _month.month,
-              index - offset + 1,
+              firstDay.year,
+              firstDay.month,
+              firstDay.day + index - offset,
             );
+            final disabled = !calendar.isSelectable(date);
             final endpoint =
                 _hasSelection &&
                 (DateUtils.isSameDay(date, _start) ||
@@ -430,7 +444,8 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
             final inside =
                 _hasSelection && !date.isBefore(_start) && !date.isAfter(_end);
             return Semantics(
-              label: DateFormat.yMMMMd().format(date),
+              label: shopDate(context, date, 'yMMMMd'),
+              enabled: !disabled,
               selected: endpoint,
               button: true,
               child: Stack(
@@ -442,11 +457,11 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                       bottom: 2,
                       child: LayoutBuilder(
                         builder: (context, constraints) => Padding(
-                          padding: EdgeInsets.only(
-                            left: DateUtils.isSameDay(date, _start)
+                          padding: EdgeInsetsDirectional.only(
+                            start: DateUtils.isSameDay(date, _start)
                                 ? constraints.maxWidth / 2
                                 : 0,
-                            right: DateUtils.isSameDay(date, _end)
+                            end: DateUtils.isSameDay(date, _end)
                                 ? constraints.maxWidth / 2
                                 : 0,
                           ),
@@ -470,12 +485,16 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => _select(date, calendar: true),
+                      onTap: disabled
+                          ? null
+                          : () => _select(date, calendar: true),
                       child: Center(
                         child: Text(
-                          shopNumber(context, date.day),
+                          shopNumber(context, index - offset + 1),
                           style: TextStyle(
-                            color: endpoint
+                            color: disabled
+                                ? Theme.of(context).disabledColor
+                                : endpoint
                                 ? colors.onSecondary
                                 : colors.onSurface,
                           ),

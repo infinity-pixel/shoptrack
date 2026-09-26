@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import '../calendar/shop_calendar.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../models/shopping_list_group.dart';
@@ -62,6 +62,9 @@ Future<void> showShoppingListShareSheet(
     translate: (value) => shopTr(context, value),
     defaultListLabel: shopTr(context, 'My List'),
     formatCount: (value) => shopNumber(context, value),
+    dateLabel: shopDate(context, session.date, 'EEEE, d MMMM yyyy'),
+    formatNumberText: (value) =>
+        shopIsArabic(context) ? shopDigits(context, value) : value,
   );
   try {
     if (request.action == _ShareAction.copy) {
@@ -76,7 +79,7 @@ Future<void> showShoppingListShareSheet(
         ShareParams(
           text: text,
           subject:
-              'ShopTrack — ${DateFormat('d MMMM yyyy').format(session.date)}',
+              'ShopTrack — ${shopDate(context, session.date, 'd MMMM yyyy')}',
         ),
       );
     }
@@ -175,9 +178,11 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
               title: _selectedItemsOnly
                   ? 'Share Selected Items'
                   : 'Share Your List',
-              subtitle: DateFormat(
+              subtitle: shopDate(
+                context,
+                widget.session.date,
                 'EEEE, d MMMM yyyy',
-              ).format(widget.session.date),
+              ),
               onClose: () => Navigator.pop(context),
             ),
             Flexible(
@@ -239,9 +244,10 @@ class _ShoppingListShareSheetState extends State<_ShoppingListShareSheet> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              shopIsBangla(context)
-                  ? '${shopNumber(context, count)}টি নির্বাচিত পণ্য'
-                  : '$count selected ${count == 1 ? 'item' : 'items'}',
+              shopTr(
+                context,
+                count == 1 ? '{count} selected item' : '{count} selected items',
+              ).replaceAll('{count}', shopNumber(context, count)),
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),

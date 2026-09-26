@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
-import 'package:intl/intl.dart';
+import 'package:shoptrack/core/calendar/shop_calendar.dart';
+import 'package:shoptrack/core/calendar/calendar_date_dialog.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/utils/session_date_manager.dart';
 import '../../../../core/widgets/scroll_aware_fab.dart';
@@ -139,7 +140,15 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.summary.displayTitle),
+        title: Text(
+          ShopCalendarScope.of(context).isHijri
+              ? '${shopDate(context, DateTime(widget.summary.year, widget.summary.month), 'd MMM')} — ${shopDate(context, DateTime(widget.summary.year, widget.summary.month + 1, 0), 'd MMM yyyy')}'
+              : shopDate(
+                  context,
+                  DateTime(widget.summary.year, widget.summary.month),
+                  'MMMM yyyy',
+                ),
+        ),
         centerTitle: true,
       ),
       body: ListView.builder(
@@ -170,12 +179,12 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
     // Task 3: Use the first day of the month as a neutral default initial date
     final initialDate = firstDate;
 
-    final selectedDate = await showDatePicker(
+    final selectedDate = await showPreferredDatePicker(
       context: context,
       initialDate: initialDate,
       firstDate: firstDate,
       lastDate: lastDate,
-      helpText: 'Select date in ${widget.summary.monthName}',
+      helpText: 'Select Date',
     );
 
     if (selectedDate == null || !mounted) return;
@@ -184,7 +193,7 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('Add Shopping Date'),
-        content: Text(DateFormat('d MMMM yyyy').format(selectedDate)),
+        content: Text(shopDate(context, selectedDate, 'd MMMM yyyy')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

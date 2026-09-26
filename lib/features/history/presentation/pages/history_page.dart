@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
-import 'package:intl/intl.dart';
+import 'package:shoptrack/core/calendar/shop_calendar.dart';
+import 'package:shoptrack/core/calendar/calendar_date_dialog.dart';
 
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
@@ -288,7 +289,7 @@ class _HistoryPageState extends State<HistoryPage>
   ) {
     final groups = <String, List<ShoppingSession>>{};
     for (final session in sessions) {
-      final key = DateFormat('MMMM yyyy').format(session.date).toUpperCase();
+      final key = shopDate(context, session.date, 'MMMM yyyy').toUpperCase();
       groups.putIfAbsent(key, () => []).add(session);
     }
     return groups;
@@ -440,7 +441,7 @@ class _HistoryPageState extends State<HistoryPage>
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final selectedDate = await showDatePicker(
+    final selectedDate = await showPreferredDatePicker(
       context: context,
       initialDate: result == 'past'
           ? today.subtract(const Duration(days: 1))
@@ -458,7 +459,7 @@ class _HistoryPageState extends State<HistoryPage>
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('Create shopping date?'),
-        content: Text(DateFormat('d MMMM yyyy').format(selectedDate)),
+        content: Text(shopDate(context, selectedDate, 'd MMMM yyyy')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

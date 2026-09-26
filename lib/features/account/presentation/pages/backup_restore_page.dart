@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
-import 'package:intl/intl.dart';
+import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import '../../../../app.dart';
 import '../../../../core/data/settings_repository.dart';
 import '../../../../core/data/shopping_repository.dart';
@@ -253,7 +253,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                     vertical: 4,
                   ),
                   child: Text(
-                    '${shopTr(context, 'Last backup')}: ${DateFormat('d MMM yyyy, HH:mm').format(status.lastBackupTime!)}',
+                    '${shopTr(context, 'Last backup')}: ${shopDate(context, status.lastBackupTime!, 'd MMM yyyy, HH:mm')}',
                     style: TextStyle(
                       color: colors.onSurfaceVariant,
                       fontSize: 12,

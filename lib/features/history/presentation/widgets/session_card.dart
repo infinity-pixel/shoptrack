@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
-import 'package:intl/intl.dart';
+import 'package:shoptrack/core/calendar/shop_calendar.dart';
 
 import '../../../../core/currency/currency_catalog.dart';
 import '../../../../core/theme/theme_presets.dart';
@@ -77,7 +77,7 @@ class SessionCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+              padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 8, 12),
               child: Row(
                 children: [
                   HistoryDateBadge(
@@ -95,11 +95,13 @@ class SessionCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          DateFormat(
+                          shopDate(
+                            context,
+                            session.date,
                             session.isToday || session.isFuture
                                 ? 'EEEE, MMMM'
                                 : 'EEEE',
-                          ).format(session.date),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(

@@ -33,9 +33,9 @@ void main() {
     test('Theme preference persistence works', () async {
       await service.loadSettings();
       await service.updateTheme(AppTheme.dark);
-      
+
       expect(service.settings.theme, AppTheme.dark);
-      
+
       // Reload from repository to verify persistence
       final newRepository = LocalSettingsRepository();
       final loadedSettings = await newRepository.getSettings();
@@ -46,24 +46,24 @@ void main() {
       await service.loadSettings();
       await service.updateCurrency('USD');
       expect(service.settings.currency, 'USD');
-      
+
       final loadedSettings = await repository.getSettings();
       expect(loadedSettings.currency, 'USD');
     });
 
-    test('Language preference placeholder persists correctly', () async {
+    test('Supported language preference persists correctly', () async {
       await service.loadSettings();
-      await service.updateLanguage('Spanish');
-      expect(service.settings.language, 'Spanish');
-      
+      await service.updateLanguage('Arabic');
+      expect(service.settings.language, 'Arabic');
+
       final loadedSettings = await repository.getSettings();
-      expect(loadedSettings.language, 'Spanish');
+      expect(loadedSettings.language, 'Arabic');
     });
 
     test('AppSettings copyWith creates a new instance with updated values', () {
       const settings = AppSettings();
       final updated = settings.copyWith(theme: AppTheme.light, currency: 'EUR');
-      
+
       expect(updated.theme, AppTheme.light);
       expect(updated.currency, 'EUR');
       expect(updated.language, 'English'); // Preserved
@@ -76,10 +76,10 @@ void main() {
         currency: 'GBP',
         language: 'French',
       );
-      
+
       final json = settings.toJson();
       final reconstructed = AppSettings.fromJson(json);
-      
+
       expect(reconstructed.theme, settings.theme);
       expect(reconstructed.currency, settings.currency);
       expect(reconstructed.language, settings.language);

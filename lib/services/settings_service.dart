@@ -8,11 +8,13 @@ class SettingsService extends ChangeNotifier {
   final SettingsRepository _repository;
   AppSettings _settings = const AppSettings();
   bool _isInitialized = false;
+  bool _isSwitchingLanguage = false;
 
   SettingsService(this._repository);
 
   AppSettings get settings => _settings;
   bool get isInitialized => _isInitialized;
+  bool get isSwitchingLanguage => _isSwitchingLanguage;
 
   ThemeMode get themeMode {
     switch (_settings.theme) {
@@ -32,52 +34,76 @@ class SettingsService extends ChangeNotifier {
   }
 
   Future<void> updateTheme(AppTheme theme) async {
-    _settings = _settings.copyWith(theme: theme);
-    await _repository.saveSettings(_settings);
-    notifyListeners();
+    await _save(_settings.copyWith(theme: theme));
   }
 
   Future<void> updateLightPreset(LightPreset preset) async {
-    _settings = _settings.copyWith(lightPreset: preset);
-    await _repository.saveSettings(_settings);
-    notifyListeners();
+    await _save(_settings.copyWith(lightPreset: preset));
   }
 
   Future<void> updateDarkPreset(DarkPreset preset) async {
-    _settings = _settings.copyWith(darkPreset: preset);
-    await _repository.saveSettings(_settings);
-    notifyListeners();
+    await _save(_settings.copyWith(darkPreset: preset));
   }
 
   Future<void> updateCurrency(String currency) async {
     final normalized = CurrencyCatalog.normalizeDefaultCode(currency);
-    _settings = _settings.copyWith(
+    final updated = _settings.copyWith(
       currency: normalized,
       recentCurrencies: CurrencyCatalog.sanitizeRecentCodes(
         _settings.recentCurrencies,
         defaultCurrencyCode: normalized,
       ),
     );
-    await _repository.saveSettings(_settings);
-    notifyListeners();
+    await _save(updated);
   }
 
   Future<void> updateNumberFormat(NumberFormatPreference preference) async {
-    _settings = _settings.copyWith(numberFormat: preference);
-    await _repository.saveSettings(_settings);
-    notifyListeners();
+    await _save(_settings.copyWith(numberFormat: preference));
   }
 
   Future<void> recordRecentCurrency(String currency) async {
     final updated = _settings.recordRecentCurrency(currency);
     if (identical(updated, _settings)) return;
-    _settings = updated;
-    await _repository.saveSettings(_settings);
-    notifyListeners();
+    await _save(updated);
   }
 
-  Future<void> updateLanguage(String language) async {
-    final updated = _settings.copyWith(language: language);
+  Future<void> updateLanguage(
+    String language, {
+    Future<void> Function()? waitForFrame,
+  }) async {
+    if (_isSwitchingLanguage || _settings.language == language) return;
+    if (!const ['English', 'Bangla', 'Arabic'].contains(language)) {
+      throw ArgumentError.value(language, 'language');
+    }
+    _isSwitchingLanguage = true;
+    notifyListeners();
+    try {
+      // Let the busy overlay paint before changing locale and direction. There
+      // is no artificial delay; it stays until the new interface has a frame.
+      await waitForFrame?.call();
+      final updated = _settings.copyWith(language: language);
+      await _repository.saveSettings(updated);
+      _settings = updated;
+      notifyListeners();
+      await waitForFrame?.call();
+    } finally {
+      _isSwitchingLanguage = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateCalendar(
+    CalendarPreference calendar,
+    int hijriAdjustment,
+  ) async {
+    final updated = _settings.copyWith(
+      calendar: calendar,
+      hijriAdjustment: hijriAdjustment,
+    );
+    await _save(updated);
+  }
+
+  Future<void> _save(AppSettings updated) async {
     await _repository.saveSettings(updated);
     _settings = updated;
     notifyListeners();

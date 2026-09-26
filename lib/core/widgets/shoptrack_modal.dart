@@ -20,7 +20,7 @@ class ShopTrackSheetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = ShopTrackThemeTokens.of(context).palette;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 2, 12, 12),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 2, 12, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

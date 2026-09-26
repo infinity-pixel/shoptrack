@@ -15,6 +15,9 @@ class AtmosphericBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    Alignment directionAware(Alignment alignment) =>
+        isRtl ? Alignment(-alignment.x, alignment.y) : alignment;
     // Keep the child in the same tree position when switching brightness.
     // Replacing Stack with another wrapper would reset the active tab/editor.
     return Stack(
@@ -33,8 +36,8 @@ class AtmosphericBackground extends StatelessWidget {
                     ? darkEdgeGradient(context)
                     : LinearGradient(
                         colors: config.gradientColors,
-                        begin: config.begin,
-                        end: config.end,
+                        begin: directionAware(config.begin),
+                        end: directionAware(config.end),
                       ),
               ),
             ),

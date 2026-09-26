@@ -1,5 +1,7 @@
 import '../core/currency/currency_catalog.dart';
 
+enum CalendarPreference { gregorian, hijri }
+
 enum NumberFormatPreference {
   automatic,
   international,
@@ -77,6 +79,8 @@ class AppSettings {
   final List<String> recentCurrencies;
   final NumberFormatPreference numberFormat;
   final String language;
+  final CalendarPreference calendar;
+  final int hijriAdjustment;
 
   const AppSettings({
     this.theme = AppTheme.system,
@@ -86,6 +90,8 @@ class AppSettings {
     this.recentCurrencies = const [],
     this.numberFormat = NumberFormatPreference.automatic,
     this.language = 'English',
+    this.calendar = CalendarPreference.gregorian,
+    this.hijriAdjustment = 0,
   });
 
   AppSettings copyWith({
@@ -96,6 +102,8 @@ class AppSettings {
     List<String>? recentCurrencies,
     NumberFormatPreference? numberFormat,
     String? language,
+    CalendarPreference? calendar,
+    int? hijriAdjustment,
   }) {
     return AppSettings(
       theme: theme ?? this.theme,
@@ -105,6 +113,8 @@ class AppSettings {
       recentCurrencies: recentCurrencies ?? this.recentCurrencies,
       numberFormat: numberFormat ?? this.numberFormat,
       language: language ?? this.language,
+      calendar: calendar ?? this.calendar,
+      hijriAdjustment: (hijriAdjustment ?? this.hijriAdjustment).clamp(-2, 2),
     );
   }
 
@@ -117,6 +127,8 @@ class AppSettings {
       'recentCurrencies': recentCurrencies,
       'numberFormat': numberFormat.name,
       'language': language,
+      'calendar': calendar.name,
+      'hijriAdjustment': hijriAdjustment,
     };
   }
 
@@ -146,6 +158,13 @@ class AppSettings {
         orElse: () => NumberFormatPreference.automatic,
       ),
       language: json['language'] as String? ?? 'English',
+      calendar: CalendarPreference.values.firstWhere(
+        (value) => value.name == json['calendar'],
+        orElse: () => CalendarPreference.gregorian,
+      ),
+      hijriAdjustment: json['hijriAdjustment'] is int
+          ? (json['hijriAdjustment'] as int).clamp(-2, 2)
+          : 0,
     );
   }
 

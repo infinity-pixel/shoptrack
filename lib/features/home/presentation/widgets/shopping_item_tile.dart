@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/shoptrack_text.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/widgets/compact_amount_text.dart';
@@ -79,7 +80,7 @@ class ShoppingItemTile extends StatelessWidget {
             onLongPress: onLongPress,
             borderRadius: cardRadius,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(
+              padding: EdgeInsetsDirectional.fromSTEB(
                 2,
                 4,
                 14,
@@ -117,8 +118,8 @@ class ShoppingItemTile extends StatelessWidget {
                   // Checkbox
                   Semantics(
                     label: selectionMode
-                        ? 'Select ${item.name}'
-                        : 'Mark ${item.name} Purchased',
+                        ? '${shopTr(context, 'Select item')}: ${item.name}'
+                        : '${shopTr(context, 'Mark as purchased')}: ${item.name}',
                     checked: checked,
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
@@ -127,9 +128,9 @@ class ShoppingItemTile extends StatelessWidget {
                         width: 40,
                         height: 48,
                         child: Padding(
-                          padding: const EdgeInsets.only(left: 4),
+                          padding: const EdgeInsetsDirectional.only(start: 4),
                           child: Align(
-                            alignment: Alignment.centerLeft,
+                            alignment: AlignmentDirectional.centerStart,
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 280),
                               width: 26,
@@ -210,7 +211,7 @@ class ShoppingItemTile extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(top: 0),
                             child: Text(
-                              '${NumberFormatter.formatQuantity(displayQty ?? 0, enteredText: item.quantity)} ${displayUnit ?? ''}'
+                              '${shopDigitsLanguage(Localizations.localeOf(context).languageCode, NumberFormatter.formatQuantity(displayQty ?? 0, enteredText: item.quantity))} ${shopTr(context, displayUnit ?? '')}'
                                   .trim(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -246,7 +247,7 @@ class ShoppingItemTile extends StatelessWidget {
                   const SizedBox(
                     width: 12,
                   ), // Breathing room between qty and price
-                  // RIGHT: Price Column
+                  // Trailing price column follows the interface direction.
                   Expanded(
                     flex: 4,
                     child: Column(
@@ -271,7 +272,8 @@ class ShoppingItemTile extends StatelessWidget {
                             value: pricing.unitPrice,
                             currencyCode: item.currencyCode,
                             preference: numberFormat,
-                            suffix: '/${pricing.priceBasisSymbol}',
+                            suffix:
+                                '/${shopTr(context, pricing.priceBasisSymbol)}',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w500,

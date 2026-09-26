@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import '../../../../core/theme/theme_presets.dart';
 
 class RecordHero extends StatelessWidget {
@@ -33,6 +33,7 @@ class RecordHero extends StatelessWidget {
               Image.asset(
                 tokens.headerArtworkPath!,
                 fit: BoxFit.cover,
+                matchTextDirection: true,
                 // Keep Midnight's moon and right-hand branches in short heroes.
                 alignment: darkIcons
                     ? Alignment.center
@@ -41,6 +42,8 @@ class RecordHero extends StatelessWidget {
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
+                  begin: AlignmentDirectional.centerStart,
+                  end: AlignmentDirectional.centerEnd,
                   colors: [
                     p.surface.withValues(alpha: darkIcons ? .85 : .45),
                     p.surface.withValues(alpha: darkIcons ? .1 : 0),
@@ -48,8 +51,8 @@ class RecordHero extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(
-              left: 8,
+            PositionedDirectional(
+              start: 8,
               top: topInset + 2,
               child: IconButton(
                 tooltip: shopTr(context, 'Back to History'),
@@ -61,10 +64,10 @@ class RecordHero extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(
-              left: 20,
+            PositionedDirectional(
+              start: 20,
               bottom: 10,
-              right: 16,
+              end: 16,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -78,7 +81,7 @@ class RecordHero extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          DateFormat.EEEE().format(date).toUpperCase(),
+                          shopDate(context, date, 'EEEE').toUpperCase(),
                           style: TextStyle(
                             color: p.secondary,
                             fontSize: 11,
@@ -86,7 +89,7 @@ class RecordHero extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          DateFormat('d MMM').format(date),
+                          shopDate(context, date, 'd MMM'),
                           style: TextStyle(
                             color: p.onBackground,
                             fontSize: 24,
@@ -95,9 +98,7 @@ class RecordHero extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          shopIsBangla(context)
-                              ? DateFormat('yyyy', 'bn').format(date)
-                              : '${date.year}',
+                          shopDate(context, date, 'yyyy'),
                           style: TextStyle(
                             color: p.textSecondary,
                             fontSize: 12,

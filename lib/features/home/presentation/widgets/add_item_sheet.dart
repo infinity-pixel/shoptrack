@@ -7,6 +7,7 @@ import '../../../../core/widgets/compact_amount_text.dart';
 import '../../../../models/app_settings.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/utils/large_amount_guard.dart';
+import '../../../../core/utils/numeric_input.dart';
 import '../../../../core/utils/pricing_calculator.dart';
 import '../../../../core/widgets/currency_picker_dialog.dart';
 import '../../../../models/frequent_item_suggestion.dart';
@@ -65,9 +66,47 @@ class _AddItemSheetState extends State<AddItemSheet> {
   PricingResult _calcResult = PricingResult.zero;
   bool _isUnitMenuOpen = false;
   bool _openUnitMenuOnFocus = false;
+  String? _inputLanguage;
   late List<FrequentItemSuggestion> _visibleSuggestions;
 
   bool get _isEditing => widget.initialItem != null;
+
+  String _localizedInput(String value) => shopDigitsLanguage(
+    Localizations.localeOf(context).languageCode,
+    normalizeNumericInput(value),
+  );
+
+  TextInputFormatter _numberInputFormatter({required int decimals}) =>
+      TextInputFormatter.withFunction((oldValue, newValue) {
+        final normalized = normalizeNumericInput(newValue.text);
+        if (!RegExp('^\\d*(?:\\.\\d{0,$decimals})?\$').hasMatch(normalized)) {
+          return oldValue;
+        }
+        final displayed = _localizedInput(normalized);
+        int offset(int original) => original < 0
+            ? original
+            : normalizeNumericInput(
+                newValue.text.substring(0, original),
+              ).length;
+        return newValue.copyWith(
+          text: displayed,
+          selection: TextSelection(
+            baseOffset: offset(newValue.selection.baseOffset),
+            extentOffset: offset(newValue.selection.extentOffset),
+          ),
+          composing: TextRange.empty,
+        );
+      });
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final language = Localizations.localeOf(context).languageCode;
+    if (_inputLanguage == language) return;
+    _inputLanguage = language;
+    _quantityController.text = _localizedInput(_quantityController.text);
+    _priceController.text = _localizedInput(_priceController.text);
+  }
 
   @override
   void initState() {
@@ -139,12 +178,18 @@ class _AddItemSheetState extends State<AddItemSheet> {
 
   String _formatQty(double? val, {String? enteredText}) {
     if (val == null) return '';
-    return NumberFormatter.formatQuantity(val, enteredText: enteredText);
+    return _localizedInput(
+      NumberFormatter.formatQuantity(val, enteredText: enteredText),
+    );
   }
 
   void _updateCalculation() {
-    final parsedQty = double.tryParse(_quantityController.text);
-    final parsedPrice = double.tryParse(_priceController.text);
+    final parsedQty = double.tryParse(
+      normalizeNumericInput(_quantityController.text),
+    );
+    final parsedPrice = double.tryParse(
+      normalizeNumericInput(_priceController.text),
+    );
     final qty = parsedQty?.isFinite == true ? parsedQty : null;
     final price = parsedPrice?.isFinite == true ? parsedPrice : null;
 
@@ -186,7 +231,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
       return;
     }
 
-    final quantityText = _quantityController.text.trim();
+    final quantityText = normalizeNumericInput(_quantityController.text.trim());
     final quantity = double.tryParse(quantityText);
     if (quantityText.isNotEmpty &&
         (quantity == null ||
@@ -202,7 +247,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
       );
       return;
     }
-    final priceText = _priceController.text.trim();
+    final priceText = normalizeNumericInput(_priceController.text.trim());
     final price = double.tryParse(priceText);
     if (priceText.isNotEmpty &&
         (price == null ||
@@ -238,9 +283,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
     final item = ShoppingItem(
       id: widget.initialItem?.id ?? const Uuid().v4(),
       name: name,
-      quantity: _quantityController.text.trim().isEmpty
-          ? null
-          : _quantityController.text.trim(),
+      quantity: quantityText.isEmpty ? null : quantityText,
       quantityValue: quantity,
       priceValue: price,
       currencyCode: _selectedCurrencyCode,
@@ -265,7 +308,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ShopText(label, style: const TextStyle(fontSize: 14)),
+        Text(
+          label.startsWith('Price per ') && label != 'Price per unit'
+              ? '${shopTr(context, 'Price per')} ${shopTr(context, label.substring(10))}'
+              : shopTr(context, label),
+          style: const TextStyle(fontSize: 14),
+        ),
         CompactAmountText(
           value: amount,
           currencyCode: _selectedCurrencyCode,
@@ -290,8 +338,10 @@ class _AddItemSheetState extends State<AddItemSheet> {
         ? _formatQty(item.quantityValue, enteredText: item.quantity)
         : '';
     _priceController.text = item.priceValue != null
-        ? item.priceValue!.toStringAsFixed(
-            item.priceValue == item.priceValue!.roundToDouble() ? 0 : 2,
+        ? _localizedInput(
+            item.priceValue!.toStringAsFixed(
+              item.priceValue == item.priceValue!.roundToDouble() ? 0 : 2,
+            ),
           )
         : '';
     _notesController.text = item.notes ?? '';
@@ -542,6 +592,11 @@ class _AddItemSheetState extends State<AddItemSheet> {
                     flex: 2,
                     child: TextField(
                       controller: _quantityController,
+                      textDirection: TextDirection.ltr,
+                      textAlign: Directionality.of(context) == TextDirection.rtl
+                          ? TextAlign.right
+                          : TextAlign.left,
+                      inputFormatters: [_numberInputFormatter(decimals: 12)],
                       focusNode: _quantityFocusNode,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
@@ -592,7 +647,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: Text(
+                                child: ShopText(
                                   _selectedUnit?.displayName ?? 'No Unit',
                                 ),
                               ),
@@ -628,7 +683,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                           label: suggestion.name,
                           hint: 'Long press to remove this suggestion',
                           child: Padding(
-                            padding: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsetsDirectional.only(end: 8),
                             child: ActionChip(
                               label: Text(suggestion.name),
                               onPressed: () => _applySuggestion(suggestion),
@@ -657,7 +712,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                         color: colors.primary,
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      ShopText(
                         _showMoreOptions ? 'Fewer Options' : 'More Options',
                         style: TextStyle(
                           color: colors.primary,
@@ -768,32 +823,33 @@ class _AddItemSheetState extends State<AddItemSheet> {
                       child: TextField(
                         key: const ValueKey('item_price_field'),
                         controller: _priceController,
+                        textDirection: TextDirection.ltr,
+                        textAlign:
+                            Directionality.of(context) == TextDirection.rtl
+                            ? TextAlign.right
+                            : TextAlign.left,
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        inputFormatters: [
-                          TextInputFormatter.withFunction(
-                            (oldValue, newValue) =>
-                                RegExp(
-                                  r'^\d*(?:\.\d{0,2})?$',
-                                ).hasMatch(newValue.text)
-                                ? newValue
-                                : oldValue,
-                          ),
-                        ],
+                        inputFormatters: [_numberInputFormatter(decimals: 2)],
                         decoration: InputDecoration(
                           labelText:
                               _getPriceLabel() != 'Price per Unit' &&
                                   _getPriceLabel().startsWith('Price per ')
-                              ? '${shopTr(context, 'Price per')} ${_getPriceLabel().substring(10)}'
+                              ? '${shopTr(context, 'Price per')} ${shopTr(context, _getPriceLabel().substring(10))}'
                               : shopTr(context, _getPriceLabel()),
                           errorText: _priceErrorText == null
                               ? null
                               : shopTr(context, _priceErrorText!),
-                          helperText: _priceReferenceText?.replaceFirst(
-                            'Last used price:',
-                            '${shopTr(context, 'Last used price')}:',
-                          ),
+                          helperText: _priceReferenceText == null
+                              ? null
+                              : shopDigitsLanguage(
+                                  Localizations.localeOf(context).languageCode,
+                                  _priceReferenceText!.replaceFirst(
+                                    'Last used price:',
+                                    '${shopTr(context, 'Last used price')}:',
+                                  ),
+                                ),
                           helperStyle: TextStyle(
                             color: colors.primary,
                             fontWeight: FontWeight.w500,
@@ -829,7 +885,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                           _calcResult.unitPrice,
                           suffix: _calcResult.priceBasisSymbol.isEmpty
                               ? ''
-                              : '/${_calcResult.priceBasisSymbol}',
+                              : '/${shopTr(context, _calcResult.priceBasisSymbol)}',
                         ),
                       ],
                     ),

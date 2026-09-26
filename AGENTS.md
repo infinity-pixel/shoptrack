@@ -84,7 +84,16 @@ that adds friction needs a clear user benefit.
   collapsed. Both transitions animate their labels. Scroll intent updates only
   the FAB subtree, not the entire page, and requires sustained movement.
   History uses a calendar-plus `New Date` action.
-- Profile offers English and Bangla interface languages. The built-in `My List`
+- Profile offers English, Bangla, and Modern Standard Arabic interface languages.
+  Arabic uses RTL layout, mirrored decorative scenery, and Arabic-Indic interface
+  digits. User-authored names remain unchanged. Language changes show a blocking
+  busy state until persistence and the updated interface frame complete.
+  The independent Calendar preference offers Gregorian (default) or Hijri
+  (Umm al-Qura), with a local -2 to +2 day correction and preview in all languages.
+  Calendar changes affect labels and date selection only: stored shopping dates,
+  session IDs, sync keys, and filters remain Gregorian civil days. See
+  `docs/umm_al_qura_calendar.md` for method, range, and data provenance.
+  The built-in `My List`
   displays as `আমার তালিকা` in Bangla; user-authored item and list names remain
   unchanged. The item editor accepts very large round values
   up to one quintillion when they survive the current numeric representation

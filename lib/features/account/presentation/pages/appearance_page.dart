@@ -346,10 +346,11 @@ class _PresetCard<T> extends StatelessWidget {
                       Image.asset(
                         definition.headerArtworkPath!,
                         fit: BoxFit.cover,
+                        matchTextDirection: true,
                         alignment: Alignment.topCenter,
                       ),
-                    Positioned(
-                      right: 7,
+                    PositionedDirectional(
+                      end: 7,
                       top: 7,
                       child: AnimatedScale(
                         scale: selected ? 1 : .8,
