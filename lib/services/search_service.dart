@@ -11,31 +11,57 @@ class SearchService {
     required String query,
     SearchItemStatus? statusFilter,
     DateTimeRange? dateRange,
+    bool noPriceOnly = false,
   }) async {
-    if (query.trim().isEmpty && statusFilter == null && dateRange == null) return [];
+    if (query.trim().isEmpty &&
+        statusFilter == null &&
+        dateRange == null &&
+        !noPriceOnly) {
+      return [];
+    }
 
     final normalizedQuery = query.trim().toLowerCase();
     final allSessions = await _repository.getAllSessions(includeEmpty: true);
-    
+
     final results = <ShoppingSearchResult>[];
 
     for (final session in allSessions) {
       // 1. Date Range Filter
       if (dateRange != null) {
-        final normalizedSessionDate = DateTime(session.date.year, session.date.month, session.date.day);
-        final normalizedFrom = DateTime(dateRange.start.year, dateRange.start.month, dateRange.start.day);
-        final normalizedTo = DateTime(dateRange.end.year, dateRange.end.month, dateRange.end.day);
-        
-        if (normalizedSessionDate.isBefore(normalizedFrom) || normalizedSessionDate.isAfter(normalizedTo)) {
+        final normalizedSessionDate = DateTime(
+          session.date.year,
+          session.date.month,
+          session.date.day,
+        );
+        final normalizedFrom = DateTime(
+          dateRange.start.year,
+          dateRange.start.month,
+          dateRange.start.day,
+        );
+        final normalizedTo = DateTime(
+          dateRange.end.year,
+          dateRange.end.month,
+          dateRange.end.day,
+        );
+
+        if (normalizedSessionDate.isBefore(normalizedFrom) ||
+            normalizedSessionDate.isAfter(normalizedTo)) {
           continue;
         }
       }
 
       for (final item in session.items) {
+        // An explicitly entered zero is a price, not missing information.
+        if (noPriceOnly &&
+            (item.priceValue != null ||
+                (item.price?.trim().isNotEmpty ?? false))) {
+          continue;
+        }
         final result = ShoppingSearchResult(item: item, session: session);
-        
+
         // 2. Query Filter
-        if (normalizedQuery.isNotEmpty && !item.name.toLowerCase().contains(normalizedQuery)) {
+        if (normalizedQuery.isNotEmpty &&
+            !item.name.toLowerCase().contains(normalizedQuery)) {
           continue;
         }
 

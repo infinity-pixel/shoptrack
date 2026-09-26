@@ -256,7 +256,9 @@ class _HistoryAmount extends StatelessWidget {
             value: value,
             currencyCode: currencyCode,
             preference: numberFormat,
-            textAlign: isArabic ? TextAlign.end : TextAlign.start,
+            textAlign: isArabic && !shopIsArabic(context)
+                ? TextAlign.end
+                : TextAlign.start,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w700,

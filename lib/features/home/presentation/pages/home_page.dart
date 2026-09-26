@@ -13,6 +13,7 @@ import '../../../../core/theme/atmospheric_background.dart';
 import '../../../../core/utils/shopping_session_actions.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../core/widgets/scroll_aware_fab.dart';
+import '../../../../core/widgets/confirm_app_exit.dart';
 import '../../../../core/widgets/compact_amount_text.dart';
 import '../../../../core/widgets/shopping_list_share_sheet.dart';
 import '../../../../core/widgets/shoptrack_modal.dart';
@@ -36,6 +37,7 @@ class HomePage extends StatefulWidget {
   final VoidCallback? onMoveToToday;
   final FrequentItemSuggestion? initialNewItemSuggestion;
   final SettingsService? settingsService;
+  final bool isActive;
 
   const HomePage({
     super.key,
@@ -45,6 +47,7 @@ class HomePage extends StatefulWidget {
     this.onMoveToToday,
     this.initialNewItemSuggestion,
     this.settingsService,
+    this.isActive = true,
   });
 
   @override
@@ -761,36 +764,55 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
+  Widget _guardUnavailablePage(Widget child) => PopScope(
+    canPop: !widget.isActive,
+    onPopInvokedWithResult: (didPop, result) async {
+      if (didPop || !widget.isActive) return;
+      if (widget.onBackToHistory != null) {
+        widget.onBackToHistory!();
+      } else if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        await confirmAppExit(context);
+      }
+    },
+    child: child,
+  );
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return _guardUnavailablePage(
+        const Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
     }
     if (!_hasLoadedSession) {
-      return Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.cloud_off_outlined, size: 42),
-                  const SizedBox(height: 12),
-                  ShopText(
-                    _loadError ?? 'Could not open this shopping list.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () {
-                      setState(() => _isLoading = true);
-                      _loadSession();
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const ShopText('Try Again'),
-                  ),
-                ],
+      return _guardUnavailablePage(
+        Scaffold(
+          body: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off_outlined, size: 42),
+                    const SizedBox(height: 12),
+                    ShopText(
+                      _loadError ?? 'Could not open this shopping list.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () {
+                        setState(() => _isLoading = true);
+                        _loadSession();
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const ShopText('Try Again'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -813,9 +835,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final bool allPurchased = hasActiveListItems && activeItems.isEmpty;
 
     return PopScope(
-      canPop: false,
+      canPop: !widget.isActive,
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
+        if (didPop || !widget.isActive) return;
         if (_selectionMode) {
           _cancelSelection();
           return;
@@ -830,7 +852,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           if (widget.onBackToHistory != null) {
             widget.onBackToHistory!();
           } else {
-            Navigator.pop(context);
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              await confirmAppExit(context);
+            }
           }
         }
       },

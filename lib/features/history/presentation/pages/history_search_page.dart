@@ -34,6 +34,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
   List<ShoppingSearchResult> _results = [];
   List<FrequentItemSuggestion> _suggestions = [];
   SearchItemStatus? _status;
+  bool _noPriceOnly = false;
   DateTimeRange? _range;
   Timer? _debounce;
   int _request = 0;
@@ -72,6 +73,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
   bool get _active =>
       _searchController.text.trim().isNotEmpty ||
       _status != null ||
+      _noPriceOnly ||
       _range != null;
   Future<void> _search() async {
     _debounce?.cancel();
@@ -94,6 +96,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
         query: _searchController.text,
         statusFilter: _status,
         dateRange: _range,
+        noPriceOnly: _noPriceOnly,
       );
       if (mounted && request == _request) {
         setState(() {
@@ -233,6 +236,17 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                       },
                     ),
                   ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 8),
+                  child: FilterChip(
+                    label: const ShopText('No Price'),
+                    selected: _noPriceOnly,
+                    onSelected: (selected) {
+                      setState(() => _noPriceOnly = selected);
+                      _search();
+                    },
+                  ),
+                ),
                 ActionChip(
                   backgroundColor: _range != null ? p.secondary : p.surface,
                   labelStyle: TextStyle(

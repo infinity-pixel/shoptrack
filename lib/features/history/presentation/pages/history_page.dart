@@ -246,10 +246,14 @@ class _HistoryPageState extends State<HistoryPage>
               ShopText(
                 title,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: shopIsArabic(context) || shopIsBangla(context)
+                      ? 15
+                      : 12,
                   fontWeight: FontWeight.w800,
                   color: color,
-                  letterSpacing: 1.25,
+                  letterSpacing: shopIsArabic(context) || shopIsBangla(context)
+                      ? 0
+                      : 1.25,
                   shadows: animated
                       ? [
                           Shadow(

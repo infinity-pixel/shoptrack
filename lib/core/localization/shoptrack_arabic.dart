@@ -2,6 +2,13 @@ import 'shoptrack_currency_names.dart';
 
 /// Modern Standard Arabic interface copy. User-authored names are not translated.
 const Map<String, String> shopArabicTranslations = {
+  'No Price': 'بدون سعر',
+  'Close ShopTrack?': 'إغلاق شوب تراك؟',
+  'Do you want to close the app?': 'هل تريد إغلاق التطبيق؟',
+  'No items yet': 'لا توجد منتجات بعد',
+  'Tap + to add your first item.': 'اضغط على + لإضافة أول منتج.',
+  'Shopping Completed': 'اكتمل التسوق',
+  'All items have been purchased.': 'تم شراء جميع المنتجات.',
   ...shopArabicCurrencyNames,
   'Date Removed': 'تم حذف التاريخ',
   'No Items': 'لا توجد منتجات',
@@ -431,10 +438,10 @@ const Map<String, String> shopArabicTranslations = {
   'Use Another Device': 'الاستخدام على جهاز آخر',
   'Sign in to the same account to load your lists.':
       'سجّل الدخول بالحساب نفسه للوصول إلى قوائمك.',
-  'Kilogram (kg)': 'كيلوغرام (كغ)',
-  'Gram (g)': 'غرام (غ)',
-  'Litre (L)': 'لتر (ل)',
-  'Millilitre (mL)': 'ملليلتر (مل)',
+  'Kilogram (kg)': 'كيلوغرام (kg)',
+  'Gram (g)': 'غرام (g)',
+  'Litre (L)': 'لتر (L)',
+  'Millilitre (mL)': 'مليلتر (mL)',
   'Piece (pc)': 'قطعة',
   'Packet': 'عبوة',
   'Package': 'حزمة',

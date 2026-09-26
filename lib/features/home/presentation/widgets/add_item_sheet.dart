@@ -773,94 +773,113 @@ class _AddItemSheetState extends State<AddItemSheet> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: _currencyButtonWidth(context),
-                      child: Semantics(
-                        button: true,
-                        label: 'Currency, $_selectedCurrencyCode',
-                        hint: 'Double tap to change currency',
-                        child: InkWell(
-                          key: const ValueKey('item_currency_button'),
-                          onTap: _chooseCurrency,
-                          borderRadius: BorderRadius.circular(12),
-                          child: InputDecorator(
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final currencyWidth = _currencyButtonWidth(
+                      context,
+                    ).clamp(0.0, constraints.maxWidth).toDouble();
+                    final remaining = constraints.maxWidth - currencyWidth - 10;
+                    final priceWidth =
+                        remaining < MediaQuery.textScalerOf(context).scale(110)
+                        ? constraints.maxWidth
+                        : remaining;
+                    return Wrap(
+                      spacing: 10,
+                      runSpacing: 12,
+                      children: [
+                        SizedBox(
+                          width: currencyWidth,
+                          child: Semantics(
+                            button: true,
+                            label:
+                                '${shopTr(context, 'Currency')}, $_selectedCurrencyCode',
+                            hint: shopTr(
+                              context,
+                              'Double tap to change currency',
+                            ),
+                            child: InkWell(
+                              key: const ValueKey('item_currency_button'),
+                              onTap: _chooseCurrency,
+                              borderRadius: BorderRadius.circular(12),
+                              child: InputDecorator(
+                                decoration: InputDecoration(
+                                  labelText: shopTr(context, 'Currency'),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 17,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        _currencyLabel(_selectedCurrencyCode),
+                                        textDirection: TextDirection.ltr,
+                                        maxLines: 1,
+                                        style: _currencyLabelStyle(context),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 1),
+                                    const Icon(Icons.arrow_drop_down, size: 20),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: priceWidth,
+                          child: TextField(
+                            key: const ValueKey('item_price_field'),
+                            controller: _priceController,
+                            textDirection: TextDirection.ltr,
+                            textAlign:
+                                Directionality.of(context) == TextDirection.rtl
+                                ? TextAlign.right
+                                : TextAlign.left,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            inputFormatters: [
+                              _numberInputFormatter(decimals: 2),
+                            ],
                             decoration: InputDecoration(
-                              labelText: shopTr(context, 'Currency'),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 17,
+                              labelText:
+                                  _getPriceLabel() != 'Price per Unit' &&
+                                      _getPriceLabel().startsWith('Price per ')
+                                  ? '${shopTr(context, 'Price per')} ${shopTr(context, _getPriceLabel().substring(10))}'
+                                  : shopTr(context, _getPriceLabel()),
+                              errorText: _priceErrorText == null
+                                  ? null
+                                  : shopTr(context, _priceErrorText!),
+                              helperText: _priceReferenceText == null
+                                  ? null
+                                  : shopDigitsLanguage(
+                                      Localizations.localeOf(
+                                        context,
+                                      ).languageCode,
+                                      _priceReferenceText!.replaceFirst(
+                                        'Last used price:',
+                                        '${shopTr(context, 'Last used price')}:',
+                                      ),
+                                    ),
+                              helperStyle: TextStyle(
+                                color: colors.primary,
+                                fontWeight: FontWeight.w500,
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    _currencyLabel(_selectedCurrencyCode),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 1),
-                                const Icon(Icons.arrow_drop_down, size: 20),
-                              ],
-                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        key: const ValueKey('item_price_field'),
-                        controller: _priceController,
-                        textDirection: TextDirection.ltr,
-                        textAlign:
-                            Directionality.of(context) == TextDirection.rtl
-                            ? TextAlign.right
-                            : TextAlign.left,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        inputFormatters: [_numberInputFormatter(decimals: 2)],
-                        decoration: InputDecoration(
-                          labelText:
-                              _getPriceLabel() != 'Price per Unit' &&
-                                  _getPriceLabel().startsWith('Price per ')
-                              ? '${shopTr(context, 'Price per')} ${shopTr(context, _getPriceLabel().substring(10))}'
-                              : shopTr(context, _getPriceLabel()),
-                          errorText: _priceErrorText == null
-                              ? null
-                              : shopTr(context, _priceErrorText!),
-                          helperText: _priceReferenceText == null
-                              ? null
-                              : shopDigitsLanguage(
-                                  Localizations.localeOf(context).languageCode,
-                                  _priceReferenceText!.replaceFirst(
-                                    'Last used price:',
-                                    '${shopTr(context, 'Last used price')}:',
-                                  ),
-                                ),
-                          helperStyle: TextStyle(
-                            color: colors.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
                 if (_calcResult != PricingResult.zero)
                   Container(
@@ -983,17 +1002,26 @@ class _AddItemSheetState extends State<AddItemSheet> {
     final painter = TextPainter(
       text: TextSpan(
         text: _currencyLabel(_selectedCurrencyCode),
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        style: _currencyLabelStyle(context),
       ),
-      textDirection: Directionality.of(context),
+      textDirection: TextDirection.ltr,
+      locale: Localizations.localeOf(context),
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,
     )..layout(maxWidth: double.infinity);
-    final desired = painter.width + 20 + 1 + 20;
+    // Icon sizes also follow the accessibility text scale.
+    final desired =
+        painter.width + 20 + 1 + MediaQuery.textScalerOf(context).scale(20) + 4;
     painter.dispose();
-    final available = MediaQuery.sizeOf(context).width - 64;
-    return desired.clamp(96.0, available * .46).toDouble();
+    return desired < 96 ? 96 : desired;
   }
+
+  TextStyle _currencyLabelStyle(BuildContext context) =>
+      DefaultTextStyle.of(context).style.copyWith(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        fontFamilyFallback: const ['ShopTrackCurrency', 'ShopTrackRufiyaa'],
+      );
 }
 
 /// Keyboard metrics rebuild this small wrapper instead of the whole form.

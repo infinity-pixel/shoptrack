@@ -15,7 +15,13 @@ class ShopCurrency {
   final bool isSupported;
 
   String get code => _source.isoCode;
-  String get symbol => _source.symbol.trim();
+  String get symbol => switch (code) {
+    'SAR' => '\u20C1',
+    'MVR' => '\u20C2',
+    'AED' => '\u20C3',
+    'OMR' => '\u20C4',
+    _ => _source.symbol.trim(),
+  };
   String get name => _source.name.trim().isNotEmpty
       ? _source.name.trim()
       : _source.unit.trim().isNotEmpty

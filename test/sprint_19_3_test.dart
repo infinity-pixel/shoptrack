@@ -17,7 +17,7 @@ void main() {
     expect(motion.update(20, atStart: false), isNull);
     expect(motion.update(28, atStart: false), isNull);
     expect(motion.update(48, atStart: false), isTrue);
-    expect(motion.update(-90, atStart: true), isTrue);
+    expect(motion.update(-90, atStart: true), isNull);
   });
 
   test('very large round prices and totals remain exact', () {

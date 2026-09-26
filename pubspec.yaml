@@ -77,6 +77,9 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/fonts/ShopTrackCurrency-LICENSE.txt
+    - assets/fonts/ShopTrackRufiyaa-OFL.txt
+    - assets/fonts/Unifont-COPYING.txt
     - assets/images/theme_light_golden_summer.webp
     - assets/images/theme_light_ember_autumn.webp
     - assets/images/theme_light_tranquil_ocean.webp
@@ -87,6 +90,12 @@ flutter:
     - assets/images/theme_dark_ancient_forest.webp
 
   fonts:
+    - family: ShopTrackCurrency
+      fonts:
+        - asset: assets/fonts/ShopTrackCurrency.ttf
+    - family: ShopTrackRufiyaa
+      fonts:
+        - asset: assets/fonts/ShopTrackRufiyaa.otf
     - family: LibreBaskerville
       fonts:
         - asset: assets/fonts/LibreBaskerville[wght].ttf

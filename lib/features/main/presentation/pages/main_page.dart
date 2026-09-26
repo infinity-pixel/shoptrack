@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app.dart';
+import '../../../../core/widgets/confirm_app_exit.dart';
 import '../../../../core/widgets/shoptrack_navigation_bar.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../history/presentation/pages/history_page.dart';
@@ -24,34 +25,41 @@ class _MainPageState extends State<MainPage> {
     return ListenableBuilder(
       listenable: settingsService,
       builder: (context, _) {
-        return Scaffold(
-          key: ValueKey('main_scaffold_${settingsService.dataToken}'),
-          backgroundColor: Colors.transparent,
-          body: IndexedStack(
-            index: _currentIndex,
-            children: [
-              TickerMode(enabled: _currentIndex == 0, child: _buildHomeTab()),
-              TickerMode(
-                enabled: _currentIndex == 1,
-                child: _buildHistoryTab(),
-              ),
-              TickerMode(
-                enabled: _currentIndex == 2,
-                child: _buildAccountTab(),
-              ),
-            ],
-          ),
-          bottomNavigationBar: ShopTrackNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-                // Clear historical date when switching tabs (unless it's the home tab)
-                if (index != 0) {
-                  _selectedHistoricalDate = null;
-                }
-              });
-            },
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            // Lists handles selection and historical-date Back first.
+            if (!didPop && _currentIndex != 0) confirmAppExit(context);
+          },
+          child: Scaffold(
+            key: ValueKey('main_scaffold_${settingsService.dataToken}'),
+            backgroundColor: Colors.transparent,
+            body: IndexedStack(
+              index: _currentIndex,
+              children: [
+                TickerMode(enabled: _currentIndex == 0, child: _buildHomeTab()),
+                TickerMode(
+                  enabled: _currentIndex == 1,
+                  child: _buildHistoryTab(),
+                ),
+                TickerMode(
+                  enabled: _currentIndex == 2,
+                  child: _buildAccountTab(),
+                ),
+              ],
+            ),
+            bottomNavigationBar: ShopTrackNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                  // Clear historical date when switching tabs (unless it's the home tab)
+                  if (index != 0) {
+                    _selectedHistoricalDate = null;
+                  }
+                });
+              },
+            ),
           ),
         );
       },
@@ -60,6 +68,7 @@ class _MainPageState extends State<MainPage> {
 
   Widget _buildHomeTab() {
     return HomePage(
+      isActive: _currentIndex == 0,
       key: ValueKey(_selectedHistoricalDate?.toIso8601String() ?? 'today'),
       settingsService: ShopTrackApp.of(context),
       sessionDate: _selectedHistoricalDate,

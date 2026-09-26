@@ -60,7 +60,14 @@ class CompactAmountText extends StatelessWidget {
       builder: (context, constraints) {
         final fullLabel = '$full$suffix';
         final available = constraints.maxWidth;
-        final effectiveStyle = DefaultTextStyle.of(context).style.merge(style);
+        final effectiveStyle = DefaultTextStyle.of(context).style
+            .merge(style)
+            .copyWith(
+              fontFamilyFallback: const [
+                'ShopTrackCurrency',
+                'ShopTrackRufiyaa',
+              ],
+            );
         final painter = TextPainter(
           text: TextSpan(text: fullLabel, style: effectiveStyle),
           textDirection: direction,
@@ -96,7 +103,7 @@ class CompactAmountText extends StatelessWidget {
                   _ => textAlign,
                 },
                 textDirection: direction,
-                style: style,
+                style: effectiveStyle,
               ),
             ),
           ),

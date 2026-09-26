@@ -203,6 +203,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
             Directionality.of(context) == TextDirection.rtl
                 ? Icons.chevron_right
                 : Icons.chevron_left,
+            textDirection: TextDirection.ltr,
           ),
         ),
         Expanded(
@@ -221,6 +222,7 @@ class _ShopTrackDatePickerState extends State<ShopTrackDatePicker> {
             Directionality.of(context) == TextDirection.rtl
                 ? Icons.chevron_left
                 : Icons.chevron_right,
+            textDirection: TextDirection.ltr,
           ),
         ),
       ],

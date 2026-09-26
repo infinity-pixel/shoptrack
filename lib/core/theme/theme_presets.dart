@@ -46,6 +46,7 @@ class ThemeDefinition {
 
   ThemeData toThemeData() {
     return ThemeData(
+      fontFamilyFallback: const ['ShopTrackCurrency', 'ShopTrackRufiyaa'],
       useMaterial3: true,
       brightness: brightness,
       primaryColor: palette.primary,

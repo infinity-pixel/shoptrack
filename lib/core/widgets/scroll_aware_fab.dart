@@ -14,7 +14,7 @@ class FabScrollIntent {
   bool? update(double delta, {required bool atStart}) {
     if (atStart) {
       reset();
-      return true;
+      return null; // Boundary contact/bounce is not a new scroll intent.
     }
     if (!delta.isFinite || delta == 0) return null;
     final towardStart = delta < 0;

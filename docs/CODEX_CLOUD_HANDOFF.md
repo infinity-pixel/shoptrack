@@ -1,6 +1,21 @@
 # ShopTrack — Codex Cloud and Local Development Handover
 
-Last reviewed against the local checkout: **26 September 2026**.
+Last reviewed against the local checkout: **27 September 2026**.
+
+Sprint 19.4.1 refines Arabic/Bangla empty states, calendar arrows and compact
+month badges, History heading prominence and RTL amount alignment. FABs retain
+their last deliberate state at the top boundary. Root Back confirms app exit;
+History search adds a combinable No Price filter (zero remains an entered price).
+Profile separates Sign Out into a centered, warning-colored bottom action.
+Currency input widths are measured, with stacked price input on narrow screens;
+SAR/MVR/AED/OMR updated glyphs ship locally (see `currency_symbols.md`).
+No persistence schema or cloud ownership changes are part of this sprint.
+Verification: the full suite passed 375 tests; the dedicated 19.4.1 run also
+passed with real-font visual previews. Static analysis is clean and a debug
+APK builds. Hardware acceptance remains separate: check deliberate FAB scrolling
+at the top boundary, root Back/Cancel/Close, new currency signs, and Arabic
+calendar navigation on the user's phone. Build warnings about future Firebase
+plugin/Kotlin compatibility remain; this sprint does not upgrade those plugins.
 
 This is the canonical continuity document for moving ShopTrack work between
 Codex Cloud and local Codex tasks. It records the product intent, implemented

@@ -5,6 +5,11 @@ import '../currency/currency_catalog.dart';
 import '../../models/app_settings.dart';
 
 class NumberFormatter {
+  static String _symbolMarker(ShopCurrency currency) =>
+      const {'SAR', 'AED', 'OMR', 'MVR'}.contains(currency.code)
+      ? '${currency.symbol} '
+      : currency.symbol;
+
   /// Formats a number with international thousands separators (commas).
   /// Preserves decimals but removes unnecessary trailing zeros.
   static String format(double value) {
@@ -32,9 +37,11 @@ class NumberFormatter {
   }) {
     final currency = CurrencyCatalog.resolve(currencyCode);
     final symbol = currency.symbol;
-    final marker = symbol.isEmpty ? '${currency.code} ' : symbol;
+    final marker = symbol.isEmpty
+        ? '${currency.code} '
+        : _symbolMarker(currency);
     final prefix = includeCode && symbol.isNotEmpty
-        ? '${currency.code} $symbol'
+        ? '${currency.code} $marker'
         : marker;
     final locale = _numberLocale(preference, currency.code, deviceLocale);
 
@@ -72,7 +79,7 @@ class NumberFormatter {
         : '';
     final symbol = currency.symbol.isEmpty
         ? '${currency.code} '
-        : currency.symbol;
+        : _symbolMarker(currency);
     final locale = _numberLocale(preference, currency.code, deviceLocale);
     final southAsian = _usesSouthAsianGrouping(locale);
     final value = price.abs();

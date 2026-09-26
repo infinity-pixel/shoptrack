@@ -170,14 +170,6 @@ class AccountPage extends StatelessWidget {
                               }
                             },
                           ),
-                          if (authState is AuthAuthenticated)
-                            _buildSettingsTile(
-                              context,
-                              icon: Icons.logout,
-                              title: 'Sign Out',
-                              subtitle: 'Lists stay on this device',
-                              onTap: () => confirmSignOut(context, authService),
-                            ),
                         ],
                       ),
                     ),
@@ -200,6 +192,38 @@ class AccountPage extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (authState is AuthAuthenticated) ...[
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          key: const ValueKey('profile_sign_out'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error.withValues(alpha: .06),
+                            side: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.error.withValues(alpha: .4),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                          ),
+                          onPressed: () => confirmSignOut(context, authService),
+                          icon: const Icon(Icons.logout),
+                          label: const ShopText(
+                            'Sign Out',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -233,6 +233,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                 Directionality.of(context) == TextDirection.rtl
                                     ? Icons.chevron_right
                                     : Icons.chevron_left,
+                                textDirection: TextDirection.ltr,
                               ),
                               visualDensity: VisualDensity.compact,
                             ),
@@ -257,6 +258,7 @@ class _SmartDateRangePickerState extends State<SmartDateRangePicker> {
                                 Directionality.of(context) == TextDirection.rtl
                                     ? Icons.chevron_left
                                     : Icons.chevron_right,
+                                textDirection: TextDirection.ltr,
                               ),
                               visualDensity: VisualDensity.compact,
                             ),

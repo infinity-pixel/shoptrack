@@ -85,6 +85,11 @@ that adds friction needs a clear user benefit.
   the FAB subtree, not the entire page, and requires sustained movement.
   History uses a calendar-plus `New Date` action.
 - Profile offers English, Bangla, and Modern Standard Arabic interface languages.
+  Root device Back asks for confirmation before closing the app; nested routes,
+  editors and item selection retain their own Back behavior. History search's
+  No Price filter matches absent prices, not explicitly entered zero values.
+  Current SAR, MVR, AED and OMR signs have bundled glyph-only fallback fonts;
+  provenance and licenses are documented in `docs/currency_symbols.md`.
   Arabic uses RTL layout, mirrored decorative scenery, and Arabic-Indic interface
   digits. User-authored names remain unchanged. Language changes show a blocking
   busy state until persistence and the updated interface frame complete.

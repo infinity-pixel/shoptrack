@@ -156,6 +156,13 @@ String shopListName(
     : name;
 
 const Map<String, String> _bangla = {
+  'No Price': 'দাম দেওয়া হয়নি',
+  'Close ShopTrack?': 'শপট্র্যাক বন্ধ করবেন?',
+  'Do you want to close the app?': 'আপনি কি অ্যাপটি বন্ধ করতে চান?',
+  'No items yet': 'এখনও কোনো পণ্য নেই',
+  'Tap + to add your first item.': 'প্রথম পণ্য যোগ করতে + চাপুন।',
+  'Shopping Completed': 'কেনাকাটা সম্পন্ন',
+  'All items have been purchased.': 'সব পণ্য কেনা হয়েছে।',
   ...shopBanglaCurrencyNames,
   'Date Removed': 'তারিখ সরানো হয়েছে',
   'No Items': 'কোনো পণ্য নেই',
