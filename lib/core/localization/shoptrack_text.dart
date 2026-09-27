@@ -99,6 +99,14 @@ bool shopIsBangla(BuildContext context) =>
 bool shopIsArabic(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'ar';
 
+/// Optical correction for compact section headings, not body text or amounts.
+double shopSectionHeadingSize(BuildContext context, double base) =>
+    switch (Localizations.localeOf(context).languageCode) {
+      'ar' => base + 3,
+      'zh' => base + 2,
+      _ => base,
+    };
+
 String shopNumber(BuildContext context, num value) =>
     shopNumberLanguage(Localizations.localeOf(context).languageCode, value);
 

@@ -42,8 +42,12 @@ class RecordHero extends StatelessWidget {
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: AlignmentDirectional.centerStart,
-                  end: AlignmentDirectional.centerEnd,
+                  begin: Directionality.of(context) == TextDirection.rtl
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  end: Directionality.of(context) == TextDirection.rtl
+                      ? Alignment.centerLeft
+                      : Alignment.centerRight,
                   colors: [
                     p.surface.withValues(alpha: darkIcons ? .85 : .45),
                     p.surface.withValues(alpha: darkIcons ? .1 : 0),

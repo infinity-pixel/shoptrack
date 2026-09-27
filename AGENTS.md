@@ -94,13 +94,21 @@ that adds friction needs a clear user benefit.
   No Price filter matches absent prices, not explicitly entered zero values.
   Current SAR, MVR, AED and OMR signs have bundled glyph-only fallback fonts;
   provenance and licenses are documented in `docs/currency_symbols.md`.
+  Money text uses bundled regular/medium/bold Latin-digit fonts and a taka-only
+  fallback; receipt totals retain LibreBaskerville. The currency editor keeps
+  only the ISO code and dropdown arrow, sized to their actual content. Calendar badges
+  use localized short month labels when available, with Arabic and longer
+  names directly above the rings; their day is always a bare localized number.
+  Hero fades resolve their physical direction on every language change. Today
+  headings have a subtle glow (a static highlight with reduced motion).
   Arabic uses RTL layout, mirrored decorative scenery, and Arabic-Indic interface
   digits. User-authored names remain unchanged. Language changes show a blocking
   busy state until persistence and the updated interface frame complete.
   The independent Calendar preference offers Gregorian (default) or Hijri
   (Umm al-Qura), with a local -2 to +2 day correction and preview in all languages.
   Calendar changes affect labels and date selection only: stored shopping dates,
-  session IDs, sync keys, and filters remain Gregorian civil days. See
+  session IDs, sync keys, and filters remain Gregorian civil days. Dates still
+  roll over at local midnight; there is no location/sunset feature. See
   `docs/umm_al_qura_calendar.md` for method, range, and data provenance.
   The built-in `My List`
   displays as `আমার তালিকা` in Bangla; user-authored item and list names remain

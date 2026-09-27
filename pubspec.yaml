@@ -80,6 +80,8 @@ flutter:
     - assets/fonts/ShopTrackCurrency-LICENSE.txt
     - assets/fonts/ShopTrackRufiyaa-OFL.txt
     - assets/fonts/Unifont-COPYING.txt
+    - assets/fonts/ShopTrackAmounts-LICENSE.txt
+    - assets/fonts/ShopTrackTaka-OFL.txt
     - assets/images/theme_light_golden_summer.webp
     - assets/images/theme_light_ember_autumn.webp
     - assets/images/theme_light_tranquil_ocean.webp
@@ -90,6 +92,22 @@ flutter:
     - assets/images/theme_dark_ancient_forest.webp
 
   fonts:
+    - family: ShopTrackAmounts
+      fonts:
+        - asset: assets/fonts/ShopTrackAmounts-400.ttf
+          weight: 400
+        - asset: assets/fonts/ShopTrackAmounts-500.ttf
+          weight: 500
+        - asset: assets/fonts/ShopTrackAmounts-700.ttf
+          weight: 700
+    - family: ShopTrackTaka
+      fonts:
+        - asset: assets/fonts/ShopTrackTaka-400.ttf
+          weight: 400
+        - asset: assets/fonts/ShopTrackTaka-500.ttf
+          weight: 500
+        - asset: assets/fonts/ShopTrackTaka-700.ttf
+          weight: 700
     - family: ShopTrackCurrency
       fonts:
         - asset: assets/fonts/ShopTrackCurrency.ttf

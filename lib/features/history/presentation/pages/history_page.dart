@@ -50,12 +50,22 @@ class _HistoryPageState extends State<HistoryPage>
     _headingGlowController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2100),
-    )..repeat(reverse: true);
+    );
     _headingGlow = CurvedAnimation(
       parent: _headingGlowController,
       curve: Curves.easeInOut,
     );
     _loadSessions();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _headingGlowController.stop();
+    } else if (!_headingGlowController.isAnimating) {
+      _headingGlowController.repeat(reverse: true);
+    }
   }
 
   @override
@@ -214,9 +224,14 @@ class _HistoryPageState extends State<HistoryPage>
               children: [
                 Icon(Icons.search, color: palette.textSecondary),
                 const SizedBox(width: 10),
-                ShopText(
-                  'Search history',
-                  style: TextStyle(color: palette.textSecondary, fontSize: 15),
+                Expanded(
+                  child: ShopText(
+                    'Search history',
+                    style: TextStyle(
+                      color: palette.textSecondary,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -243,25 +258,30 @@ class _HistoryPageState extends State<HistoryPage>
           final strength = animated ? 0.10 + animation.value * 0.18 : 0.0;
           return Row(
             children: [
-              ShopText(
-                title,
-                style: TextStyle(
-                  fontSize: shopIsArabic(context) || shopIsBangla(context)
-                      ? 15
-                      : 12,
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                  letterSpacing: shopIsArabic(context) || shopIsBangla(context)
-                      ? 0
-                      : 1.25,
-                  shadows: animated
-                      ? [
-                          Shadow(
-                            color: color.withValues(alpha: strength),
-                            blurRadius: 4 + animation.value * 4,
-                          ),
-                        ]
-                      : null,
+              Flexible(
+                child: ShopText(
+                  title,
+                  style: TextStyle(
+                    fontSize: shopIsBangla(context)
+                        ? 15
+                        : Localizations.localeOf(context).languageCode == 'en'
+                        ? 12
+                        : shopSectionHeadingSize(context, 14),
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                    letterSpacing:
+                        Localizations.localeOf(context).languageCode == 'en'
+                        ? 1.25
+                        : 0,
+                    shadows: animated
+                        ? [
+                            Shadow(
+                              color: color.withValues(alpha: strength),
+                              blurRadius: 4 + animation.value * 4,
+                            ),
+                          ]
+                        : null,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),

@@ -259,7 +259,7 @@ void main() {
   );
 
   testWidgets(
-    'long Arabic badge month uses local month number and full-date tooltip',
+    'Arabic badge month sits above the rings with full-date tooltip',
     (tester) async {
       await tester.pumpWidget(
         _app(
@@ -268,7 +268,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('٩'), findsOneWidget);
+      expect(find.text('سبتمبر'), findsOneWidget);
+      expect(find.text('٢٧'), findsOneWidget);
       expect(
         tester.widget<Tooltip>(find.byType(Tooltip)).message,
         contains('سبتمبر'),
@@ -313,9 +314,7 @@ void main() {
 
   for (final language in ['en', 'bn', 'ar']) {
     for (final size in [const Size(320, 640), const Size(640, 360)]) {
-      testWidgets('complete currency labels fit $language $size at 1.3x', (
-        tester,
-      ) async {
+      testWidgets('currency codes fit $language $size at 1.3x', (tester) async {
         await tester.binding.setSurfaceSize(size);
         addTearDown(() => tester.binding.setSurfaceSize(null));
         for (final code in ['XAF', 'UZS', 'MAD', 'SAR', 'AED', 'OMR', 'MVR']) {
@@ -342,7 +341,7 @@ void main() {
           final label = tester.widget<Text>(
             find.descendant(of: button, matching: find.byType(Text)).first,
           );
-          expect(label.data, '$code ${CurrencyCatalog.resolve(code).symbol}');
+          expect(label.data, code);
           expect(label.overflow, isNot(TextOverflow.ellipsis));
           final paragraph = tester.renderObject<RenderParagraph>(
             find.descendant(of: button, matching: find.byType(RichText)).first,

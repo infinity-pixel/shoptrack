@@ -1063,8 +1063,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         alpha: useDarkStatusIcons ? 0.12 : 0,
                       ),
                     ],
-                    begin: AlignmentDirectional.centerStart,
-                    end: AlignmentDirectional.centerEnd,
+                    // Resolve before painting: a direction-only update must
+                    // invalidate Flutter's cached gradient shader as well.
+                    begin: Directionality.of(context) == TextDirection.rtl
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    end: Directionality.of(context) == TextDirection.rtl
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
                   ),
                 ),
               ),
@@ -1201,7 +1207,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           child: ShopText(
             label,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: shopSectionHeadingSize(context, 18),
               fontWeight: FontWeight.bold,
               color: palette.onBackground,
             ),
@@ -1254,7 +1260,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                   style: TextStyle(
                     color: palette.textSecondary,
-                    fontSize: 12,
+                    fontSize: shopSectionHeadingSize(context, 12),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1867,7 +1873,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             'Total Amount',
             textAlign: TextAlign.end,
             style: TextStyle(
-              fontSize: 17,
+              fontSize: shopSectionHeadingSize(context, 17),
+              decoration: TextDecoration.underline,
+              decorationColor: palette.onBackground,
+              decorationThickness: 1,
               color: palette.onBackground,
               fontWeight: FontWeight.w600,
             ),
@@ -1922,10 +1931,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       Flexible(
                         child: ShopText(
                           'Purchased Amount',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: shopSectionHeadingSize(context, 18),
                             fontWeight: FontWeight.bold,
                             color: palette.onBackground,
                           ),

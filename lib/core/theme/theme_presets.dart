@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/app_settings.dart';
 import 'design_system.dart';
+import 'amount_typography.dart';
 
 /// Configuration for the atmospheric background of a theme.
 class AtmosphericConfig {
@@ -46,7 +47,7 @@ class ThemeDefinition {
 
   ThemeData toThemeData() {
     return ThemeData(
-      fontFamilyFallback: const ['ShopTrackCurrency', 'ShopTrackRufiyaa'],
+      fontFamilyFallback: shopCurrencyFontFallbacks,
       useMaterial3: true,
       brightness: brightness,
       primaryColor: palette.primary,

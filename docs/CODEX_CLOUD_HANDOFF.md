@@ -2,6 +2,19 @@
 
 Last reviewed against the local checkout: **27 September 2026**.
 
+Sprint 19.5.1 refines the four-language presentation: localized short calendar
+month labels (Arabic/long names directly above the rings), bare Chinese day
+digits, live-switch-safe directional hero fades, clearer Arabic/Chinese section
+headings, and an underlined Total Amount heading without rearranging totals.
+The editor shows a compact ISO code and arrow; amounts retain their symbols. Bundled
+Latin money weights and taka glyphs remove device-dependent gaps/weight changes.
+Today glows in every language/theme, with static reduced-motion highlighting.
+Midnight rollover, calendar adjustment, stored records and sync are unchanged;
+no location permission or sunset calculation is added.
+Verification: 396 tests passed, 14 optional preview tests skipped. Real-font
+previews and physical-device acceptance are separate; see
+`sprint_19_5_1_refinements.md` for the checks and remaining device checklist.
+
 Sprint 19.5 adds Simplified Chinese (简体中文) throughout the interface, including
 dialogs, empty/error states, accessibility labels, currency search, sharing,
 and Gregorian/Hijri presentation. Chinese is LTR with unmirrored scenery and

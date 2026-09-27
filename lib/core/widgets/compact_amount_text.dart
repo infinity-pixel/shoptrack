@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_settings.dart';
 import '../currency/currency_catalog.dart';
 import '../localization/shoptrack_text.dart';
+import '../theme/amount_typography.dart';
 import '../utils/number_formatter.dart';
 
 /// Shows a bounded shopping amount and exposes its full value on tap.
@@ -60,14 +61,10 @@ class CompactAmountText extends StatelessWidget {
       builder: (context, constraints) {
         final fullLabel = '$full$suffix';
         final available = constraints.maxWidth;
-        final effectiveStyle = DefaultTextStyle.of(context).style
-            .merge(style)
-            .copyWith(
-              fontFamilyFallback: const [
-                'ShopTrackCurrency',
-                'ShopTrackRufiyaa',
-              ],
-            );
+        final effectiveStyle = shopAmountStyle(
+          DefaultTextStyle.of(context).style.merge(style),
+          fontFamily: style.fontFamily,
+        );
         final painter = TextPainter(
           text: TextSpan(text: fullLabel, style: effectiveStyle),
           textDirection: direction,

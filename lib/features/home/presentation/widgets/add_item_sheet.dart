@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/amount_typography.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
@@ -991,12 +992,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
     return 'Price per Unit';
   }
 
-  String _currencyLabel(String code) {
-    final currency = CurrencyCatalog.resolve(code);
-    return currency.symbol.isEmpty
-        ? currency.code
-        : '${currency.code} ${currency.symbol}';
-  }
+  String _currencyLabel(String code) => CurrencyCatalog.resolve(code).code;
 
   double _currencyButtonWidth(BuildContext context) {
     final painter = TextPainter(
@@ -1013,15 +1009,14 @@ class _AddItemSheetState extends State<AddItemSheet> {
     final desired =
         painter.width + 20 + 1 + MediaQuery.textScalerOf(context).scale(20) + 4;
     painter.dispose();
-    return desired < 96 ? 96 : desired;
+    return desired < 48 ? 48 : desired;
   }
 
-  TextStyle _currencyLabelStyle(BuildContext context) =>
-      DefaultTextStyle.of(context).style.copyWith(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        fontFamilyFallback: const ['ShopTrackCurrency', 'ShopTrackRufiyaa'],
-      );
+  TextStyle _currencyLabelStyle(BuildContext context) => shopAmountStyle(
+    Theme.of(
+      context,
+    ).textTheme.bodyLarge!.copyWith(fontSize: 16, fontWeight: FontWeight.w600),
+  );
 }
 
 /// Keyboard metrics rebuild this small wrapper instead of the whole form.

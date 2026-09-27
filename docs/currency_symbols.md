@@ -34,11 +34,33 @@ Run `python tool/subset_currency_fonts.py`. The first font remaps source glyphs
 E001/E002/E004 to 20C1/20C3/20C4; the second keeps only 20C2. Both derived font
 families are renamed. Do not commit downloaded build inputs or fonttools.
 
-The currency editor measures its selected label using its actual font and text
-scale. It does not size by character count: `FCFA`, `soʻm`, and Arabic dotted
-abbreviations can occupy different widths. On a narrow screen the price field
-moves to the next line, preserving the whole currency label and touch target.
+The currency editor shows only the ISO code and dropdown arrow, measured with
+the actual font and text scale, without reserving space for a symbol. Currency
+symbols remain in the picker and displayed amounts. On a narrow screen the
+price field can move to the next line, preserving the label and touch target.
 
 Physical-device acceptance: check these four glyphs on an older Android build,
 both light/dark themes, and at enlarged text size. Imported/exported plain text
 still depends on the receiving application's font coverage.
+
+## Stable amount typography (19.5.1)
+
+Price runs and the editor's code label now use `ShopTrackAmounts`, a
+Roboto subset with real regular/medium/bold faces. Receipt and summary totals
+retain LibreBaskerville. `ShopTrackTaka` supplies only U+09F3 in matching weights
+so the BDT sign cannot disappear when a device's Bengali fallback is unavailable.
+Arabic/CJK letters and Arabic-Indic digits still use the device's script fonts;
+these subsets do not replace interface fonts. All catalogue amounts share this
+same rendering path. This is not a claim that all system fallback glyphs have
+been visually checked on every Android version.
+
+Reproduce with `python tool/subset_amount_fonts.py <Flutter SDK>` and fonttools
+4.66. Roboto inputs and their Apache 2.0 notice come from the SDK's
+`bin/cache/artifacts/material_fonts/roboto-{regular,medium,bold}.ttf` and
+`roboto_license.txt`. Original embedded copyright notices are retained.
+Download NotoSansBengali Regular, Medium and Bold from the upstream
+[pinned unhinted/ttf directory](https://github.com/notofonts/noto-sans-bengali/tree/7211a297d0517c16e03328c271de1cf7f85d9e49/unhinted/ttf)
+into `build/`, plus its `LICENSE-fonts.txt` as `build/NotoBengali-OFL.txt`.
+Derived subsets are renamed and ship with their licenses in the app's notices.
+No font downloads happen at runtime. The six subsets total about 158 KB before
+APK compression.

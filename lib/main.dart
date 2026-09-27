@@ -14,6 +14,8 @@ Future<void> main() async {
       'ShopTrackCurrency-LICENSE.txt',
       'ShopTrackRufiyaa-OFL.txt',
       'Unifont-COPYING.txt',
+      'ShopTrackAmounts-LICENSE.txt',
+      'ShopTrackTaka-OFL.txt',
     ]) {
       yield LicenseEntryWithLineBreaks([
         'ShopTrack currency fonts',
