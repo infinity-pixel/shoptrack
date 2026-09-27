@@ -2,7 +2,11 @@ import 'shoptrack_currency_names.dart';
 
 /// Modern Standard Arabic interface copy. User-authored names are not translated.
 const Map<String, String> shopArabicTranslations = {
+  'Chinese': '简体中文',
+  'Default currency changed to {currency}. Existing items were not changed.':
+      'تم تغيير العملة الافتراضية إلى {currency}. لم تتغير عملات المنتجات السابقة.',
   'No Price': 'بدون سعر',
+  'No Date Range Selected': 'لم يُحدد نطاق زمني',
   'Close ShopTrack?': 'إغلاق شوب تراك؟',
   'Do you want to close the app?': 'هل تريد إغلاق التطبيق؟',
   'No items yet': 'لا توجد منتجات بعد',

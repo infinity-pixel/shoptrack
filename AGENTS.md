@@ -84,7 +84,11 @@ that adds friction needs a clear user benefit.
   collapsed. Both transitions animate their labels. Scroll intent updates only
   the FAB subtree, not the entire page, and requires sustained movement.
   History uses a calendar-plus `New Date` action.
-- Profile offers English, Bangla, and Modern Standard Arabic interface languages.
+- Profile offers English, Bangla, Modern Standard Arabic, and Simplified Chinese
+  (简体中文) interface languages. Chinese uses LTR layout, unmirrored scenery,
+  ordinary 0–9 digits, localized currency names, and year/month/day date entry.
+  Gregorian and Hijri remain independent preferences; Chinese does not imply a
+  Chinese lunar calendar. User-authored names are never automatically translated.
   Root device Back asks for confirmation before closing the app; nested routes,
   editors and item selection retain their own Back behavior. History search's
   No Price filter matches absent prices, not explicitly entered zero values.

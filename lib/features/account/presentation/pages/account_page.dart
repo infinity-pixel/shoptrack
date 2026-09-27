@@ -530,11 +530,10 @@ class AccountPage extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            shopIsBangla(context)
-                ? 'ডিফল্ট মুদ্রা $selected করা হয়েছে। আগের পণ্যগুলোর মুদ্রা বদলায়নি।'
-                : shopIsArabic(context)
-                ? 'تم تغيير العملة الافتراضية إلى $selected. لم تتغير عملات المنتجات السابقة.'
-                : 'Default currency changed to $selected. Existing items were not changed.',
+            shopTr(
+              context,
+              'Default currency changed to {currency}. Existing items were not changed.',
+            ).replaceAll('{currency}', selected),
           ),
         ),
       );
@@ -557,7 +556,12 @@ class AccountPage extends StatelessWidget {
       builder: (dialogContext) => SimpleDialog(
         title: const ShopText('Language Preference'),
         children: [
-          for (final language in const ['English', 'Bangla', 'Arabic'])
+          for (final language in const [
+            'English',
+            'Bangla',
+            'Arabic',
+            'Chinese',
+          ])
             SimpleDialogOption(
               onPressed: () => Navigator.pop(dialogContext, language),
               child: Row(

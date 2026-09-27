@@ -2,6 +2,18 @@
 
 Last reviewed against the local checkout: **27 September 2026**.
 
+Sprint 19.5 adds Simplified Chinese (简体中文) throughout the interface, including
+dialogs, empty/error states, accessibility labels, currency search, sharing,
+and Gregorian/Hijri presentation. Chinese is LTR with unmirrored scenery and
+year/month/day date entry; switching from Arabic restores LTR without changing
+user-authored names or stored shopping dates. Local language settings persist
+the stable value `Chinese`. Existing number-format overrides remain unchanged.
+See `sprint_19_5_chinese.md` for data provenance and acceptance checks.
+No APK is built for this sprint, as requested; physical-device acceptance is
+still required. No schema, account ownership or synchronization changes.
+Verification: 389 regression tests passed (13 optional previews skipped);
+the Chinese-only real-font run passed all 15 checks and its images were inspected.
+
 Sprint 19.4.1 refines Arabic/Bangla empty states, calendar arrows and compact
 month badges, History heading prominence and RTL amount alignment. FABs retain
 their last deliberate state at the top boundary. Root Back confirms app exit;
@@ -90,7 +102,7 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 19.4 — Arabic RTL and independent Hijri calendar**.
+- Current local milestone: **Sprint 19.5 — Simplified Chinese interface**.
 - Check `git log` for the latest commit and `git status` for any uncommitted work.
 
 Sprint 19 foundation work includes:
@@ -257,12 +269,12 @@ Implemented behavior includes:
 - Google Drive App Data backup/restore as a separate advanced system;
 - About and app-version UI;
 - a dedicated Appearance screen, a searchable default-currency picker,
-  number-format selection, three-language selection, and calendar preferences.
+  number-format selection, four-language selection, and calendar preferences.
 
 Important distinction: the ShopTrack display name/photo is local app profile
 data. It does not edit the user's Google account.
 
-Currency picking, grouped totals, and English/Bangla/Arabic language selection are
+Currency picking, grouped totals, and English/Bangla/Arabic/Simplified Chinese language selection are
 visible. The underlying per-item currency, catalogue, grouped totals,
 settings, persistence, backup, sharing, and sync contracts are implemented.
 

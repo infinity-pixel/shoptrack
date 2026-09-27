@@ -118,6 +118,20 @@ class ShopCalendar {
     // intl ships en_US data without initialization. Plain MaterialApp widget
     // tests intentionally omit global localization delegates; keep them valid.
     if (language == 'en') locale = 'en_US';
+    if (language == 'zh') {
+      // Existing call sites describe fields in English order. Chinese presents
+      // year/month/day; use numeric months to avoid duplicating the 月 suffix.
+      pattern = switch (pattern) {
+        'EEEE, d MMMM yyyy' => 'yyyy年M月d日 EEEE',
+        'EEEE, d MMMM' => 'M月d日 EEEE',
+        'EEEE, MMMM' => 'M月 EEEE',
+        'MMMM yyyy' => 'yyyy年M月',
+        'd MMMM yyyy' || 'd MMM yyyy' || 'd MMMM y' => 'yyyy年M月d日',
+        'd MMM' || 'd MMMM' => 'M月d日',
+        'd MMM yyyy, HH:mm' => 'yyyy年M月d日 HH:mm',
+        _ => pattern,
+      };
+    }
     if (!isHijri) {
       return localizeDateDigits(
         DateFormat(pattern, locale).format(date),
@@ -163,6 +177,8 @@ class ShopCalendar {
                   ? 'هـ'
                   : language == 'bn'
                   ? 'হিজরি'
+                  : language == 'zh'
+                  ? '伊斯兰历'
                   : 'AH',
             );
           default:
@@ -238,10 +254,27 @@ List<String> shopWeekdays(BuildContext context) =>
     switch (Localizations.localeOf(context).languageCode) {
       'bn' => const ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র', 'শনি'],
       'ar' => const ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'],
+      'zh' => const ['日', '一', '二', '三', '四', '五', '六'],
       _ => const ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
     };
 
 const _hijriMonths = {
+  // Unicode CLDR ca-islamic zh month names (Unicode License V3 is registered
+  // with the currency names). This is the Islamic calendar, not a lunar toggle.
+  'zh': [
+    '一月',
+    '二月',
+    '三月',
+    '四月',
+    '五月',
+    '六月',
+    '七月',
+    '八月',
+    '九月',
+    '十月',
+    '十一月',
+    '十二月',
+  ],
   'en': [
     'Muharram',
     'Safar',

@@ -124,6 +124,7 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
         final locale = switch (settingsService.settings.language) {
           'Bangla' => const Locale('bn', 'BD'),
           'Arabic' => const Locale('ar'),
+          'Chinese' => const Locale('zh', 'CN'),
           _ => const Locale('en', 'US'),
         };
         Intl.defaultLocale = locale.toString();
@@ -141,6 +142,7 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
             Locale('en', 'US'),
             Locale('bn', 'BD'),
             Locale('ar'),
+            Locale('zh', 'CN'),
           ],
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,

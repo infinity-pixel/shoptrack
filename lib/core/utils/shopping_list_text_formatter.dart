@@ -137,7 +137,7 @@ class ShoppingListTextFormatter {
     output.writeln('${translate(title)} (${formatCount(section.length)})');
     for (final item in section) {
       output.writeln(
-        '$marker ${_itemLine(item, includeCurrencyCode: includeCurrencyCodes, numberText: numberText)}',
+        '$marker ${_itemLine(item, includeCurrencyCode: includeCurrencyCodes, numberText: numberText, translate: translate)}',
       );
       if (item.notes?.trim().isNotEmpty == true) {
         output.writeln('   ${translate('Note')}: ${item.notes!.trim()}');
@@ -234,13 +234,14 @@ class ShoppingListTextFormatter {
     ShoppingItem item, {
     required bool includeCurrencyCode,
     required String Function(String) numberText,
+    required String Function(String) translate,
   }) {
     final pricing = item.pricing;
     final details = <String>[];
     if (pricing.resolvedQuantity != null ||
         pricing.resolvedUnitSymbol != null) {
       details.add(
-        '${numberText(NumberFormatter.formatQuantity(pricing.resolvedQuantity ?? 0, enteredText: item.quantity))} ${pricing.resolvedUnitSymbol ?? ''}'
+        '${numberText(NumberFormatter.formatQuantity(pricing.resolvedQuantity ?? 0, enteredText: item.quantity))} ${translate(pricing.resolvedUnitSymbol ?? '')}'
             .trim(),
       );
     }

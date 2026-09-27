@@ -88,57 +88,60 @@ class _DatePartsFieldState extends State<DatePartsField> {
   }
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      for (var i = 0; i < 3; i++) ...[
-        if (i > 0) const SizedBox(width: 8),
-        Expanded(
-          child: TextField(
-            controller: _fields[i],
-            focusNode: _focusNodes[i],
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            textInputAction: i == 2
-                ? TextInputAction.done
-                : TextInputAction.next,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp('[0-9০-৯٠-٩۰-۹]')),
-              TextInputFormatter.withFunction(
-                (oldValue, newValue) => newValue.copyWith(
-                  text: localizeDateDigits(newValue.text, _language),
+  Widget build(BuildContext context) {
+    final order = _language == 'zh' ? const [2, 1, 0] : const [0, 1, 2];
+    return Row(
+      children: [
+        for (final i in order) ...[
+          if (i != order.first) const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _fields[i],
+              focusNode: _focusNodes[i],
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              textInputAction: i == order.last
+                  ? TextInputAction.done
+                  : TextInputAction.next,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp('[0-9০-৯٠-٩۰-۹]')),
+                TextInputFormatter.withFunction(
+                  (oldValue, newValue) => newValue.copyWith(
+                    text: localizeDateDigits(newValue.text, _language),
+                  ),
+                ),
+                LengthLimitingTextInputFormatter(i == 2 ? 4 : 2),
+              ],
+              decoration: InputDecoration(
+                filled: Theme.of(context).brightness == Brightness.dark,
+                fillColor: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: .05),
+                labelText: shopTr(context, ['Day', 'Month', 'Year'][i]),
+                isDense: true,
+                floatingLabelAlignment: FloatingLabelAlignment.center,
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
                 ),
               ),
-              LengthLimitingTextInputFormatter(i == 2 ? 4 : 2),
-            ],
-            decoration: InputDecoration(
-              filled: Theme.of(context).brightness == Brightness.dark,
-              fillColor: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: .05),
-              labelText: shopTr(context, ['Day', 'Month', 'Year'][i]),
-              isDense: true,
-              floatingLabelAlignment: FloatingLabelAlignment.center,
-              floatingLabelBehavior: FloatingLabelBehavior.always,
-              border: const OutlineInputBorder(),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 6,
-              ),
+              onChanged: _changed,
+              // Flutter's default editing completion also advances focus for
+              // Next. Own the transition here so it runs exactly once.
+              onEditingComplete: () {},
+              onSubmitted: (_) {
+                if (i != order.last) {
+                  _focusNodes[order[order.indexOf(i) + 1]].requestFocus();
+                } else {
+                  FocusScope.of(context).unfocus();
+                }
+              },
             ),
-            onChanged: _changed,
-            // Flutter's default editing completion also advances focus for
-            // Next. Own the transition here so it runs exactly once.
-            onEditingComplete: () {},
-            onSubmitted: (_) {
-              if (i < 2) {
-                _focusNodes[i + 1].requestFocus();
-              } else {
-                FocusScope.of(context).unfocus();
-              }
-            },
           ),
-        ),
+        ],
       ],
-    ],
-  );
+    );
+  }
 }

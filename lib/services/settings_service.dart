@@ -72,7 +72,7 @@ class SettingsService extends ChangeNotifier {
     Future<void> Function()? waitForFrame,
   }) async {
     if (_isSwitchingLanguage || _settings.language == language) return;
-    if (!const ['English', 'Bangla', 'Arabic'].contains(language)) {
+    if (!const ['English', 'Bangla', 'Arabic', 'Chinese'].contains(language)) {
       throw ArgumentError.value(language, 'language');
     }
     _isSwitchingLanguage = true;

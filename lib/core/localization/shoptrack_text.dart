@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 
 import 'shoptrack_arabic.dart';
+import 'shoptrack_chinese.dart';
 import 'shoptrack_currency_names.dart';
 
 export 'shoptrack_currency_names.dart'
@@ -73,9 +74,12 @@ String shopTr(BuildContext context, String english) =>
 /// Context-free translation for exports and status messages. Only interface
 /// strings belong here; never pass user-authored content through this helper.
 String shopTrLanguage(String languageCode, String english) {
+  // An autonym keeps the new language discoverable from every current locale.
+  if (english == 'Chinese') return '简体中文';
   final translations = switch (languageCode) {
     'bn' => _bangla,
     'ar' => shopArabicTranslations,
+    'zh' => shopChineseTranslations,
     _ => const <String, String>{},
   };
   final translated = translations[english];
@@ -102,6 +106,7 @@ String shopNumberLanguage(String languageCode, num value) {
   final locale = switch (languageCode) {
     'bn' => 'bn_BD',
     'ar' => 'ar',
+    'zh' => 'zh_CN',
     _ => 'en_US',
   };
   return shopDigitsLanguage(
@@ -136,6 +141,7 @@ String shopDigitsLanguage(String languageCode, String text) {
 Set<String> shopTranslationKeys(String languageCode) => switch (languageCode) {
   'bn' => _bangla.keys.toSet(),
   'ar' => shopArabicTranslations.keys.toSet(),
+  'zh' => shopChineseTranslations.keys.toSet(),
   _ => const {},
 };
 
@@ -164,6 +170,10 @@ const Map<String, String> _bangla = {
   'Shopping Completed': 'কেনাকাটা সম্পন্ন',
   'All items have been purchased.': 'সব পণ্য কেনা হয়েছে।',
   ...shopBanglaCurrencyNames,
+  'No Date Range Selected': 'কোনো সময়সীমা বাছাই করা হয়নি',
+  'Chinese': '简体中文',
+  'Default currency changed to {currency}. Existing items were not changed.':
+      'ডিফল্ট মুদ্রা {currency} করা হয়েছে। আগের পণ্যগুলোর মুদ্রা বদলায়নি।',
   'Date Removed': 'তারিখ সরানো হয়েছে',
   'No Items': 'কোনো পণ্য নেই',
   'Sign In With Google': 'গুগল দিয়ে সাইন ইন করুন',
