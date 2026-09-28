@@ -55,22 +55,28 @@ class HistoryDateBadge extends StatelessWidget {
                 Positioned.fill(
                   top: 5,
                   child: Container(
+                    key: const ValueKey('calendar-day-face'),
                     decoration: BoxDecoration(
                       border: Border.all(color: calendarAccent, width: 1.5),
                       borderRadius: BorderRadius.circular(7),
                     ),
-                    child: Column(
+                    child: Stack(
                       children: [
-                        Container(
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: calendarAccent,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(5),
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: calendarAccent,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(5),
+                              ),
                             ),
                           ),
                         ),
-                        Expanded(
+                        Positioned.fill(
                           child: Center(
                             child: FittedBox(
                               fit: BoxFit.scaleDown,

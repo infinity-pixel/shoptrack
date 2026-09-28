@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/shoptrack_hero_artwork.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 import '../widgets/record_hero.dart';
@@ -250,7 +252,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final destinations = _currentSession.orderedLists
         .where((list) => list.id != _activeListId)
         .toList();
-    final choice = await showModalBottomSheet<Object>(
+    final choice = await showShopBottomSheet<Object>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -321,7 +323,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     ShoppingListGroup target;
     var sessionForMove = _currentSession;
     if (choice == 'create') {
-      final name = await showDialog<String>(
+      final name = await showShopDialog<String>(
         context: context,
         builder: (_) => ShoppingListNameDialog(
           title: 'New shopping list',
@@ -399,7 +401,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     String message,
     String action,
   ) async {
-    return await showDialog<bool>(
+    return await showShopDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: ShopText(title),
@@ -589,8 +591,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Future<void> _openAddSheet({FrequentItemSuggestion? suggestion}) =>
       _withStableEditor(() async {
         final settings = widget.settingsService?.settings;
-        final newItem = await showModalBottomSheet<dynamic>(
+        final newItem = await showShopBottomSheet<dynamic>(
           context: context,
+          requestFocus: false,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
           builder: (context) => AddItemSheet(
@@ -1040,15 +1043,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (tokens.headerArtworkPath != null)
-                Image.asset(
-                  tokens.headerArtworkPath!,
-                  matchTextDirection: true,
-                  fit: BoxFit.cover,
-                  alignment: useDarkStatusIcons
-                      ? Alignment.center
-                      : const Alignment(0, -0.5),
-                ),
+              ShopTrackHeroArtwork(
+                path: tokens.headerArtworkPath,
+                alignment: useDarkStatusIcons
+                    ? Alignment.center
+                    : const Alignment(0, -0.5),
+              ),
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -1329,7 +1329,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _createShoppingList() => _withStableEditor(() async {
-    final name = await showDialog<String>(
+    final name = await showShopDialog<String>(
       context: context,
       builder: (_) => ShoppingListNameDialog(
         title: 'New shopping list',
@@ -1366,7 +1366,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> _showListActions(ShoppingListGroup list) =>
       _withStableEditor(() async {
-        final action = await showModalBottomSheet<String>(
+        final action = await showShopBottomSheet<String>(
           context: context,
           showDragHandle: true,
           builder: (context) => SafeArea(
@@ -1414,7 +1414,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> _renameShoppingList(ShoppingListGroup list) => _withStableEditor(
     () async {
-      final name = await showDialog<String>(
+      final name = await showShopDialog<String>(
         context: context,
         builder: (_) => ShoppingListNameDialog(
           title: 'Rename shopping list',
@@ -1454,7 +1454,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     ShoppingListGroup list,
   ) => _withStableEditor(() async {
     final itemCount = _currentSession.itemsForList(list.id).length;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showShopDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
@@ -1518,7 +1518,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<bool> _showDiscardWarning() async {
-    final result = await showDialog<bool>(
+    final result = await showShopDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('No items added'),
@@ -1542,8 +1542,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> _openEditSheet(ShoppingItem item) => _withStableEditor(() async {
     final settings = widget.settingsService?.settings;
-    final result = await showModalBottomSheet<dynamic>(
+    final result = await showShopBottomSheet<dynamic>(
       context: context,
+      requestFocus: false,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddItemSheet(
@@ -1626,6 +1627,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final itemIndex = _currentSession.items.indexWhere(
       (current) => current.id == item.id,
     );
+    if (itemIndex != -1 && MediaQuery.disableAnimationsOf(context)) {
+      setState(() {
+        _currentSession.items[itemIndex] = item.copyWith(
+          isPurchased: becomingPurchased,
+        );
+        _checkmarkTransitionStates.remove(item.id);
+      });
+      return;
+    }
     if (sourceBox == null || itemIndex == -1) {
       if (itemIndex != -1) {
         setState(() {
@@ -1778,7 +1788,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     setState(() {
       _checkmarkTransitionStates[item.id] = becomingPurchased;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 280));
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      await Future<void>.delayed(const Duration(milliseconds: 280));
+    }
     if (!mounted) return;
     await _animateItemTransfer(item, becomingPurchased);
     await _persistSession();

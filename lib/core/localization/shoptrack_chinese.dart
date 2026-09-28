@@ -2,6 +2,48 @@ import 'shoptrack_chinese_currency_names.dart';
 
 /// Simplified Chinese interface copy. Never translate user-authored names.
 const shopChineseTranslations = <String, String>{
+  'Create dates and lists': '创建购物日期与清单',
+  'Use New Date in History to plan a shopping day.': '在历史记录中点击“新建日期”，安排购物日。',
+  'On Lists, use the add-list control to create a separate named list.':
+      '在清单页点击添加清单按钮，创建单独命名的清单。',
+  'Move, delete, and undo': '移动、删除与撤销',
+  'Long-press an item to select it for moving or deleting.':
+      '长按商品将其选中，然后移动或删除。',
+  'Swipe an item to delete it. Tap Undo promptly if that was a mistake.':
+      '滑动商品即可删除；如果误删，请及时点击“撤销”。',
+  'Personalize ShopTrack': '个性化设置',
+  'In Profile, choose your appearance, language, default currency, and number format.':
+      '在个人中心选择外观、语言、默认货币和数字格式。',
+  'Choose Gregorian or Hijri calendar labels; your saved shopping dates remain unchanged.':
+      '可选择公历或伊斯兰历日期显示；已保存的购物日期不会改变。',
+  'Help & FAQ': '帮助与常见问题',
+  'A quick guide to everyday shopping in ShopTrack.':
+      '快速了解如何使用 ShopTrack 管理日常购物。',
+  'Add and price an item': '添加商品与填写价格',
+  'Open a shopping date and tap Add Item.': '打开一个购物日期，点击“添加商品”。',
+  'Enter a name and quantity. Use More Options for currency and total or per-unit price.':
+      '输入名称和数量。展开“更多选项”，选择货币、总价或单价。',
+  'Tap Save. Different currencies stay separate; ShopTrack does not convert them.':
+      '点击“保存”。不同货币的金额分别显示；ShopTrack 不会自动换算。',
+  'Mark purchased and reorder': '标记已购买与调整顺序',
+  'Tap the checkbox on an item to mark it purchased.': '点击商品旁的复选框，将其标记为已购买。',
+  'Drag its handle to reorder it within the same currency section.':
+      '拖动商品的排序手柄，可在相同货币分组内调整顺序。',
+  'Find and share a list': '查找与分享清单',
+  'Use History to open shopping dates or search by status, no price, or date range.':
+      '在历史记录中打开购物日期，也可按状态、未填写价格或日期范围搜索。',
+  'On Lists, open the Add Item arrow and choose Share Your List.':
+      '在清单页展开“添加商品”旁的箭头，选择“分享清单”。',
+  'Offline and cloud sync': '离线使用与云同步',
+  'Your shopping records remain available on this device while offline.':
+      '离线时仍可在本设备查看购物记录。',
+  'If signed in, pending changes sync when the connection returns. Check Cloud Sync for their status.':
+      '登录后，待同步的更改会在网络恢复时同步。可在云同步中查看状态。',
+  'Backup and restore': '备份与恢复',
+  'In Profile, open Cloud Sync, then Advanced Backup & Restore.':
+      '在个人中心打开“云同步”，再进入“高级备份与恢复”。',
+  'Export a file or Drive backup before restoring. Restore can replace current data.':
+      '恢复前请先导出文件或云端硬盘备份；恢复操作可能替换当前数据。',
   ...shopChineseCurrencyNames,
   'Chinese': '简体中文',
   'No Price': '未填写价格',

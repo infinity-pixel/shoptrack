@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../app.dart';
 import '../../../../core/widgets/confirm_app_exit.dart';
 import '../../../../core/widgets/shoptrack_navigation_bar.dart';
+import '../../../../core/widgets/shoptrack_motion.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../history/presentation/pages/history_page.dart';
 import '../../../account/presentation/pages/account_page.dart';
@@ -37,15 +38,9 @@ class _MainPageState extends State<MainPage> {
             body: IndexedStack(
               index: _currentIndex,
               children: [
-                TickerMode(enabled: _currentIndex == 0, child: _buildHomeTab()),
-                TickerMode(
-                  enabled: _currentIndex == 1,
-                  child: _buildHistoryTab(),
-                ),
-                TickerMode(
-                  enabled: _currentIndex == 2,
-                  child: _buildAccountTab(),
-                ),
+                _animatedTab(0, _buildHomeTab()),
+                _animatedTab(1, _buildHistoryTab()),
+                _animatedTab(2, _buildAccountTab()),
               ],
             ),
             bottomNavigationBar: ShopTrackNavigationBar(
@@ -82,6 +77,24 @@ class _MainPageState extends State<MainPage> {
               });
             }
           : null,
+    );
+  }
+
+  Widget _animatedTab(int index, Widget child) {
+    final active = _currentIndex == index;
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : ShopTrackMotion.tab;
+    return AnimatedOpacity(
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      opacity: active ? 1 : 0,
+      child: AnimatedSlide(
+        duration: duration,
+        curve: Curves.easeOutCubic,
+        offset: active ? Offset.zero : const Offset(0, .015),
+        child: TickerMode(enabled: active, child: child),
+      ),
     );
   }
 

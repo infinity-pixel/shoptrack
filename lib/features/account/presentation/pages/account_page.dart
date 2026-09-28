@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import '../../../../app.dart';
 import '../../../../core/currency/currency_catalog.dart';
@@ -17,6 +18,7 @@ import '../widgets/sign_out_dialog.dart';
 import 'backup_restore_page.dart';
 import 'cloud_sync_page.dart';
 import 'calendar_settings_page.dart';
+import 'help_faq_page.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -178,6 +180,17 @@ class AccountPage extends StatelessWidget {
                       context,
                       Column(
                         children: [
+                          _buildSettingsTile(
+                            context,
+                            icon: Icons.help_outline_rounded,
+                            title: 'Help & FAQ',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const HelpFaqPage(),
+                              ),
+                            ),
+                          ),
                           _buildSettingsTile(
                             context,
                             icon: Icons.shopping_cart_outlined,
@@ -430,7 +443,7 @@ class AccountPage extends StatelessWidget {
     BuildContext context,
     AuthService authService,
   ) {
-    showDialog(
+    showShopDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('Sign In Required'),
@@ -551,7 +564,7 @@ class AccountPage extends StatelessWidget {
     BuildContext context,
     SettingsService settingsService,
   ) async {
-    final selected = await showDialog<String>(
+    final selected = await showShopDialog<String>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
         title: const ShopText('Language Preference'),
@@ -612,7 +625,7 @@ class AccountPage extends StatelessWidget {
     BuildContext context,
     SettingsService settingsService,
   ) async {
-    final selected = await showDialog<NumberFormatPreference>(
+    final selected = await showShopDialog<NumberFormatPreference>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
         title: const ShopText('Number Format'),

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import '../../../../core/widgets/shoptrack_modal.dart';
 import '../../../../core/theme/theme_presets.dart';
 import '../../../../models/auth_state.dart';
@@ -66,7 +67,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _cancel() async {
     if (_busy) return;
     if (_dirty) {
-      final discard = await showDialog<bool>(
+      final discard = await showShopDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const ShopText('Discard Changes?'),
@@ -123,7 +124,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _photoOptions() async {
-    final action = await showModalBottomSheet<String>(
+    final action = await showShopBottomSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(

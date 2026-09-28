@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import '../calendar/shop_calendar.dart';
 import '../calendar/calendar_date_dialog.dart';
 import 'package:uuid/uuid.dart';
@@ -44,7 +45,7 @@ class SessionDateManager {
     final existingAtTarget = await repository.getSessionByDate(targetDate);
     if (existingAtTarget.items.isNotEmpty) {
       if (!context.mounted) return;
-      await showDialog(
+      await showShopDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const ShopText('Date Already Exists'),
@@ -75,7 +76,7 @@ class SessionDateManager {
       // MIXED or ALL-PURCHASED session moving to future
       if (!context.mounted) return;
 
-      final confirm = await showDialog<bool>(
+      final confirm = await showShopDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const ShopText('Purchased items detected'),
@@ -178,7 +179,7 @@ class SessionDateManager {
       // STANDARD MOVE (Past/Today target, or Future target with NO purchased items)
       if (!context.mounted) return;
 
-      final confirm = await showDialog<bool>(
+      final confirm = await showShopDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const ShopText('Change Shopping Date?'),

@@ -39,6 +39,30 @@ class ShopTrackRadius {
 class ShopTrackMotion {
   const ShopTrackMotion();
 
+  static const tab = Duration(milliseconds: 220);
+  static const dialog = Duration(milliseconds: 240);
+  static const sheet = Duration(milliseconds: 320);
+
+  static AnimationStyle dialogStyle(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context)
+      ? AnimationStyle.noAnimation
+      : const AnimationStyle(
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+          duration: dialog,
+          reverseDuration: Duration(milliseconds: 180),
+        );
+
+  static AnimationStyle sheetStyle(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context)
+      ? AnimationStyle.noAnimation
+      : const AnimationStyle(
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+          duration: sheet,
+          reverseDuration: Duration(milliseconds: 240),
+        );
+
   final Duration short = const Duration(milliseconds: 200);
   final Duration medium = const Duration(milliseconds: 400);
   final Duration long = const Duration(milliseconds: 600);
@@ -63,11 +87,13 @@ class ShopTrackPalette {
 
   // Semantic Status Colors
   final Color purchased;
+
   /// Lighter status ink, independent of the stronger monetary total.
   Color get purchasedStatus {
     final hsl = HSLColor.fromColor(purchased);
     return hsl.withLightness((hsl.lightness + 0.08).clamp(0.0, 0.75)).toColor();
   }
+
   final Color pending;
   final Color planned;
   final Color today;
@@ -109,6 +135,39 @@ class ShopTrackPalette {
     required this.receiptEdge,
     required this.receiptShadow,
   });
+
+  static ShopTrackPalette lerp(
+    ShopTrackPalette begin,
+    ShopTrackPalette end,
+    double t,
+  ) => ShopTrackPalette(
+    primary: Color.lerp(begin.primary, end.primary, t)!,
+    secondary: Color.lerp(begin.secondary, end.secondary, t)!,
+    background: Color.lerp(begin.background, end.background, t)!,
+    surface: Color.lerp(begin.surface, end.surface, t)!,
+    error: Color.lerp(begin.error, end.error, t)!,
+    onPrimary: Color.lerp(begin.onPrimary, end.onPrimary, t)!,
+    onSecondary: Color.lerp(begin.onSecondary, end.onSecondary, t)!,
+    onBackground: Color.lerp(begin.onBackground, end.onBackground, t)!,
+    onSurface: Color.lerp(begin.onSurface, end.onSurface, t)!,
+    onError: Color.lerp(begin.onError, end.onError, t)!,
+    purchased: Color.lerp(begin.purchased, end.purchased, t)!,
+    pending: Color.lerp(begin.pending, end.pending, t)!,
+    planned: Color.lerp(begin.planned, end.planned, t)!,
+    today: Color.lerp(begin.today, end.today, t)!,
+    onStatus: Color.lerp(begin.onStatus, end.onStatus, t)!,
+    surfaceToBuy: Color.lerp(begin.surfaceToBuy, end.surfaceToBuy, t)!,
+    surfacePurchased: Color.lerp(
+      begin.surfacePurchased,
+      end.surfacePurchased,
+      t,
+    )!,
+    border: Color.lerp(begin.border, end.border, t)!,
+    textSecondary: Color.lerp(begin.textSecondary, end.textSecondary, t)!,
+    surfaceReceipt: Color.lerp(begin.surfaceReceipt, end.surfaceReceipt, t)!,
+    receiptEdge: Color.lerp(begin.receiptEdge, end.receiptEdge, t)!,
+    receiptShadow: Color.lerp(begin.receiptShadow, end.receiptShadow, t)!,
+  );
 
   /// Standard Light Palette Foundation
   factory ShopTrackPalette.light({

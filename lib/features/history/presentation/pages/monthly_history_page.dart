@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import 'package:shoptrack/core/calendar/calendar_date_dialog.dart';
@@ -70,7 +71,7 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
   }
 
   Future<void> _deleteSession(ShoppingSession session) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showShopDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('Delete this date?'),
@@ -189,7 +190,7 @@ class _MonthlyHistoryPageState extends State<MonthlyHistoryPage> {
 
     if (selectedDate == null || !mounted) return;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showShopDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('Add Shopping Date'),

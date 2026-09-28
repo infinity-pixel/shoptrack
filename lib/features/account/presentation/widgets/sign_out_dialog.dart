@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import '../../../../services/auth_service.dart';
 
 Future<void> confirmSignOut(BuildContext context, AuthService auth) async {
   bool busy = false;
   String? error;
-  await showDialog<void>(
+  await showShopDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (context) => StatefulBuilder(

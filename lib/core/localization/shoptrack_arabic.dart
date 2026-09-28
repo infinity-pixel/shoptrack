@@ -2,6 +2,51 @@ import 'shoptrack_currency_names.dart';
 
 /// Modern Standard Arabic interface copy. User-authored names are not translated.
 const Map<String, String> shopArabicTranslations = {
+  'Create dates and lists': 'إنشاء تواريخ وقوائم',
+  'Use New Date in History to plan a shopping day.':
+      'استخدم تاريخ جديد في السجل للتخطيط ليوم تسوق.',
+  'On Lists, use the add-list control to create a separate named list.':
+      'في القوائم، استخدم زر إضافة قائمة لإنشاء قائمة مستقلة باسم تختاره.',
+  'Move, delete, and undo': 'النقل والحذف والتراجع',
+  'Long-press an item to select it for moving or deleting.':
+      'اضغط مطولًا على المنتج لتحديده ونقله أو حذفه.',
+  'Swipe an item to delete it. Tap Undo promptly if that was a mistake.':
+      'اسحب المنتج لحذفه، واضغط على تراجع سريعًا إذا حدث ذلك بالخطأ.',
+  'Personalize ShopTrack': 'تخصيص شوب تراك',
+  'In Profile, choose your appearance, language, default currency, and number format.':
+      'من الملف الشخصي، اختر المظهر واللغة والعملة الافتراضية وتنسيق الأرقام.',
+  'Choose Gregorian or Hijri calendar labels; your saved shopping dates remain unchanged.':
+      'اختر عرض التاريخ الميلادي أو الهجري؛ لن تتغير تواريخ التسوق المحفوظة.',
+  'Help & FAQ': 'المساعدة والأسئلة الشائعة',
+  'A quick guide to everyday shopping in ShopTrack.':
+      'دليل سريع للتسوق اليومي في شوب تراك.',
+  'Add and price an item': 'إضافة منتج وتحديد سعره',
+  'Open a shopping date and tap Add Item.':
+      'افتح تاريخ التسوق واضغط على إضافة منتج.',
+  'Enter a name and quantity. Use More Options for currency and total or per-unit price.':
+      'أدخل الاسم والكمية. افتح المزيد من الخيارات لاختيار العملة والسعر الإجمالي أو سعر الوحدة.',
+  'Tap Save. Different currencies stay separate; ShopTrack does not convert them.':
+      'اضغط حفظ. تبقى المبالغ بعملاتها المختلفة منفصلة؛ لا يحوّل شوب تراك العملات.',
+  'Mark purchased and reorder': 'تحديد المشتريات وإعادة الترتيب',
+  'Tap the checkbox on an item to mark it purchased.':
+      'اضغط مربع الاختيار بجانب المنتج لتحديده كمُشترى.',
+  'Drag its handle to reorder it within the same currency section.':
+      'اسحب مقبض المنتج لإعادة ترتيبه داخل قسم العملة نفسه.',
+  'Find and share a list': 'العثور على قائمة ومشاركتها',
+  'Use History to open shopping dates or search by status, no price, or date range.':
+      'افتح السجل لعرض تواريخ التسوق أو ابحث حسب الحالة أو غياب السعر أو النطاق الزمني.',
+  'On Lists, open the Add Item arrow and choose Share Your List.':
+      'في القوائم، افتح السهم بجانب إضافة منتج واختر مشاركة قائمتك.',
+  'Offline and cloud sync': 'العمل دون اتصال والمزامنة السحابية',
+  'Your shopping records remain available on this device while offline.':
+      'تبقى سجلات التسوق متاحة على هذا الجهاز دون اتصال بالإنترنت.',
+  'If signed in, pending changes sync when the connection returns. Check Cloud Sync for their status.':
+      'إذا سجلت الدخول، تُزامن التغييرات المعلقة عند عودة الاتصال. تحقق من حالتها في المزامنة السحابية.',
+  'Backup and restore': 'النسخ الاحتياطي والاستعادة',
+  'In Profile, open Cloud Sync, then Advanced Backup & Restore.':
+      'من الملف الشخصي، افتح المزامنة السحابية ثم النسخ الاحتياطي والاستعادة المتقدمان.',
+  'Export a file or Drive backup before restoring. Restore can replace current data.':
+      'صدّر نسخة احتياطية إلى ملف أو إلى درايف قبل الاستعادة؛ فقد تستبدل الاستعادة بياناتك الحالية.',
   'Chinese': '简体中文',
   'Default currency changed to {currency}. Existing items were not changed.':
       'تم تغيير العملة الافتراضية إلى {currency}. لم تتغير عملات المنتجات السابقة.',

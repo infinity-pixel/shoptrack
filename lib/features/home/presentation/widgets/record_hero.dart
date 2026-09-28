@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 import 'package:shoptrack/core/calendar/shop_calendar.dart';
+import '../../../../core/widgets/shoptrack_hero_artwork.dart';
 import '../../../../core/theme/theme_presets.dart';
 
 class RecordHero extends StatelessWidget {
@@ -29,16 +30,13 @@ class RecordHero extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (tokens.headerArtworkPath != null)
-              Image.asset(
-                tokens.headerArtworkPath!,
-                fit: BoxFit.cover,
-                matchTextDirection: true,
-                // Keep Midnight's moon and right-hand branches in short heroes.
-                alignment: darkIcons
-                    ? Alignment.center
-                    : const Alignment(0, -0.5),
-              ),
+            ShopTrackHeroArtwork(
+              path: tokens.headerArtworkPath,
+              // Keep Midnight's moon and right-hand branches in short heroes.
+              alignment: darkIcons
+                  ? Alignment.center
+                  : const Alignment(0, -0.5),
+            ),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

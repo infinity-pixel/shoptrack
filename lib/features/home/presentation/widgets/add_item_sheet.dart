@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import '../../../../core/theme/amount_typography.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
@@ -51,6 +52,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
   late final TextEditingController _quantityController;
   late final TextEditingController _priceController;
   late final TextEditingController _notesController;
+  late final FocusNode _nameFocusNode;
   late final FocusNode _quantityFocusNode;
   late final FocusNode _unitFocusNode;
   final GlobalKey _unitPickerKey = GlobalKey();
@@ -68,6 +70,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
   bool _isUnitMenuOpen = false;
   bool _openUnitMenuOnFocus = false;
   String? _inputLanguage;
+  Animation<double>? _entryAnimation;
   late List<FrequentItemSuggestion> _visibleSuggestions;
 
   bool get _isEditing => widget.initialItem != null;
@@ -134,6 +137,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
           : '',
     );
     _notesController = TextEditingController(text: item?.notes);
+    _nameFocusNode = FocusNode();
     _quantityFocusNode = FocusNode();
     _unitFocusNode = FocusNode();
     _unitFocusNode.addListener(_handleUnitFocus);
@@ -163,14 +167,45 @@ class _AddItemSheetState extends State<AddItemSheet> {
 
     // Initial calculation if editing
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateCalculation());
+    if (!_isEditing) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _focusAfterSheetEntrance(),
+      );
+    }
+  }
+
+  void _focusAfterSheetEntrance() {
+    if (!mounted) return;
+    final route = ModalRoute.of(context);
+    if (route is! ModalBottomSheetRoute) return;
+    final animation = route.animation;
+    if (animation == null ||
+        animation.status == AnimationStatus.completed ||
+        MediaQuery.disableAnimationsOf(context)) {
+      if (route.isCurrent) _nameFocusNode.requestFocus();
+      return;
+    }
+    _entryAnimation = animation;
+    animation.addStatusListener(_onSheetAnimationStatus);
+  }
+
+  void _onSheetAnimationStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _entryAnimation?.removeStatusListener(_onSheetAnimationStatus);
+    _entryAnimation = null;
+    if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+      _nameFocusNode.requestFocus();
+    }
   }
 
   @override
   void dispose() {
+    _entryAnimation?.removeStatusListener(_onSheetAnimationStatus);
     _nameController.dispose();
     _quantityController.dispose();
     _priceController.dispose();
     _notesController.dispose();
+    _nameFocusNode.dispose();
     _quantityFocusNode.dispose();
     _unitFocusNode.removeListener(_handleUnitFocus);
     _unitFocusNode.dispose();
@@ -416,7 +451,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
   }
 
   Future<void> _onDelete() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showShopDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('Delete item?'),
@@ -560,7 +595,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
               const SizedBox(height: 16),
               TextField(
                 controller: _nameController,
-                autofocus: !_isEditing,
+                focusNode: _nameFocusNode,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(

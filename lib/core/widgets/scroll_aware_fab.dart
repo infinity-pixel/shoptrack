@@ -3,6 +3,16 @@ import 'package:shoptrack/core/localization/shoptrack_text.dart';
 
 import '../theme/theme_presets.dart';
 
+TextStyle? _fabLabelStyle(BuildContext context, Color foreground) =>
+    Theme.of(context).textTheme.labelLarge?.copyWith(
+      color: foreground,
+      fontFamily: 'LibreBaskerville',
+      fontFamilyFallback: const ['serif'],
+      fontWeight: FontWeight.w700,
+      fontSize: 16,
+      height: 1.1,
+    );
+
 /// Requires a short, deliberate scroll before changing FAB width.
 class FabScrollIntent {
   FabScrollIntent({this.threshold = 96});
@@ -134,11 +144,10 @@ class _DelayedExtendedFabState extends State<DelayedExtendedFab>
                                   padding: const EdgeInsetsDirectional.only(
                                     end: 14,
                                   ),
-                                  child: Text(
+                                  child: ShopText(
                                     widget.label,
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      color: foreground,
-                                    ),
+                                    maxLines: 1,
+                                    style: _fabLabelStyle(context, foreground),
                                   ),
                                 ),
                               ),
@@ -421,8 +430,10 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                                             child: ShopText(
                                               'Add Item',
                                               maxLines: 1,
-                                              style: theme.textTheme.labelLarge
-                                                  ?.copyWith(color: foreground),
+                                              style: _fabLabelStyle(
+                                                context,
+                                                foreground,
+                                              ),
                                             ),
                                           ),
                                         ),

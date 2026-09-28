@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 
 import '../currency/currency_catalog.dart';
@@ -10,7 +11,7 @@ Future<String?> showCurrencyPickerDialog(
   Iterable<String> recentCurrencyCodes = const [],
   String title = 'Choose Currency',
 }) {
-  return showDialog<String>(
+  return showShopDialog<String>(
     context: context,
     builder: (context) => CurrencyPickerDialog(
       selectedCurrencyCode: selectedCurrencyCode,

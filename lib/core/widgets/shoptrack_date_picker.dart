@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import '../calendar/shop_calendar.dart';
 import 'date_parts_field.dart';
@@ -31,7 +32,7 @@ class ShopTrackDatePicker extends StatefulWidget {
     String confirmText = 'OK',
   }) {
     final calendar = ShopCalendarScope.of(context);
-    return showDialog<DateTime>(
+    return showShopDialog<DateTime>(
       context: context,
       builder: (context) => ShopCalendarScope(
         calendar: calendar,

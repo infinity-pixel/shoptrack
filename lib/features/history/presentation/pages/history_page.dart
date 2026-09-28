@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import 'package:shoptrack/core/calendar/calendar_date_dialog.dart';
@@ -347,7 +348,7 @@ class _HistoryPageState extends State<HistoryPage>
 
   Future<void> _deleteSession(ShoppingSession session) async {
     final palette = ShopTrackThemeTokens.of(context).palette;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showShopDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('Delete this date?'),
@@ -429,7 +430,7 @@ class _HistoryPageState extends State<HistoryPage>
     final tokens = ShopTrackThemeTokens.of(context);
     final palette = tokens.palette;
     final calendarAccent = tokens.calendarAccent ?? palette.planned;
-    final result = await showModalBottomSheet<String>(
+    final result = await showShopBottomSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
@@ -479,7 +480,7 @@ class _HistoryPageState extends State<HistoryPage>
     );
     if (selectedDate == null || !mounted) return;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showShopDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('Create shopping date?'),

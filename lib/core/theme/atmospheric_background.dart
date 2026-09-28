@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/shoptrack_motion.dart';
 import 'theme_presets.dart';
 
 /// A widget that renders a subtle atmospheric background based on the current theme.
@@ -16,6 +17,9 @@ class AtmosphericBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : ShopTrackMotion.sheet;
     Alignment directionAware(Alignment alignment) =>
         isRtl ? Alignment(-alignment.x, alignment.y) : alignment;
     // Keep the child in the same tree position when switching brightness.
@@ -23,14 +27,20 @@ class AtmosphericBackground extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: ColoredBox(
+          child: AnimatedContainer(
+            duration: duration,
+            curve: Curves.easeInOutCubic,
             color: config.baseColor ?? Theme.of(context).colorScheme.surface,
           ),
         ),
         Positioned.fill(
-          child: Opacity(
+          child: AnimatedOpacity(
+            duration: duration,
+            curve: Curves.easeInOutCubic,
             opacity: dark ? 1 : config.opacity,
-            child: Container(
+            child: AnimatedContainer(
+              duration: duration,
+              curve: Curves.easeInOutCubic,
               decoration: BoxDecoration(
                 gradient: dark
                     ? darkEdgeGradient(context)

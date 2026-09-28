@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import '../../../../app.dart';
@@ -128,7 +129,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
   }
 
   Future<bool?> _showRestoreConfirmation() {
-    return showDialog<bool>(
+    return showShopDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const ShopText('Restore Backup?'),

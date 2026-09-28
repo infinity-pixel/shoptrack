@@ -137,6 +137,13 @@ class _ShopTrackAppState extends State<ShopTrackApp> {
         return MaterialApp(
           key: ValueKey(syncService?.store?.scope ?? 'local'),
           title: 'ShopTrack',
+          themeAnimationStyle:
+              MediaQuery.maybeOf(context)?.disableAnimations == true
+              ? AnimationStyle.noAnimation
+              : const AnimationStyle(
+                  curve: Curves.easeInOutCubic,
+                  duration: Duration(milliseconds: 360),
+                ),
           locale: locale,
           supportedLocales: const [
             Locale('en', 'US'),

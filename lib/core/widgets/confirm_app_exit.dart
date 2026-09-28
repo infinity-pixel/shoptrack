@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:flutter/services.dart';
 
 import '../localization/shoptrack_text.dart';
@@ -10,7 +11,7 @@ Future<void> confirmAppExit(BuildContext context) async {
     FocusManager.instance.primaryFocus?.unfocus();
     return;
   }
-  final close = await showDialog<bool>(
+  final close = await showShopDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       title: const ShopText('Close ShopTrack?'),

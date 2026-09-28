@@ -1,6 +1,18 @@
 # ShopTrack — Codex Cloud and Local Development Handover
 
-Last reviewed against the local checkout: **27 September 2026**.
+Last reviewed against the local checkout: **28 September 2026**.
+
+Sprint 19.5.2 adds a shared reduced-motion-aware rhythm for page routes,
+dialogs, and sheets; animated tab arrival; theme color, background, and header
+scenery transitions; and Add Item autofocus only after its sheet completes.
+Both FAB labels use a bold display face. History search separates status and
+detail filters, calendar badge days are centered, and Profile has a localized
+step-by-step Help & FAQ in English, Bangla, Arabic, and Simplified Chinese.
+Voice input and OCR remain on hold. No item data, sync, or billing changes.
+The full Flutter test suite passed with 405 tests (15 optional previews skipped)
+and static analysis was clean. Physical-device acceptance is still needed for
+perceived motion smoothness, keyboard handoff, theme changes, and reduced-motion
+behavior, especially on a smaller Android phone.
 
 Sprint 19.5.1 refines the four-language presentation: localized short calendar
 month labels (Arabic/long names directly above the rings), bare Chinese day
@@ -115,7 +127,7 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 19.5 — Simplified Chinese interface**.
+- Current local milestone: **Sprint 19.5.2 — motion, FAB, and FAQ refinements**.
 - Check `git log` for the latest commit and `git status` for any uncommitted work.
 
 Sprint 19 foundation work includes:

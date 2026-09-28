@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/services.dart';
 import '../calendar/shop_calendar.dart';
@@ -41,7 +42,7 @@ Future<void> showShoppingListShareSheet(
     return;
   }
 
-  final request = await showModalBottomSheet<_ShareRequest>(
+  final request = await showShopBottomSheet<_ShareRequest>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,

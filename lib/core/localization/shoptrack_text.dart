@@ -170,6 +170,51 @@ String shopListName(
     : name;
 
 const Map<String, String> _bangla = {
+  'Create dates and lists': 'দিন ও তালিকা তৈরি করুন',
+  'Use New Date in History to plan a shopping day.':
+      'কেনাকাটার দিন ঠিক করতে ইতিহাসে নতুন তারিখ বাছুন।',
+  'On Lists, use the add-list control to create a separate named list.':
+      'তালিকা পাতায় তালিকা যোগ করার বোতাম দিয়ে আলাদা নামের তালিকা তৈরি করুন।',
+  'Move, delete, and undo': 'সরানো, মুছা ও ফিরিয়ে আনা',
+  'Long-press an item to select it for moving or deleting.':
+      'পণ্য সরাতে বা মুছতে সেটি চেপে ধরে নির্বাচন করুন।',
+  'Swipe an item to delete it. Tap Undo promptly if that was a mistake.':
+      'পণ্য মুছতে পাশে সোয়াইপ করুন। ভুল হলে দ্রুত ফিরিয়ে আনুন চাপুন।',
+  'Personalize ShopTrack': 'শপট্র্যাক নিজের মতো সাজান',
+  'In Profile, choose your appearance, language, default currency, and number format.':
+      'প্রোফাইলে রূপ, ভাষা, ডিফল্ট মুদ্রা ও সংখ্যার ধরন বেছে নিন।',
+  'Choose Gregorian or Hijri calendar labels; your saved shopping dates remain unchanged.':
+      'গ্রেগরীয় বা হিজরি তারিখের প্রদর্শন বাছুন; সংরক্ষিত কেনাকাটার দিন বদলাবে না।',
+  'Help & FAQ': 'সহায়তা ও সাধারণ প্রশ্ন',
+  'A quick guide to everyday shopping in ShopTrack.':
+      'শপট্র্যাকে দৈনন্দিন কেনাকাটার সংক্ষিপ্ত নির্দেশিকা।',
+  'Add and price an item': 'পণ্য যোগ ও দাম লিখুন',
+  'Open a shopping date and tap Add Item.':
+      'কেনাকাটার একটি দিন খুলে পণ্য যোগ করুন চাপুন।',
+  'Enter a name and quantity. Use More Options for currency and total or per-unit price.':
+      'নাম ও পরিমাণ লিখুন। মুদ্রা এবং মোট বা প্রতি এককের দাম দিতে আরও বিকল্প খুলুন।',
+  'Tap Save. Different currencies stay separate; ShopTrack does not convert them.':
+      'সংরক্ষণ চাপুন। আলাদা মুদ্রার দাম আলাদাই থাকে; শপট্র্যাক মুদ্রা রূপান্তর করে না।',
+  'Mark purchased and reorder': 'কেনা হয়েছে চিহ্নিত করুন ও সাজান',
+  'Tap the checkbox on an item to mark it purchased.':
+      'পণ্য কেনা হলে তার পাশের চেকবক্সে চাপুন।',
+  'Drag its handle to reorder it within the same currency section.':
+      'একই মুদ্রার অংশে পণ্য সাজাতে তার ড্র্যাগ হ্যান্ডেল টানুন।',
+  'Find and share a list': 'তালিকা খুঁজুন ও শেয়ার করুন',
+  'Use History to open shopping dates or search by status, no price, or date range.':
+      'আগের দিন খুলতে ইতিহাস দেখুন; অবস্থা, দাম নেই বা তারিখ দিয়ে খুঁজুন।',
+  'On Lists, open the Add Item arrow and choose Share Your List.':
+      'তালিকা পাতায় পণ্য যোগ করার পাশের তীর খুলে তালিকা শেয়ার করুন বাছুন।',
+  'Offline and cloud sync': 'অফলাইন ও ক্লাউড সিঙ্ক',
+  'Your shopping records remain available on this device while offline.':
+      'ইন্টারনেট না থাকলেও এই ডিভাইসে কেনাকাটার রেকর্ড দেখা যায়।',
+  'If signed in, pending changes sync when the connection returns. Check Cloud Sync for their status.':
+      'সাইন ইন করা থাকলে সংযোগ ফিরলে বাকি পরিবর্তন সিঙ্ক হয়। অবস্থা দেখতে ক্লাউড সিঙ্ক খুলুন।',
+  'Backup and restore': 'ব্যাকআপ ও পুনরুদ্ধার',
+  'In Profile, open Cloud Sync, then Advanced Backup & Restore.':
+      'প্রোফাইলে ক্লাউড সিঙ্ক খুলে উন্নত ব্যাকআপ ও পুনরুদ্ধার বাছুন।',
+  'Export a file or Drive backup before restoring. Restore can replace current data.':
+      'পুনরুদ্ধারের আগে ফাইল বা ড্রাইভে ব্যাকআপ রাখুন। পুনরুদ্ধারে বর্তমান তথ্য বদলে যেতে পারে।',
   'No Price': 'দাম দেওয়া হয়নি',
   'Close ShopTrack?': 'শপট্র্যাক বন্ধ করবেন?',
   'Do you want to close the app?': 'আপনি কি অ্যাপটি বন্ধ করতে চান?',

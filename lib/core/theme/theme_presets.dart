@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../models/app_settings.dart';
 import 'design_system.dart';
 import 'amount_typography.dart';
+import '../widgets/shoptrack_motion.dart';
 
 /// Configuration for the atmospheric background of a theme.
 class AtmosphericConfig {
@@ -47,6 +49,15 @@ class ThemeDefinition {
 
   ThemeData toThemeData() {
     return ThemeData(
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ShopTrackPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: ShopTrackPageTransitionsBuilder(),
+          TargetPlatform.linux: ShopTrackPageTransitionsBuilder(),
+        },
+      ),
       fontFamilyFallback: shopCurrencyFontFallbacks,
       useMaterial3: true,
       brightness: brightness,
@@ -543,6 +554,15 @@ class ShopTrackThemeTokens extends ThemeExtension<ShopTrackThemeTokens> {
   );
 
   @override
-  ShopTrackThemeTokens lerp(ShopTrackThemeTokens? other, double t) =>
-      t < 0.5 ? this : (other ?? this);
+  ShopTrackThemeTokens lerp(ShopTrackThemeTokens? other, double t) {
+    if (other == null) return this;
+    return ShopTrackThemeTokens(
+      palette: ShopTrackPalette.lerp(palette, other.palette, t),
+      headerArtworkPath: t < .5 ? headerArtworkPath : other.headerArtworkPath,
+      navigationIconGradient: t < .5
+          ? navigationIconGradient
+          : other.navigationIconGradient,
+      calendarAccent: Color.lerp(calendarAccent, other.calendarAccent, t),
+    );
+  }
 }

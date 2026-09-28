@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:flutter/material.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/core/calendar/shop_calendar.dart';
 import '../../../../core/data/shopping_repository.dart';
 import '../../../../core/theme/theme_presets.dart';
@@ -116,7 +117,7 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
 
   Future<void> _pickRange() async {
     FocusScope.of(context).unfocus();
-    final selection = await showModalBottomSheet<DateRangeSelection>(
+    final selection = await showShopBottomSheet<DateRangeSelection>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -236,6 +237,13 @@ class _HistorySearchPageState extends State<HistorySearchPage> {
                       },
                     ),
                   ),
+                Container(
+                  key: const ValueKey('history_filter_group_divider'),
+                  width: 1,
+                  height: 28,
+                  margin: const EdgeInsetsDirectional.only(start: 4, end: 12),
+                  color: p.border,
+                ),
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 8),
                   child: FilterChip(

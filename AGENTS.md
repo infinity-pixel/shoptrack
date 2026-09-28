@@ -84,6 +84,12 @@ that adds friction needs a clear user benefit.
   collapsed. Both transitions animate their labels. Scroll intent updates only
   the FAB subtree, not the entire page, and requires sustained movement.
   History uses a calendar-plus `New Date` action.
+- Shared page, dialog, and sheet transitions follow one motion rhythm and honor
+  reduced-motion settings. Tabs ease in without discarding their state, theme
+  colors and header scenery transition smoothly, and the Add Item keyboard waits
+  until the sheet finishes entering. Both FAB labels use a bold display face.
+  Profile includes a localized step-by-step Help & FAQ. Voice input and OCR are
+  intentionally deferred.
 - Profile offers English, Bangla, Modern Standard Arabic, and Simplified Chinese
   (简体中文) interface languages. Chinese uses LTR layout, unmirrored scenery,
   ordinary 0–9 digits, localized currency names, and year/month/day date entry.
