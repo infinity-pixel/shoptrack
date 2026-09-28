@@ -86,8 +86,9 @@ that adds friction needs a clear user benefit.
   History uses a calendar-plus `New Date` action.
 - Shared page, dialog, and sheet transitions follow one motion rhythm and honor
   reduced-motion settings. Tabs ease in without discarding their state, theme
-  colors and header scenery transition smoothly, and the Add Item keyboard waits
-  until the sheet finishes entering. Both FAB labels use a bold display face.
+  colors and header scenery transition smoothly, and automatic editor keyboard
+  focus waits until its modal finishes entering plus a brief pause. Both FAB
+  labels use a bold display face.
   Profile includes a localized step-by-step Help & FAQ. Voice input and OCR are
   intentionally deferred.
 - Profile offers English, Bangla, Modern Standard Arabic, and Simplified Chinese
@@ -104,7 +105,8 @@ that adds friction needs a clear user benefit.
   fallback; receipt totals retain LibreBaskerville. The currency editor keeps
   only the ISO code and dropdown arrow, sized to their actual content. Calendar badges
   use localized short month labels when available, with Arabic and longer
-  names directly above the rings; their day is always a bare localized number.
+  names directly above the rings; their day is always a bare localized number
+  centered in the face below its month band.
   Hero fades resolve their physical direction on every language change. Today
   headings have a subtle glow (a static highlight with reduced motion).
   Arabic uses RTL layout, mirrored decorative scenery, and Arabic-Indic interface

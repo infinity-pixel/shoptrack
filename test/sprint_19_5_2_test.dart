@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoptrack/core/calendar/shop_calendar.dart';
+import 'package:shoptrack/core/calendar/calendar_date_dialog.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
 import 'package:shoptrack/core/theme/theme_presets.dart';
 import 'package:shoptrack/core/widgets/scroll_aware_fab.dart';
@@ -17,7 +18,10 @@ import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 import 'package:shoptrack/features/account/presentation/pages/help_faq_page.dart';
 import 'package:shoptrack/features/history/presentation/pages/history_search_page.dart';
 import 'package:shoptrack/features/history/presentation/widgets/history_date_badge.dart';
+import 'package:shoptrack/features/history/presentation/widgets/session_card.dart';
 import 'package:shoptrack/features/home/presentation/widgets/add_item_sheet.dart';
+import 'package:shoptrack/features/home/presentation/widgets/shopping_list_name_dialog.dart';
+import 'package:shoptrack/models/shopping_session.dart';
 
 Widget _app(
   Widget child, {
@@ -60,7 +64,7 @@ void main() {
   });
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('add-item keyboard waits until the sheet has entered', (
+  testWidgets('add-item keyboard waits until after the sheet has entered', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -87,7 +91,79 @@ void main() {
     expect(tester.widget<TextField>(name).focusNode!.hasFocus, isFalse);
 
     await tester.pump(ShopTrackMotion.sheet + const Duration(milliseconds: 20));
+    expect(tester.widget<TextField>(name).focusNode!.hasFocus, isFalse);
+    await tester.pump(
+      ShopTrackMotion.focusPause + const Duration(milliseconds: 20),
+    );
     expect(tester.widget<TextField>(name).focusNode!.hasFocus, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('named-list keyboard waits until after its dialog has entered', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showShopDialog<String>(
+                context: context,
+                builder: (_) => const ShoppingListNameDialog(
+                  title: 'New List',
+                  actionLabel: 'Save',
+                ),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    final name = find.byType(TextField);
+    expect(tester.widget<TextField>(name).focusNode!.hasFocus, isFalse);
+    await tester.pump(
+      ShopTrackMotion.dialog + const Duration(milliseconds: 20),
+    );
+    expect(tester.widget<TextField>(name).focusNode!.hasFocus, isFalse);
+    await tester.pump(
+      ShopTrackMotion.focusPause + const Duration(milliseconds: 20),
+    );
+    expect(tester.widget<TextField>(name).focusNode!.hasFocus, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Gregorian calendar uses the shared dialog entrance', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showPreferredDatePicker(
+                context: context,
+                initialDate: DateTime(2026, 9, 27),
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    final calendar = find.byType(DatePickerDialog);
+    expect(calendar, findsOneWidget);
+    final route = ModalRoute.of(tester.element(calendar))!;
+    await tester.pump(ShopTrackMotion.dialog ~/ 2);
+    expect(route.animation!.status, isNot(AnimationStatus.completed));
+    await tester.pump(ShopTrackMotion.dialog);
+    expect(route.animation!.status, AnimationStatus.completed);
     expect(tester.takeException(), isNull);
   });
 
@@ -168,17 +244,47 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('calendar day is optically centered in its face', (tester) async {
+  testWidgets('calendar day is centered below its month band', (tester) async {
     await tester.pumpWidget(
       _app(Scaffold(body: HistoryDateBadge(date: DateTime(2026, 9, 27)))),
     );
     await tester.pumpAndSettle();
-    final face = tester.getCenter(
+    final face = tester.getRect(
       find.byKey(const ValueKey('calendar-day-face')),
     );
+    final body = tester.getCenter(
+      find.byKey(const ValueKey('calendar-day-body')),
+    );
     final day = tester.getCenter(find.text('27'));
-    expect((face.dx - day.dx).abs(), lessThan(1));
-    expect((face.dy - day.dy).abs(), lessThan(1));
+    expect((body.dx - day.dx).abs(), lessThan(1));
+    expect((body.dy - day.dy).abs(), lessThan(1));
+    expect(body.dy, closeTo(face.top + 10 + (face.height - 10) / 2, 1));
+    expect(day.dy, greaterThan(face.center.dy));
+  });
+
+  testWidgets('History options menu follows the shared motion rhythm', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        Scaffold(
+          body: SessionCard(
+            session: ShoppingSession(
+              id: 'menu-motion',
+              date: DateTime(2026, 9, 27),
+              items: const [],
+            ),
+            onTap: () {},
+            onEdit: () {},
+          ),
+        ),
+      ),
+    );
+    final menu = tester.widget<PopupMenuButton<String>>(
+      find.byType(PopupMenuButton<String>),
+    );
+    expect(menu.popUpAnimationStyle?.duration, ShopTrackMotion.menu);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('History filters separate status from detail filters', (

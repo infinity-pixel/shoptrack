@@ -40,8 +40,20 @@ class ShopTrackMotion {
   const ShopTrackMotion();
 
   static const tab = Duration(milliseconds: 220);
-  static const dialog = Duration(milliseconds: 240);
-  static const sheet = Duration(milliseconds: 320);
+  static const dialog = Duration(milliseconds: 300);
+  static const sheet = Duration(milliseconds: 390);
+  static const menu = Duration(milliseconds: 320);
+  static const focusPause = Duration(milliseconds: 100);
+
+  static AnimationStyle menuStyle(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context)
+      ? AnimationStyle.noAnimation
+      : const AnimationStyle(
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+          duration: menu,
+          reverseDuration: Duration(milliseconds: 220),
+        );
 
   static AnimationStyle dialogStyle(BuildContext context) =>
       MediaQuery.disableAnimationsOf(context)
@@ -50,7 +62,7 @@ class ShopTrackMotion {
           curve: Curves.easeOutCubic,
           reverseCurve: Curves.easeInCubic,
           duration: dialog,
-          reverseDuration: Duration(milliseconds: 180),
+          reverseDuration: Duration(milliseconds: 220),
         );
 
   static AnimationStyle sheetStyle(BuildContext context) =>
@@ -60,7 +72,7 @@ class ShopTrackMotion {
           curve: Curves.easeOutCubic,
           reverseCurve: Curves.easeInCubic,
           duration: sheet,
-          reverseDuration: Duration(milliseconds: 240),
+          reverseDuration: Duration(milliseconds: 280),
         );
 
   final Duration short = const Duration(milliseconds: 200);

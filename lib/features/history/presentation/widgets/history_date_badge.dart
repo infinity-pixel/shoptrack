@@ -77,7 +77,9 @@ class HistoryDateBadge extends StatelessWidget {
                           ),
                         ),
                         Positioned.fill(
+                          top: 10,
                           child: Center(
+                            key: const ValueKey('calendar-day-body'),
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(

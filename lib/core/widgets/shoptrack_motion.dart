@@ -1,8 +1,68 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../theme/design_system.dart';
 
 export '../theme/design_system.dart' show ShopTrackMotion;
+
+/// Gives an editor's keyboard a moment after its modal finishes entering.
+/// The owning State must attach after its first frame and dispose this helper.
+class ShopTrackEntranceFocus {
+  ModalRoute<dynamic>? _route;
+  Animation<double>? _animation;
+  FocusNode? _node;
+  Timer? _timer;
+  bool _disposed = false;
+
+  void attach(BuildContext context, FocusNode node) {
+    if (_disposed) return;
+    final route = ModalRoute.of(context);
+    if (route == null) return;
+    _route = route;
+    _node = node;
+    final animation = route.animation;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _requestFocus();
+    } else if (animation == null ||
+        animation.status == AnimationStatus.completed) {
+      _scheduleFocus();
+    } else {
+      _animation = animation;
+      animation.addStatusListener(_onAnimationStatus);
+    }
+  }
+
+  void _onAnimationStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _animation?.removeStatusListener(_onAnimationStatus);
+    _animation = null;
+    _scheduleFocus();
+  }
+
+  void _scheduleFocus() {
+    _timer?.cancel();
+    _timer = Timer(ShopTrackMotion.focusPause, _requestFocus);
+  }
+
+  void _requestFocus() {
+    final activeFocus = FocusManager.instance.primaryFocus;
+    if (activeFocus != _node && activeFocus?.context?.widget is EditableText) {
+      return;
+    }
+    if (!_disposed &&
+        _route?.isCurrent == true &&
+        _node?.canRequestFocus == true) {
+      _node?.requestFocus();
+    }
+  }
+
+  void dispose() {
+    _disposed = true;
+    _animation?.removeStatusListener(_onAnimationStatus);
+    _timer?.cancel();
+  }
+}
 
 /// Keeps iOS's native back gesture while making Android page arrivals coherent.
 class ShopTrackPageTransitionsBuilder extends PageTransitionsBuilder {

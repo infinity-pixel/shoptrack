@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shoptrack/core/localization/shoptrack_text.dart';
+import 'package:shoptrack/core/widgets/shoptrack_motion.dart';
 
 /// Owns the list-name field for the full lifetime of the dialog route.
 ///
@@ -25,15 +26,22 @@ class ShoppingListNameDialog extends StatefulWidget {
 
 class _ShoppingListNameDialogState extends State<ShoppingListNameDialog> {
   late final TextEditingController _controller;
+  final FocusNode _nameFocusNode = FocusNode();
+  final ShopTrackEntranceFocus _entranceFocus = ShopTrackEntranceFocus();
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialName);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _entranceFocus.attach(context, _nameFocusNode);
+    });
   }
 
   @override
   void dispose() {
+    _entranceFocus.dispose();
+    _nameFocusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -48,7 +56,7 @@ class _ShoppingListNameDialogState extends State<ShoppingListNameDialog> {
       title: ShopText(widget.title),
       content: TextField(
         controller: _controller,
-        autofocus: true,
+        focusNode: _nameFocusNode,
         textCapitalization: TextCapitalization.words,
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(

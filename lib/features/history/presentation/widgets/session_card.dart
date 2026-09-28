@@ -4,6 +4,7 @@ import 'package:shoptrack/core/calendar/shop_calendar.dart';
 
 import '../../../../core/currency/currency_catalog.dart';
 import '../../../../core/theme/theme_presets.dart';
+import '../../../../core/theme/design_system.dart';
 import '../../../../core/widgets/compact_amount_text.dart';
 import '../../../../models/app_settings.dart';
 import '../../../../models/shopping_session.dart';
@@ -174,6 +175,7 @@ class SessionCard extends StatelessWidget {
     final palette = tokens.palette;
     final calendarAccent = tokens.calendarAccent ?? palette.onSurface;
     return PopupMenuButton<String>(
+      popUpAnimationStyle: ShopTrackMotion.menuStyle(context),
       tooltip: shopTr(context, 'Date options'),
       onSelected: (value) {
         if (value == 'share') onShare?.call();

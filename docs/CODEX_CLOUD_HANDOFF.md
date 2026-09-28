@@ -1,6 +1,19 @@
 # ShopTrack — Codex Cloud and Local Development Handover
 
-Last reviewed against the local checkout: **28 September 2026**.
+Last reviewed against the local checkout: **29 September 2026**.
+
+Sprint 19.5.4 slightly lengthens the shared dialog and bottom-sheet entrance,
+including the Gregorian date picker, and eases the History options menu while
+preserving reduced-motion behavior.
+Automatic keyboard focus for Add Item and named-list dialogs occurs after the
+modal completes plus a short pause; user-initiated focus remains immediate.
+History badge numerals center in the lower face below the month band, not in
+the entire badge. This is a presentation-only change with no date, item, or
+sync-data migration. Physical-device motion and keyboard acceptance still
+remain separate from automated verification. Static analysis is clean; the
+full Flutter suite passed 408 tests (15 optional previews skipped). The
+real-font multilingual badge preview passed and English/Arabic renders were
+visually inspected.
 
 Sprint 19.5.2 adds a shared reduced-motion-aware rhythm for page routes,
 dialogs, and sheets; animated tab arrival; theme color, background, and header
@@ -127,7 +140,7 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 19.5.2 — motion, FAB, and FAQ refinements**.
+- Current local milestone: **Sprint 19.5.4 — modal pacing and date-badge alignment**.
 - Check `git log` for the latest commit and `git status` for any uncommitted work.
 
 Sprint 19 foundation work includes:

@@ -70,7 +70,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
   bool _isUnitMenuOpen = false;
   bool _openUnitMenuOnFocus = false;
   String? _inputLanguage;
-  Animation<double>? _entryAnimation;
+  final ShopTrackEntranceFocus _entranceFocus = ShopTrackEntranceFocus();
   late List<FrequentItemSuggestion> _visibleSuggestions;
 
   bool get _isEditing => widget.initialItem != null;
@@ -168,39 +168,15 @@ class _AddItemSheetState extends State<AddItemSheet> {
     // Initial calculation if editing
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateCalculation());
     if (!_isEditing) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _focusAfterSheetEntrance(),
-      );
-    }
-  }
-
-  void _focusAfterSheetEntrance() {
-    if (!mounted) return;
-    final route = ModalRoute.of(context);
-    if (route is! ModalBottomSheetRoute) return;
-    final animation = route.animation;
-    if (animation == null ||
-        animation.status == AnimationStatus.completed ||
-        MediaQuery.disableAnimationsOf(context)) {
-      if (route.isCurrent) _nameFocusNode.requestFocus();
-      return;
-    }
-    _entryAnimation = animation;
-    animation.addStatusListener(_onSheetAnimationStatus);
-  }
-
-  void _onSheetAnimationStatus(AnimationStatus status) {
-    if (status != AnimationStatus.completed) return;
-    _entryAnimation?.removeStatusListener(_onSheetAnimationStatus);
-    _entryAnimation = null;
-    if (mounted && ModalRoute.of(context)?.isCurrent == true) {
-      _nameFocusNode.requestFocus();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _entranceFocus.attach(context, _nameFocusNode);
+      });
     }
   }
 
   @override
   void dispose() {
-    _entryAnimation?.removeStatusListener(_onSheetAnimationStatus);
+    _entranceFocus.dispose();
     _nameController.dispose();
     _quantityController.dispose();
     _priceController.dispose();
