@@ -817,7 +817,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
                                 decoration: InputDecoration(
                                   labelText: shopTr(context, 'Currency'),
                                   contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
+                                    horizontal: 8,
                                     vertical: 17,
                                   ),
                                   border: OutlineInputBorder(
@@ -827,13 +827,12 @@ class _AddItemSheetState extends State<AddItemSheet> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Flexible(
-                                      child: Text(
-                                        _currencyLabel(_selectedCurrencyCode),
-                                        textDirection: TextDirection.ltr,
-                                        maxLines: 1,
-                                        style: _currencyLabelStyle(context),
-                                      ),
+                                    Text(
+                                      _currencyLabel(_selectedCurrencyCode),
+                                      textDirection: TextDirection.ltr,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      style: _currencyLabelStyle(context),
                                     ),
                                     const SizedBox(width: 1),
                                     const Icon(Icons.arrow_drop_down, size: 20),
@@ -1017,8 +1016,14 @@ class _AddItemSheetState extends State<AddItemSheet> {
       maxLines: 1,
     )..layout(maxWidth: double.infinity);
     // Icon sizes also follow the accessibility text scale.
+    // InputDecorator's border and internal insets need a little more than the
+    // text/icon widths alone. Keep the ISO code whole rather than flex-clipping.
     final desired =
-        painter.width + 20 + 1 + MediaQuery.textScalerOf(context).scale(20) + 4;
+        painter.width +
+        16 +
+        1 +
+        MediaQuery.textScalerOf(context).scale(20) +
+        12;
     painter.dispose();
     return desired < 48 ? 48 : desired;
   }

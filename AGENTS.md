@@ -83,7 +83,8 @@ that adds friction needs a clear user benefit.
   expand while scrolling toward the end; Lists retains its split arrow when
   collapsed. Both transitions animate their labels. Scroll intent updates only
   the FAB subtree, not the entire page, and requires sustained movement.
-  History uses a calendar-plus `New Date` action.
+  History uses a calendar-plus `New Date` action. Both main FABs are 50dp tall;
+  label ink is softened only while readable contrast remains.
 - Shared page, dialog, and sheet transitions follow one motion rhythm and honor
   reduced-motion settings. Tabs ease in without discarding their state, theme
   colors and header scenery transition smoothly, and automatic editor keyboard
@@ -103,8 +104,9 @@ that adds friction needs a clear user benefit.
   provenance and licenses are documented in `docs/currency_symbols.md`.
   Money text uses bundled regular/medium/bold Latin-digit fonts and a taka-only
   fallback; receipt totals retain LibreBaskerville. The currency editor keeps
-  only the ISO code and dropdown arrow, sized to their actual content. Calendar badges
-  use localized short month labels when available, with Arabic and longer
+  only the full ISO code and dropdown arrow, sized to their actual content without
+  clipping. History count statuses use complete language-specific phrases.
+  Calendar badges use localized short month labels when available, with Arabic and longer
   names directly above the rings; their day is always a bare localized number
   centered in the face below its month band.
   Hero fades resolve their physical direction on every language change. Today

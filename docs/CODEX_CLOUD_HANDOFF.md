@@ -1,6 +1,17 @@
 # ShopTrack — Codex Cloud and Local Development Handover
 
-Last reviewed against the local checkout: **29 September 2026**.
+Last reviewed against the local checkout: **30 September 2026**.
+
+Sprint 19.5.5 keeps the three-letter currency code visible
+in the item editor by tightening its padding and avoiding text compression.
+History record counts now use complete compact phrases in English, Bangla,
+Arabic, and Simplified Chinese, including Bangla's `টি` classifier. Both main
+FABs are slightly shorter, with softened label color where contrast permits;
+the Lists split-arrow action remains intact. There are no item, date, or sync
+model changes. Physical-device acceptance is still needed for appearance and
+touch feel. Static analysis is clean and the full Flutter suite passed 412
+tests (16 optional visual previews skipped); the real-font Bangla editor
+preview was inspected with the full `BDT` code visible.
 
 Sprint 19.5.4 slightly lengthens the shared dialog and bottom-sheet entrance,
 including the Gregorian date picker, and eases the History options menu while
@@ -140,7 +151,7 @@ discarding unknown changes.
 At the time of this handover:
 
 - Local branch: `master`.
-- Current local milestone: **Sprint 19.5.4 — modal pacing and date-badge alignment**.
+- Current local milestone: **Sprint 19.5.5 — currency-field, count wording, and FAB refinements**.
 - Check `git log` for the latest commit and `git status` for any uncommitted work.
 
 Sprint 19 foundation work includes:

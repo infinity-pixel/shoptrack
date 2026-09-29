@@ -99,12 +99,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     final during = tester.getSize(find.byKey(const ValueKey('split-main-fab')));
     expect(during.width, lessThan(wide.width));
-    expect(during.width, greaterThan(103));
+    expect(during.width, greaterThan(99));
     await tester.pumpAndSettle();
     final compact = tester.getSize(
       find.byKey(const ValueKey('split-main-fab')),
     );
-    expect(compact.width, 103);
+    expect(compact.width, 99);
     await tester.tap(find.byIcon(Icons.keyboard_arrow_up_rounded));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('share-fab-action')));

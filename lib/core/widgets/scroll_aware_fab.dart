@@ -3,15 +3,37 @@ import 'package:shoptrack/core/localization/shoptrack_text.dart';
 
 import '../theme/theme_presets.dart';
 
-TextStyle? _fabLabelStyle(BuildContext context, Color foreground) =>
-    Theme.of(context).textTheme.labelLarge?.copyWith(
-      color: foreground,
-      fontFamily: 'LibreBaskerville',
-      fontFamilyFallback: const ['serif'],
-      fontWeight: FontWeight.w700,
-      fontSize: 16,
-      height: 1.1,
+Color _fabLabelColor(Color foreground, Color background) {
+  final backgroundLuminance = background.computeLuminance();
+  for (final strength in [.86, .90, .94, .98]) {
+    final color = Color.alphaBlend(
+      foreground.withValues(alpha: strength),
+      background,
     );
+    final labelLuminance = color.computeLuminance();
+    final lighter = labelLuminance > backgroundLuminance
+        ? labelLuminance
+        : backgroundLuminance;
+    final darker = labelLuminance > backgroundLuminance
+        ? backgroundLuminance
+        : labelLuminance;
+    if ((lighter + .05) / (darker + .05) >= 4.5) return color;
+  }
+  return foreground;
+}
+
+TextStyle? _fabLabelStyle(
+  BuildContext context,
+  Color foreground,
+  Color background,
+) => Theme.of(context).textTheme.labelLarge?.copyWith(
+  color: _fabLabelColor(foreground, background),
+  fontFamily: 'LibreBaskerville',
+  fontFamilyFallback: const ['serif'],
+  fontWeight: FontWeight.w700,
+  fontSize: 16,
+  height: 1.1,
+);
 
 /// Requires a short, deliberate scroll before changing FAB width.
 class FabScrollIntent {
@@ -118,7 +140,7 @@ class _DelayedExtendedFabState extends State<DelayedExtendedFab>
               child: Material(
                 color: background,
                 elevation: 6,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(25),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: widget.onPressed,
@@ -129,8 +151,8 @@ class _DelayedExtendedFabState extends State<DelayedExtendedFab>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           SizedBox(
-                            width: 56,
-                            height: 56,
+                            width: 50,
+                            height: 50,
                             child: Center(child: widget.icon),
                           ),
                           ClipRect(
@@ -147,7 +169,11 @@ class _DelayedExtendedFabState extends State<DelayedExtendedFab>
                                   child: ShopText(
                                     widget.label,
                                     maxLines: 1,
-                                    style: _fabLabelStyle(context, foreground),
+                                    style: _fabLabelStyle(
+                                      context,
+                                      foreground,
+                                      background,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -383,7 +409,7 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                 key: const ValueKey('split-main-fab'),
                 color: background,
                 elevation: 6,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(25),
                 clipBehavior: Clip.antiAlias,
                 child: IconTheme(
                   data: IconThemeData(color: foreground),
@@ -406,13 +432,13 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                                 curve: Curves.easeOut,
                               ).transform(_expansion.value);
                               return SizedBox(
-                                height: 56,
+                                height: 50,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const SizedBox(
-                                      width: 56,
-                                      height: 56,
+                                      width: 50,
+                                      height: 50,
                                       child: Center(child: Icon(Icons.add)),
                                     ),
                                     ClipRect(
@@ -433,6 +459,7 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                                               style: _fabLabelStyle(
                                                 context,
                                                 foreground,
+                                                background,
                                               ),
                                             ),
                                           ),
@@ -447,7 +474,7 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                         ),
                       ),
                       SizedBox(
-                        height: 32,
+                        height: 30,
                         child: VerticalDivider(
                           width: 1,
                           thickness: 1,
@@ -459,8 +486,8 @@ class _ShoppingSplitFabState extends State<ShoppingSplitFab>
                         child: InkWell(
                           onTap: _toggle,
                           child: SizedBox(
-                            width: 46,
-                            height: 56,
+                            width: 48,
+                            height: 50,
                             child: Center(
                               child: AnimatedBuilder(
                                 animation: _motion,

@@ -331,6 +331,13 @@ void main() {
             find.descendant(of: label, matching: find.byType(RichText)),
           );
           expect(paragraph.didExceedMaxLines, isFalse);
+          expect(
+            paragraph.size.width,
+            greaterThanOrEqualTo(
+              paragraph.getMaxIntrinsicWidth(double.infinity) - 1,
+            ),
+            reason: '$language $code must show all three letters',
+          );
           // Padding + arrow + small spacing only; no arbitrary fraction of row.
           expect(
             tester.getSize(button).width - paragraph.size.width,

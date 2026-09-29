@@ -124,9 +124,9 @@ void main() {
       expanded = false;
       await tester.pumpWidget(harness());
       await tester.pump(const Duration(milliseconds: 100));
-      expect(tester.getSize(button).width, greaterThan(103));
+      expect(tester.getSize(button).width, greaterThan(99));
       await tester.pumpAndSettle();
-      expect(tester.getSize(button).width, 103);
+      expect(tester.getSize(button).width, 99);
       await tester.tap(find.byIcon(Icons.keyboard_arrow_up_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('share-fab-action')));

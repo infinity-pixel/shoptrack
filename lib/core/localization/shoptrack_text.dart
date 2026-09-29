@@ -161,6 +161,52 @@ String shopCount(
 }) =>
     '${shopNumber(context, count)} ${shopTr(context, count == 1 ? singular : plural)}';
 
+enum ShopHistoryStatus { planned, purchased, pending }
+
+/// Compact complete phrases, rather than English word order with translated
+/// fragments. In Arabic, a label-before-count form avoids misleading singular
+/// and plural endings for different numbers.
+String shopHistoryStatus(
+  BuildContext context,
+  int count,
+  ShopHistoryStatus status,
+) => shopHistoryStatusLanguage(
+  Localizations.localeOf(context).languageCode,
+  count,
+  status,
+);
+
+String shopHistoryStatusLanguage(
+  String languageCode,
+  int count,
+  ShopHistoryStatus status,
+) {
+  final number = shopNumberLanguage(languageCode, count);
+  return switch (languageCode) {
+    'bn' => switch (status) {
+      ShopHistoryStatus.planned => '$numberটি কেনার পরিকল্পনা',
+      ShopHistoryStatus.purchased => '$numberটি কেনা হয়েছে',
+      ShopHistoryStatus.pending => '$numberটি বাকি',
+    },
+    'ar' => switch (status) {
+      ShopHistoryStatus.planned => 'المخطط له: $number',
+      ShopHistoryStatus.purchased => 'تم الشراء: $number',
+      ShopHistoryStatus.pending => 'المتبقي: $number',
+    },
+    'zh' => switch (status) {
+      ShopHistoryStatus.planned => '计划购买$number件',
+      ShopHistoryStatus.purchased => '已购买$number件',
+      ShopHistoryStatus.pending => '待购买$number件',
+    },
+    _ => switch (status) {
+      ShopHistoryStatus.planned =>
+        '$number Planned ${count == 1 ? 'Item' : 'Items'}',
+      ShopHistoryStatus.purchased => '$number Purchased',
+      ShopHistoryStatus.pending => '$number Pending',
+    },
+  };
+}
+
 String shopListName(
   BuildContext context, {
   required String id,

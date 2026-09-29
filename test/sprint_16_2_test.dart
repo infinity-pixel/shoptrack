@@ -154,7 +154,7 @@ void main() {
       ),
     );
     await show(true);
-    expect(tester.getSize(find.byType(DelayedExtendedFab)).height, 56);
+    expect(tester.getSize(find.byType(DelayedExtendedFab)).height, 50);
     expect(tester.getSize(find.byIcon(Icons.add)), const Size(24, 24));
     final expandedWidth = tester.getSize(find.byType(DelayedExtendedFab)).width;
     await show(false);
@@ -167,7 +167,7 @@ void main() {
     );
     await show(false);
     await tester.pumpAndSettle();
-    expect(tester.getSize(find.byType(DelayedExtendedFab)), const Size(56, 56));
+    expect(tester.getSize(find.byType(DelayedExtendedFab)), const Size(50, 50));
     expect(tester.takeException(), isNull);
   });
 }

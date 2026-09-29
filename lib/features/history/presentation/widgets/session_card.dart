@@ -144,8 +144,11 @@ class SessionCard extends StatelessWidget {
         _GlowingStatus(
           animation: animation,
           color: palette.planned,
-          text:
-              '${shopNumber(context, session.plannedCount)} ${shopTr(context, 'Planned')} ${shopTr(context, session.plannedCount == 1 ? 'Item' : 'Items')}',
+          text: shopHistoryStatus(
+            context,
+            session.plannedCount,
+            ShopHistoryStatus.planned,
+          ),
         ),
       ];
     }
@@ -154,15 +157,21 @@ class SessionCard extends StatelessWidget {
         _GlowingStatus(
           animation: animation,
           color: palette.purchasedStatus,
-          text:
-              '${shopNumber(context, session.purchasedCount)} ${shopTr(context, 'Purchased')}',
+          text: shopHistoryStatus(
+            context,
+            session.purchasedCount,
+            ShopHistoryStatus.purchased,
+          ),
         ),
       if (session.pendingCount > 0)
         _GlowingStatus(
           animation: animation,
           color: palette.pending,
-          text:
-              '${shopNumber(context, session.pendingCount)} ${shopTr(context, 'Pending')}',
+          text: shopHistoryStatus(
+            context,
+            session.pendingCount,
+            ShopHistoryStatus.pending,
+          ),
         ),
     ];
   }
